@@ -97,7 +97,7 @@ class ParserTest {
      @Test
     void testParseTvsd() {
          List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/tvsd.m3u"));
-         assertThat(entries, hasSize(176));
+         assertThat(entries, hasSize(88));
      }
 
     @Test

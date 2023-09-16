@@ -1,8 +1,15 @@
 package org.bitpunk.m3uedit.builder;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Builder {
+    private static final Logger log = LoggerFactory.getLogger(Builder.class);
+
     private String duration;
     private String groupTitle;
     private String tvgId;
@@ -12,6 +19,8 @@ public class Builder {
     private String radio;
     private String channelUri;
     private String channelName;
+
+    private Map<String, String> vlcOpts = new HashMap<>();
 
     public Builder duration(String duration) {
         this.duration = duration;
@@ -58,6 +67,17 @@ public class Builder {
         return this;
     }
 
+    public void addVlcOptions(Map<String, String> options) {
+        for (Map.Entry<String, String> option : options.entrySet()) {
+            String key = option.getKey();
+            String value = option.getValue();
+            String previousValue = (String) this.vlcOpts.put(key, value);
+            if (previousValue != null) {
+                log.warn("Previous value for key {} got re-assigned ({} -> {})", key, previousValue, value);
+            }
+        }
+
+    }
     public Entry build() {
         Entry entry = new Entry();
         entry.setDuration(duration);
@@ -69,6 +89,7 @@ public class Builder {
         entry.setRadio(radio);
         entry.setChannelUri(channelUri);
         entry.setChannelName(channelName);
+        entry.setVlcOpts(vlcOpts);
         return entry;
     }
 }

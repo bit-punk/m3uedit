@@ -8,13 +8,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Parser {
     private static final String M3U_START_MARKER = "#EXTM3U";
     private static final String M3U_INFO_MARKER = "#EXTINF:";
-    private static final Pattern DURATION_REGEX = Pattern.compile(".*#EXTINF:(.+?) .*", Pattern.CASE_INSENSITIVE);
+    private static final String M3U_VLC_OPT_MARKER = "#EXTVLCOPT:";
+    private static final Pattern DURATION_REGEX = Pattern.compile(".*#EXTINF:([-+]?([0-9]*[.])?[0-9]+).*", Pattern.CASE_INSENSITIVE);
     private static final Pattern TVG_ID_REGEX = Pattern.compile(".*tvg-id=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern TVG_NAME_REGEX = Pattern.compile(".*tvg-name=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern TVG_LOGO_REGEX = Pattern.compile(".*tvg-logo=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
@@ -22,6 +25,7 @@ public class Parser {
     private static final Pattern GROUP_TITLE_REGEX = Pattern.compile(".*group-title=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern RADIO_REGEX = Pattern.compile(".*radio=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern CHANNEL_NAME_REGEX = Pattern.compile(".*,(.+)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern VLC_OPTS = Pattern.compile(M3U_VLC_OPT_MARKER + "(.*)=(.*)", Pattern.CASE_INSENSITIVE);
 
 
     /**
@@ -47,16 +51,19 @@ public class Parser {
             checkStart(line);
             String globalTvgShift = extract(line, TVG_SHIFT_REGEX);
 
-            Builder entry = null;
+            Builder builder = null;
             while ((line = buffer.readLine()) != null) {
                 lineNumber++;
                 if (isExtInfo(line)) {
-                    entry = extractExtInfo(globalTvgShift, line);
+                    builder = extractExtInfo(globalTvgShift, line);
+                } else if(isExtVlcOpt(line)){
+                    Map<String, String> vlcOptions = extractExtVlcOpt(line);
+                    builder.addVlcOptions(vlcOptions);
                 } else {
-                    if (entry == null) {
+                    if (builder == null) {
                         throw new ParsingException(lineNumber, "Missing " + M3U_INFO_MARKER);
                     }
-                    entries.add(entry.channelUri(line).build());
+                    entries.add(builder.channelUri(line).build());
                 }
             }
         } catch (IOException e) {
@@ -74,6 +81,10 @@ public class Parser {
 
     private boolean isExtInfo(String line) {
         return line.contains(M3U_INFO_MARKER);
+    }
+
+    private boolean isExtVlcOpt(String line) {
+        return line.contains(M3U_VLC_OPT_MARKER);
     }
 
     private Builder extractExtInfo(String globalTvgShift, String line) {
@@ -97,6 +108,15 @@ public class Parser {
                 .tvgLogo(tvgLogo)
                 .tvgName(tvgName)
                 .tvgShift(tvgShift);
+    }
+
+    private Map<String, String> extractExtVlcOpt(String line) {
+        Map<String, String> vlcOptions = new HashMap<>();
+        Matcher matcher = VLC_OPTS.matcher(line);
+        if (matcher.matches()) {
+            vlcOptions.put(matcher.group(1), matcher.group(2));
+        }
+        return vlcOptions;
     }
 
     private String extract(String line, Pattern pattern) {
