@@ -2,13 +2,12 @@ package org.bitpunk.m3uedit.parser;
 
 import org.bitpunk.m3uedit.builder.Builder;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.model.PlayList;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,56 +21,54 @@ public class Parser {
     private static final Pattern TVG_SHIFT_REGEX = Pattern.compile(".*tvg-shift=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern GROUP_TITLE_REGEX = Pattern.compile(".*group-title=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern RADIO_REGEX = Pattern.compile(".*radio=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern CHANNEL_NAME_REGEX = Pattern.compile(".*,(.+?)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CHANNEL_NAME_REGEX = Pattern.compile(".*,(.+)$", Pattern.CASE_INSENSITIVE);
 
 
     /**
-     * Parse the m3u file
+     * Parses a m3u file.
      *
      * @param stream pointing to your m3u file
-     * @return
+     * @return a List of parsed Entry objects
      */
-    public List<Entry> parse(InputStream stream) {
+    public PlayList<Entry> parse(InputStream stream) {
         if (stream == null) {
             throw new ParsingException(0, "Cannot read stream");
         }
-        List<Entry> entries = new ArrayList<>();
-        int lineNbr = 0;
+        PlayList<Entry> entries = new PlayList<>();
+        int lineNumber = 0;
         String line;
         try {
             BufferedReader buffer = new BufferedReader(new InputStreamReader(stream));
             line = buffer.readLine();
-            if(line == null) {
+            if (line == null) {
                 throw new ParsingException(0, "Empty stream");
             }
-            lineNbr++;
+            lineNumber++;
             checkStart(line);
-            String globalTvgShif = extract(line, TVG_SHIFT_REGEX);
+            String globalTvgShift = extract(line, TVG_SHIFT_REGEX);
 
             Builder entry = null;
             while ((line = buffer.readLine()) != null) {
-                lineNbr++;
+                lineNumber++;
                 if (isExtInfo(line)) {
-                    entry = extractExtInfo(globalTvgShif, line);
+                    entry = extractExtInfo(globalTvgShift, line);
                 } else {
                     if (entry == null) {
-                        throw new ParsingException(lineNbr, "Missing " + M3U_INFO_MARKER);
+                        throw new ParsingException(lineNumber, "Missing " + M3U_INFO_MARKER);
                     }
                     entries.add(entry.channelUri(line).build());
                 }
             }
         } catch (IOException e) {
-            throw new ParsingException(lineNbr, "Cannot read file", e);
+            throw new ParsingException(lineNumber, "Cannot read file", e);
         }
 
         return entries;
     }
 
     private void checkStart(String line) {
-        if (line != null) {
-            if (!line.contains(M3U_START_MARKER)) {
-                throw new ParsingException(1, "First line of the file should be " + M3U_START_MARKER);
-            }
+        if (line != null && (!line.contains(M3U_START_MARKER))) {
+            throw new ParsingException(1, "First line of the file should be " + M3U_START_MARKER);
         }
     }
 

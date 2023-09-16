@@ -94,6 +94,12 @@ class ParserTest {
         assertThat(entries.get(2).getTvgShift(), is("4"));
     }
 
+     @Test
+    void testParseTvsd() {
+         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/tvsd.m3u"));
+         assertThat(entries, hasSize(176));
+     }
+
     @Test
     void testParseBigFile() {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/test_big_file.m3u"));
@@ -103,18 +109,14 @@ class ParserTest {
     @Test
     void testEmptyStream() {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(new byte[]{});
-        Assertions.assertThrows(ParsingException.class, () -> {
-            new Parser().parse(byteArrayInputStream);
-        });
+        Assertions.assertThrows(ParsingException.class, () -> new Parser().parse(byteArrayInputStream));
     }
 
     @Test
     void testWrongStream() throws IOException {
         InputStream stream = ParserTest.class.getResourceAsStream("/test_global_tvg_shift.m3u");
         stream.close();
-        Assertions.assertThrows(ParsingException.class, () -> {
-            new Parser().parse(stream);
-        });
+        Assertions.assertThrows(ParsingException.class, () -> new Parser().parse(stream));
     }
 }
 

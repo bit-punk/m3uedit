@@ -4,7 +4,6 @@ import org.bitpunk.m3uedit.model.Entry;
 
 public class Builder {
     private String duration;
-    private String name;
     private String groupTitle;
     private String tvgId;
     private String tvgName;

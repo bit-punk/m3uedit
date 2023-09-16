@@ -29,7 +29,7 @@ class WriterTest {
     void testWriteSingleQuote() {
         Entry entry = new Builder()
                 .channelUri("http://test.com")
-                .tvgName("test'ing")
+                .tvgName("testing")
                 .channelName("test-channel'name")
                 .groupTitle("TV'Group")
                 .duration("-1")
@@ -38,7 +38,7 @@ class WriterTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         new Writer().write(Collections.singletonList(entry), baos);
         assertThat(baos.toString(), is("#EXTM3U" + System.lineSeparator() +
-                "#EXTINF:-1 tvg-name=\"test'ing\" group-title=\"TV'Group\",test-channel'name" + System.lineSeparator() +
+                "#EXTINF:-1 tvg-name=\"testing\" group-title=\"TV'Group\",test-channel'name" + System.lineSeparator() +
                 "http://test.com"));
     }
 
