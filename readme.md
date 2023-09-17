@@ -10,3 +10,4 @@ Small editor for simple m3u-playlist files.
 ## Links
 * [JavaFX Downloads](https://gluonhq.com/products/javafx/)
 * https://en.wikipedia.org/wiki/M3U
+* [Oracle TableView example](https://docs.oracle.com/javafx/2/ui_controls/table-view.htm)

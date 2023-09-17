@@ -71,7 +71,7 @@ public class Builder {
         for (Map.Entry<String, String> option : options.entrySet()) {
             String key = option.getKey();
             String value = option.getValue();
-            String previousValue = (String) this.vlcOpts.put(key, value);
+            String previousValue = this.vlcOpts.put(key, value);
             if (previousValue != null) {
                 log.warn("Previous value for key {} got re-assigned ({} -> {})", key, previousValue, value);
             }
