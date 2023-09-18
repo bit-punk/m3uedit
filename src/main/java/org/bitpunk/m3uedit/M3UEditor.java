@@ -8,6 +8,11 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -19,6 +24,7 @@ import org.bitpunk.m3uedit.parser.Parser;
 import java.io.*;
 
 public class M3UEditor extends Application {
+    private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
     final HBox hb = new HBox();
     private final TableView<Entry> table = new TableView<>();
     private final ObservableList<Entry> data = readDataFromFile();
@@ -52,14 +58,80 @@ public class M3UEditor extends Application {
         label.setFont(new Font("Arial", 20));
 
         table.setEditable(true);
-
+        // Channel Name
         TableColumn<Entry, String> channelName = new TableColumn<>("Channel Name");
         channelName.setMinWidth(100);
         channelName.setCellValueFactory(new PropertyValueFactory<>("channelName"));
 
+        channelName.setCellFactory(TextFieldTableCell.forTableColumn());
+        channelName.setOnEditCommit(
+                t -> (t.getTableView().getItems().get(
+                        t.getTablePosition().getRow())
+                ).setChannelName(t.getNewValue())
+        );
+
+        // Channel URI
         TableColumn<Entry, String> channelUri = new TableColumn<>("Channel URI");
         channelUri.setMinWidth(100);
         channelUri.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
+
+        channelUri.setCellFactory(TextFieldTableCell.forTableColumn());
+        channelUri.setOnEditCommit(
+                t -> (t.getTableView().getItems().get(
+                        t.getTablePosition().getRow())
+                ).setChannelUri(t.getNewValue())
+        );
+
+        // set RowFactory to make rows draggable
+
+        table.setRowFactory(tv -> {
+            TableRow<Entry> row = new TableRow<>();
+
+            row.setOnDragDetected(event -> {
+                if (!row.isEmpty()) {
+                    Integer index = row.getIndex();
+                    Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
+                    db.setDragView(row.snapshot(null, null));
+                    ClipboardContent cc = new ClipboardContent();
+                    cc.put(SERIALIZED_MIME_TYPE, index);
+                    db.setContent(cc);
+                    event.consume();
+                }
+            });
+
+            row.setOnDragOver(event -> {
+                Dragboard db = event.getDragboard();
+                if (db.hasContent(SERIALIZED_MIME_TYPE) && (row.getIndex() != (Integer) db.getContent(SERIALIZED_MIME_TYPE))) {
+                    event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                    event.consume();
+
+                }
+            });
+
+            row.setOnDragDropped(event -> {
+                Dragboard db = event.getDragboard();
+                if (db.hasContent(SERIALIZED_MIME_TYPE)) {
+                    int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
+                    Entry draggedEntry = table.getItems().remove(draggedIndex);
+
+                    int dropIndex;
+
+                    if (row.isEmpty()) {
+                        dropIndex = table.getItems().size();
+                    } else {
+                        dropIndex = row.getIndex();
+                    }
+
+                    table.getItems().add(dropIndex, draggedEntry);
+
+                    event.setDropCompleted(true);
+                    table.getSelectionModel().select(dropIndex);
+                    event.consume();
+                }
+            });
+
+            return row;
+        });
 
         table.setItems(readDataFromFile());
 

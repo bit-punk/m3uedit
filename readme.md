@@ -11,3 +11,4 @@ Small editor for simple m3u-playlist files.
 * [JavaFX Downloads](https://gluonhq.com/products/javafx/)
 * https://en.wikipedia.org/wiki/M3U
 * [Oracle TableView example](https://docs.oracle.com/javafx/2/ui_controls/table-view.htm)
+* https://stackoverflow.com/questions/28603224/sort-tableview-with-drag-and-drop-rows
