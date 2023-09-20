@@ -51,7 +51,6 @@ public class SceneController implements Initializable {
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
-    private PlayList<Entry> playList = new PlayList<>();
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
@@ -95,10 +94,7 @@ public class SceneController implements Initializable {
             Entry entry = new Entry();
             entry.setChannelName(addedChannelNameTextField.getText());
             entry.setChannelUri(addedChannelUriTextField.getText());
-            playList.add(entry);
-            ObservableList<Entry> dataFromPlaylist = FXCollections.observableArrayList();
-            dataFromPlaylist.addAll(playList);
-            entryTableView.setItems(dataFromPlaylist);
+            entryTableView.getItems().add(entry);
             addedChannelNameTextField.clear();
             addedChannelUriTextField.clear();
         });
@@ -156,16 +152,14 @@ public class SceneController implements Initializable {
         });
 
         // saveFileButton
-        saveFileButton.setOnAction(e -> {
-            savePlayListToFile(targetFileNameTextField.getText());
-        });
+        saveFileButton.setOnAction(e -> savePlayListToFile(targetFileNameTextField.getText()));
     }
 
     private void savePlayListToFile(String targetFileName) {
         log.debug("saving playlist to file: {}", targetFileName);
         Writer writer = new Writer();
         try {
-            writer.write(playList, new FileOutputStream(targetFileName));
+            writer.write(entryTableView.getItems(), new FileOutputStream(targetFileName));
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -175,9 +169,8 @@ public class SceneController implements Initializable {
 
     private void populateEntryTable(String fileName) {
         try {
-            playList = readDataFromFile(fileName);
             ObservableList<Entry> dataFromFile = FXCollections.observableArrayList();
-            dataFromFile.addAll(playList);
+            dataFromFile.addAll(readDataFromFile(fileName));
             entryTableView.setItems(dataFromFile);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
