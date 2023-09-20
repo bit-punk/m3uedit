@@ -20,6 +20,7 @@ import javafx.stage.Stage;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.PlayList;
 import org.bitpunk.m3uedit.parser.Parser;
+import org.bitpunk.m3uedit.parser.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +31,10 @@ import java.util.ResourceBundle;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
-
-
-    PlayList<Entry> playList = new PlayList<>();
-
+    @FXML
+    public TextField targetFileNameTextField;
+    @FXML
+    public Button saveFileButton;
     @FXML
     public Button openFileButton;
     @FXML
@@ -50,6 +51,7 @@ public class SceneController implements Initializable {
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
+    private PlayList<Entry> playList = new PlayList<>();
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
@@ -67,7 +69,9 @@ public class SceneController implements Initializable {
                     Stage thisStage = (Stage) node.getScene().getWindow();
                     File selectedFile = fileChooser.showOpenDialog(thisStage);
                     log.debug("loading playlist-file: {}", selectedFile);
-                    populateEntryTable(selectedFile.getAbsolutePath());
+                    String fileName = selectedFile.getAbsolutePath();
+                    fileNameTextField.setText(fileName);
+                    populateEntryTable(fileName);
                 }
         );
 
@@ -137,6 +141,7 @@ public class SceneController implements Initializable {
                         dropIndex = entryTableView.getItems().size();
                     } else {
                         dropIndex = row.getIndex();
+                        log.debug("Entry dragged to index: {}", dropIndex);
                     }
 
                     entryTableView.getItems().add(dropIndex, draggedEntry);
@@ -149,12 +154,26 @@ public class SceneController implements Initializable {
 
             return row;
         });
+
+        // saveFileButton
+        saveFileButton.setOnAction(e -> {
+            savePlayListToFile(targetFileNameTextField.getText());
+        });
+    }
+
+    private void savePlayListToFile(String targetFileName) {
+        log.debug("saving playlist to file: {}", targetFileName);
+        Writer writer = new Writer();
+        try {
+            writer.write(playList, new FileOutputStream(targetFileName));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 
     private void populateEntryTable(String fileName) {
-        fileNameTextField.setText(fileName);
-
         try {
             playList = readDataFromFile(fileName);
             ObservableList<Entry> dataFromFile = FXCollections.observableArrayList();
@@ -188,7 +207,6 @@ public class SceneController implements Initializable {
     private PlayList<Entry> readDataFromFile(String fileName) throws FileNotFoundException {
         Parser parser = new Parser();
         InputStream inputStream = new DataInputStream(new FileInputStream(fileName));
-        PlayList<Entry> playList = parser.parse(inputStream);
-        return playList;
+        return parser.parse(inputStream);
     }
 }

@@ -5,6 +5,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.util.Objects;
+
 public class M3UEditor extends Application {
 
     public M3UEditor() {
@@ -18,7 +20,7 @@ public class M3UEditor extends Application {
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader loader = new FXMLLoader();
 
-        Scene scene = loader.load(getClass().getClassLoader().getResource("scene.fxml"));
+        Scene scene = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("scene.fxml")));
         primaryStage.setScene(scene);
         primaryStage.show();
     }
