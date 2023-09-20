@@ -41,7 +41,7 @@
                             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                         </columnResizePolicy>
                         <columns>
-                            <TableColumn fx:id="indexColumn" prefWidth="107.0" text="Pos"/>
+                            <TableColumn fx:id="indexColumn" prefWidth="107.0" text="Index"/>
                             <TableColumn fx:id="channelName" prefWidth="107.0" text="Channel Name"/>
                             <TableColumn fx:id="channelUri" prefWidth="86.0" text="Channel URI"/>
                         </columns>
@@ -49,7 +49,7 @@
                     <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
                         <TextField fx:id="addedChannelNameTextField" promptText="Channel Name"/>
                         <TextField fx:id="addedChannelUriTextField" promptText="ChannelUri"/>
-                        <Button fx:id="addEntryButton" mnemonicParsing="false" text="Add"/>
+                        <Button onAction="#addEntry" fx:id="addEntryButton" mnemonicParsing="false" text="Add"/>
                     </HBox>
                     <Separator prefWidth="200.0"/>
                     <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">

@@ -76,15 +76,6 @@ public class SceneController implements Initializable {
                 ).setChannelName(t.getNewValue())
         );
 
-        addEntryButton.setOnAction(e -> {
-            Entry entry = new Entry();
-            entry.setChannelName(addedChannelNameTextField.getText());
-            entry.setChannelUri(addedChannelUriTextField.getText());
-            entryTableView.getItems().add(entry);
-            addedChannelNameTextField.clear();
-            addedChannelUriTextField.clear();
-        });
-
         // set RowFactory to make rows draggable
 
         entryTableView.setRowFactory(tv -> {
@@ -155,12 +146,21 @@ public class SceneController implements Initializable {
                     }
                 }
             }
-            //set the new max-widht with some extra space
+            //set the new max-width with some extra space
             column.setPrefWidth(max + 10.0d);
         });
 
         // saveFileButton
         saveFileButton.setOnAction(e -> savePlayListToFile(targetFileNameTextField.getText()));
+    }
+
+    public void addEntry() {
+        Entry entry = new Entry();
+        entry.setChannelName(addedChannelNameTextField.getText());
+        entry.setChannelUri(addedChannelUriTextField.getText());
+        entryTableView.getItems().add(entry);
+        addedChannelNameTextField.clear();
+        addedChannelUriTextField.clear();
     }
 
     public void openFile() {
