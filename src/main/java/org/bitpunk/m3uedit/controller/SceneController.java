@@ -7,7 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
@@ -15,8 +15,8 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.PlayList;
 import org.bitpunk.m3uedit.parser.Parser;
@@ -48,6 +48,8 @@ public class SceneController implements Initializable {
     @FXML
     public TextField addedChannelUriTextField;
     @FXML
+    public Scene scene;
+    @FXML
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
@@ -56,23 +58,7 @@ public class SceneController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u")
-        );
 
-        fileNameTextField.setOnAction(e -> populateEntryTable(fileNameTextField.getText()));
-
-        openFileButton.setOnAction(e -> {
-                    Node node = (Node) e.getSource();
-                    Stage thisStage = (Stage) node.getScene().getWindow();
-                    File selectedFile = fileChooser.showOpenDialog(thisStage);
-                    log.debug("loading playlist-file: {}", selectedFile);
-                    String fileName = selectedFile.getAbsolutePath();
-                    fileNameTextField.setText(fileName);
-                    populateEntryTable(fileName);
-                }
-        );
 
         // make column channelName editable
         channelName.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -151,8 +137,42 @@ public class SceneController implements Initializable {
             return row;
         });
 
+        //Set the right resize-policy
+        entryTableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        entryTableView.getColumns().forEach((column) ->
+        {
+            //Minimal width = columnheader
+            Text t = new Text(column.getText());
+            double max = t.getLayoutBounds().getWidth();
+            for (int i = 0; i < entryTableView.getItems().size(); i++) {
+                //cell must not be empty
+                if (column.getCellData(i) != null) {
+                    t = new Text(column.getCellData(i).toString());
+                    double calcwidth = t.getLayoutBounds().getWidth();
+                    //remember new max-width
+                    if (calcwidth > max) {
+                        max = calcwidth;
+                    }
+                }
+            }
+            //set the new max-widht with some extra space
+            column.setPrefWidth(max + 10.0d);
+        });
+
         // saveFileButton
         saveFileButton.setOnAction(e -> savePlayListToFile(targetFileNameTextField.getText()));
+    }
+
+    public void openFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u")
+        );
+        File selectedFile = fileChooser.showOpenDialog(scene.getWindow());
+        log.debug("loading playlist-file: {}", selectedFile);
+        String fileName = selectedFile.getAbsolutePath();
+        fileNameTextField.setText(fileName);
+        populateEntryTable();
     }
 
     private void savePlayListToFile(String targetFileName) {
@@ -166,11 +186,10 @@ public class SceneController implements Initializable {
 
     }
 
-
-    private void populateEntryTable(String fileName) {
+    public void populateEntryTable() {
         try {
             ObservableList<Entry> dataFromFile = FXCollections.observableArrayList();
-            dataFromFile.addAll(readDataFromFile(fileName));
+            dataFromFile.addAll(readDataFromFile(fileNameTextField.getText()));
             entryTableView.setItems(dataFromFile);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -201,5 +220,9 @@ public class SceneController implements Initializable {
         Parser parser = new Parser();
         InputStream inputStream = new DataInputStream(new FileInputStream(fileName));
         return parser.parse(inputStream);
+    }
+
+    public void handleExitAction() {
+        System.exit(0);
     }
 }
