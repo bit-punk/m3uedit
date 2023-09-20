@@ -1,8 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.binding.ObjectBinding;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -11,10 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
-import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.DataFormat;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.TransferMode;
+import javafx.scene.input.*;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import org.bitpunk.m3uedit.model.Entry;
@@ -26,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class SceneController implements Initializable {
@@ -38,7 +34,7 @@ public class SceneController implements Initializable {
     @FXML
     public Button openFileButton;
     @FXML
-    public TableColumn<String, Integer> indexColumn;
+    public TableColumn<Entry, String> indexColumn;
     @FXML
     public TextField fileNameTextField;
     @FXML
@@ -55,6 +51,22 @@ public class SceneController implements Initializable {
     TableColumn<Entry, String> channelUri;
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
+
+    private boolean deleteDialog(Entry deleteEntry) {
+
+        Alert dialog = new Alert(Alert.AlertType.WARNING);
+        dialog.setTitle("Delete Entry");
+        dialog.setHeaderText("Delete Entry");
+        dialog.setContentText("Sure you want to delete:\n" + deleteEntry.getChannelName());
+
+        ButtonType buttonYes = new ButtonType("Yes");
+        ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getButtonTypes().setAll(buttonYes, buttonNo);
+        Optional<ButtonType> selectedOption = dialog.showAndWait();
+
+        return selectedOption.isPresent() && selectedOption.get() == buttonYes;
+    }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -150,11 +162,25 @@ public class SceneController implements Initializable {
             column.setPrefWidth(max + 10.0d);
         });
 
-        // saveFileButton
-        saveFileButton.setOnAction(e -> savePlayListToFile(targetFileNameTextField.getText()));
     }
 
-    public void addEntry() {
+    private void addIndexColumn() {
+        indexColumn.setCellFactory(col -> {
+            TableCell<Entry, String> cell = new TableCell<>();
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty())
+                    .then("")
+                    .otherwise(cell.indexProperty().asString()));
+            return cell;
+        });
+    }
+
+    @FXML
+    private void saveListToFile() {
+        savePlayListToFile(targetFileNameTextField.getText());
+    }
+
+    @FXML
+    private void addEntry() {
         Entry entry = new Entry();
         entry.setChannelName(addedChannelNameTextField.getText());
         entry.setChannelUri(addedChannelUriTextField.getText());
@@ -163,7 +189,8 @@ public class SceneController implements Initializable {
         addedChannelUriTextField.clear();
     }
 
-    public void openFile() {
+    @FXML
+    private void openFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u")
@@ -183,10 +210,10 @@ public class SceneController implements Initializable {
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
-
     }
 
-    public void populateEntryTable() {
+    @FXML
+    private void populateEntryTable() {
         try {
             ObservableList<Entry> dataFromFile = FXCollections.observableArrayList();
             dataFromFile.addAll(readDataFromFile(fileNameTextField.getText()));
@@ -194,26 +221,11 @@ public class SceneController implements Initializable {
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
-        indexColumn.setCellFactory(col -> {
-            TableCell<String, Integer> indexCell = new TableCell<>();
-            ReadOnlyObjectProperty<TableRow<String>> rowProperty = indexCell.tableRowProperty();
-            ObjectBinding<String> rowBinding = Bindings.createObjectBinding(() -> {
-                TableRow<String> row = rowProperty.get();
-                if (row != null) {
-                    int rowIndex = row.getIndex();
-                    if (rowIndex < row.getTableView().getItems().size()) {
-                        return Integer.toString(rowIndex);
-                    }
-                }
-                return null;
-            }, rowProperty);
-            indexCell.textProperty().bind(rowBinding);
-            return indexCell;
-        });
+        addIndexColumn();
 
         channelName.setCellValueFactory(new PropertyValueFactory<>("channelName"));
         channelUri.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
-        entryTableView.getColumns().setAll(channelName, channelUri);
+        entryTableView.getColumns().setAll(indexColumn, channelName, channelUri);
     }
 
     private PlayList<Entry> readDataFromFile(String fileName) throws FileNotFoundException {
@@ -222,7 +234,23 @@ public class SceneController implements Initializable {
         return parser.parse(inputStream);
     }
 
-    public void handleExitAction() {
+    @FXML
+    private void handleExitAction() {
         System.exit(0);
+    }
+
+    @FXML
+    private void deleteKeyListener(KeyEvent keyEvent) {
+        final Entry selectedEntry = entryTableView.getSelectionModel().getSelectedItem();
+        if (keyEvent.getCode().equals(KeyCode.DELETE)) {
+            deleteEntry(selectedEntry);
+            keyEvent.consume();
+        }
+    }
+
+    private void deleteEntry(Entry selectedEntry) {
+        if (deleteDialog(selectedEntry)) {
+            entryTableView.getItems().remove(selectedEntry);
+        }
     }
 }
