@@ -19,5 +19,4 @@ class UniqueNameFilterTest extends AbstractFilterTest {
         List<Entry> filteredList = filter.filter(entryList);
         assertThat(filteredList, hasSize(4));
     }
-
 }
