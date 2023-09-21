@@ -7,4 +7,6 @@ import java.util.List;
 public interface Filter {
     List<Entry> filter(List<Entry> list);
 
+    String getDescription();
+
 }
