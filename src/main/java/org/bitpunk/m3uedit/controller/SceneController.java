@@ -145,13 +145,13 @@ public class SceneController implements Initializable {
         entryTableView.getColumns().forEach((column) ->
         {
             //Minimal width = columnheader
-            Text t = new Text(column.getText());
-            double max = t.getLayoutBounds().getWidth();
+            Text text = new Text(column.getText());
+            double max = text.getLayoutBounds().getWidth();
             for (int i = 0; i < entryTableView.getItems().size(); i++) {
                 //cell must not be empty
                 if (column.getCellData(i) != null) {
-                    t = new Text(column.getCellData(i).toString());
-                    double calcwidth = t.getLayoutBounds().getWidth();
+                    text = new Text(column.getCellData(i).toString());
+                    double calcwidth = text.getLayoutBounds().getWidth();
                     //remember new max-width
                     if (calcwidth > max) {
                         max = calcwidth;
@@ -162,6 +162,7 @@ public class SceneController implements Initializable {
             column.setPrefWidth(max + 10.0d);
         });
 
+        entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     private void addIndexColumn() {
