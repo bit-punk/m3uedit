@@ -48,6 +48,12 @@ public class SceneController implements Initializable {
     @FXML
     public ListView<String> availableFilterListView;
     @FXML
+    public ListView<String> selectedFilterListView;
+    @FXML
+    public Button selectFilterButton;
+    @FXML
+    public Button unselectFilterButton;
+    @FXML
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
@@ -73,6 +79,10 @@ public class SceneController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
+        // allow multiple selects in availableFilterListView
+        availableFilterListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        // allow multiple selects in selectedFilterListView
+        selectedFilterListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         // make column channelName editable
         channelName.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -262,5 +272,21 @@ public class SceneController implements Initializable {
         if (deleteDialog(selectedEntry)) {
             entryTableView.getItems().remove(selectedEntry);
         }
+    }
+
+    @FXML
+    private void selectFilterAction() {
+        ObservableList<String> selectedFilters = availableFilterListView.getSelectionModel().getSelectedItems();
+        log.debug("adding selected filters: {}", selectedFilters);
+        selectedFilterListView.getItems().addAll(selectedFilters);
+        availableFilterListView.getItems().removeAll(selectedFilters);
+    }
+
+    @FXML
+    private void unselectFilterAction() {
+        ObservableList<String> unselectedFilters = selectedFilterListView.getSelectionModel().getSelectedItems();
+        log.debug("removing de-selected filters: {}", unselectedFilters);
+        availableFilterListView.getItems().addAll(unselectedFilters);
+        selectedFilterListView.getItems().removeAll(unselectedFilters);
     }
 }
