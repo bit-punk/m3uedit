@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.filter;
+package org.bitpunk.m3uedit.plugins.filter;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = false)
 public class SdChannelFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(SdChannelFilter.class);
+    private final String name = "SD Channel Filter";
     private final String description = "Filters for SD channels (criteria: the same channelName exists with a 'HD' suffix)";
 
     @Override

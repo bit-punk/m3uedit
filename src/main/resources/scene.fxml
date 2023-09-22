@@ -5,16 +5,15 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
-       fx:controller="org.bitpunk.m3uedit.controller.SceneController">
+<Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.bitpunk.m3uedit.controller.SceneController">
     <BorderPane prefHeight="400.0" prefWidth="600.0">
         <top>
             <MenuBar>
                 <menus>
                     <Menu text="File">
                         <items>
-                            <MenuItem onAction="#openFile" text="Open"/>
-                            <MenuItem onAction="#handleExitAction" text="Exit"/>
+                            <MenuItem onAction="#openFile" text="Open" />
+                            <MenuItem onAction="#handleExitAction" text="Exit" />
                         </items>
                     </Menu>
                 </menus>
@@ -25,37 +24,49 @@
             <VBox layoutX="1.0" layoutY="2.0" prefHeight="397.0" prefWidth="595.0">
                 <children>
                     <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                        <TextField fx:id="fileNameTextField" onAction="#populateEntryTable" promptText="Filename"/>
-                        <Button fx:id="openFileButton" mnemonicParsing="false" onAction="#openFile" text="Open File"/>
+                        <TextField fx:id="fileNameTextField" onAction="#populateEntryTable" promptText="Filename" />
+                        <Button fx:id="openFileButton" mnemonicParsing="false" onAction="#openFile" text="Open File" />
                     </HBox>
-                    <Separator prefWidth="200.0"/>
-                    <Label text="Channel list">
+                    <Separator prefWidth="200.0" />
+                    <Label text="Filters">
                         <font>
-                            <Font size="20.0"/>
+                            <Font size="20.0" />
                         </font>
                     </Label>
-                    <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListener"
-                               prefHeight="409.0" prefWidth="595.0" GridPane.columnIndex="0" GridPane.columnSpan="1"
-                               GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS">
+                    <HBox>
+                        <ListView fx:id="availableFilterListView"/>
+                        <VBox>
+                            <Button text="--&gt;" />
+                            <Button text="&lt;--" />
+                        </VBox>
+                        <ListView fx:id="selectedFilterListView"/>
+
+                    </HBox>
+                    <Separator prefWidth="200.0" />
+                    <Label text="Channel list">
+                        <font>
+                            <Font size="20.0" />
+                        </font>
+                    </Label>
+                    <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListener" prefHeight="409.0" prefWidth="595.0" GridPane.columnIndex="0" GridPane.columnSpan="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS">
                         <columnResizePolicy>
-                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                         </columnResizePolicy>
                         <columns>
-                            <TableColumn fx:id="indexColumn" prefWidth="107.0" text="Index"/>
-                            <TableColumn fx:id="channelName" prefWidth="107.0" text="Channel Name"/>
-                            <TableColumn fx:id="channelUri" prefWidth="86.0" text="Channel URI"/>
+                            <TableColumn fx:id="indexColumn" prefWidth="107.0" text="Index" />
+                            <TableColumn fx:id="channelName" prefWidth="107.0" text="Channel Name" />
+                            <TableColumn fx:id="channelUri" prefWidth="86.0" text="Channel URI" />
                         </columns>
                     </TableView>
                     <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                        <TextField fx:id="addedChannelNameTextField" promptText="Channel Name"/>
-                        <TextField fx:id="addedChannelUriTextField" promptText="ChannelUri"/>
-                        <Button fx:id="addEntryButton" mnemonicParsing="false" onAction="#addEntry" text="Add"/>
+                        <TextField fx:id="addedChannelNameTextField" promptText="Channel Name" />
+                        <TextField fx:id="addedChannelUriTextField" promptText="ChannelUri" />
+                        <Button fx:id="addEntryButton" mnemonicParsing="false" onAction="#addEntry" text="Add" />
                     </HBox>
-                    <Separator prefWidth="200.0"/>
+                    <Separator prefWidth="200.0" />
                     <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                        <TextField fx:id="targetFileNameTextField" promptText="Filename"/>
-                        <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToFile"
-                                text="Save File"/>
+                        <TextField fx:id="targetFileNameTextField" promptText="Filename" />
+                        <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToFile" text="Save File" />
                     </HBox>
 
                 </children>
