@@ -24,66 +24,73 @@
 
             <VBox layoutX="1.0" layoutY="2.0" prefHeight="397.0" prefWidth="595.0">
                 <children>
-                    <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                        <TextField fx:id="fileNameTextField" onAction="#populateEntryTable" promptText="Filename"/>
-                        <Button fx:id="openFileButton" mnemonicParsing="false" onAction="#openFile" text="Open File"/>
-                    </HBox>
+
                     <Accordion maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
                                prefHeight="400.0" prefWidth="600.0" xmlns:fx="http://javafx.com/fxml/1"
                                xmlns="http://javafx.com/javafx/17.0.2-ea">
 
                         <panes>
+                            <TitledPane animated="false" text="Input">
+                                <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
+                                    <TextField fx:id="fileNameTextField" onAction="#populateEntryTable"
+                                               promptText="Filename"/>
+                                    <Button fx:id="openFileButton" mnemonicParsing="false" onAction="#openFile"
+                                            text="Open File"/>
+                                </HBox>
+                            </TitledPane>
                             <TitledPane animated="false" text="Filters">
-                                <content>
-
-                                    <HBox>
-                                        <VBox>
-                                            <Label text="available Filters"/>
-                                            <ListView fx:id="availableFilterListView"/>
-                                        </VBox>
-                                        <VBox>
-                                            <Button fx:id="selectFilterButton" onAction="#selectFilterAction" text="--&gt;"/>
-                                            <Button fx:id="unselectFilterButton" onAction="#unselectFilterAction" text="&lt;--"/>
-                                        </VBox>
-                                        <VBox>
-                                            <Label text="selected Filters"/>
-                                            <ListView fx:id="selectedFilterListView"/>
-                                        </VBox>
+                                <HBox>
+                                    <VBox>
+                                        <Label text="available Filters"/>
+                                        <ListView fx:id="availableFilterListView"/>
+                                    </VBox>
+                                    <VBox>
+                                        <Button fx:id="selectFilterButton" onAction="#selectFilterAction"
+                                                text="--&gt;"/>
+                                        <Button fx:id="unselectFilterButton" onAction="#unselectFilterAction"
+                                                text="&lt;--"/>
+                                    </VBox>
+                                    <VBox>
+                                        <Label text="selected Filters"/>
+                                        <ListView fx:id="selectedFilterListView"/>
+                                    </VBox>
+                                </HBox>
+                            </TitledPane>
+                            <TitledPane animated="false" text="Sorters">
+                            </TitledPane>
+                            <TitledPane animated="false" text="Resulting List">
+                                <VBox>
+                                    <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListener"
+                                               prefHeight="409.0" prefWidth="595.0" GridPane.columnIndex="0"
+                                               GridPane.columnSpan="1"
+                                               GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS">
+                                        <columnResizePolicy>
+                                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                        </columnResizePolicy>
+                                        <columns>
+                                            <TableColumn fx:id="indexColumn" prefWidth="107.0" text="Index"/>
+                                            <TableColumn fx:id="channelName" prefWidth="107.0" text="Channel Name"/>
+                                            <TableColumn fx:id="channelUri" prefWidth="86.0" text="Channel URI"/>
+                                        </columns>
+                                    </TableView>
+                                    <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
+                                        <TextField fx:id="addedChannelNameTextField" promptText="Channel Name"/>
+                                        <TextField fx:id="addedChannelUriTextField" promptText="ChannelUri"/>
+                                        <Button fx:id="addEntryButton" mnemonicParsing="false" onAction="#addEntry"
+                                                text="Add"/>
                                     </HBox>
-                                </content>
+                                </VBox>
+                            </TitledPane>
+                            <TitledPane animated="false" text="Output">
+                                <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
+                                    <TextField fx:id="targetFileNameTextField" promptText="Filename"/>
+                                    <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToFile"
+                                            text="Save File"/>
+                                </HBox>
+
                             </TitledPane>
                         </panes>
                     </Accordion>
-                    <Separator prefWidth="200.0"/>
-                    <Label text="Channel list">
-                        <font>
-                            <Font size="20.0"/>
-                        </font>
-                    </Label>
-                    <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListener"
-                               prefHeight="409.0" prefWidth="595.0" GridPane.columnIndex="0" GridPane.columnSpan="1"
-                               GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS">
-                        <columnResizePolicy>
-                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                        </columnResizePolicy>
-                        <columns>
-                            <TableColumn fx:id="indexColumn" prefWidth="107.0" text="Index"/>
-                            <TableColumn fx:id="channelName" prefWidth="107.0" text="Channel Name"/>
-                            <TableColumn fx:id="channelUri" prefWidth="86.0" text="Channel URI"/>
-                        </columns>
-                    </TableView>
-                    <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                        <TextField fx:id="addedChannelNameTextField" promptText="Channel Name"/>
-                        <TextField fx:id="addedChannelUriTextField" promptText="ChannelUri"/>
-                        <Button fx:id="addEntryButton" mnemonicParsing="false" onAction="#addEntry" text="Add"/>
-                    </HBox>
-                    <Separator prefWidth="200.0"/>
-                    <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                        <TextField fx:id="targetFileNameTextField" promptText="Filename"/>
-                        <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToFile"
-                                text="Save File"/>
-                    </HBox>
-
                 </children>
             </VBox>
         </center>
