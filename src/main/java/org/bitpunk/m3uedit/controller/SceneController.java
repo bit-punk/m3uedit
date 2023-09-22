@@ -16,13 +16,13 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.PlayList;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.parser.Writer;
+import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
@@ -45,6 +45,8 @@ public class SceneController implements Initializable {
     public TextField addedChannelUriTextField;
     @FXML
     public Scene scene;
+    @FXML
+    public ListView<String> availableFilterListView;
     @FXML
     TableColumn<Entry, String> channelName;
     @FXML
@@ -163,6 +165,13 @@ public class SceneController implements Initializable {
         });
 
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        initAvailableFilterListView();
+    }
+
+    private void initAvailableFilterListView() {
+        List<String> filterNames = FilterPluginService.getInstance().getFilterNames();
+        log.debug("filterNames: {}", filterNames);
+        availableFilterListView.getItems().addAll(filterNames);
     }
 
     private void addIndexColumn() {

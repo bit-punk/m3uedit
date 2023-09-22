@@ -21,26 +21,27 @@
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.11</logback.version>
         <javafx.version>20.0.2</javafx.version>
-
+        <lombok.version>1.18.28</lombok.version>
+        <junit-jupiter.version>5.10.0</junit-jupiter.version>
+        <hamcrest-library.version>2.2</hamcrest-library.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
+            <version>${lombok.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
+            <version>${junit-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-library</artifactId>
-            <version>2.2</version>
+            <version>${hamcrest-library.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- Logging -->

@@ -1,0 +1,4 @@
+org.bitpunk.m3uedit.plugins.filter.NameFilter
+org.bitpunk.m3uedit.plugins.filter.SdChannelFilter
+org.bitpunk.m3uedit.plugins.filter.UniqueNameFilter
+org.bitpunk.m3uedit.plugins.filter.UniqueUriFilter

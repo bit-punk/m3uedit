@@ -1,6 +1,8 @@
 package org.bitpunk.m3uedit.filter;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.plugins.filter.SdChannelFilter;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;

@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.filter;
+package org.bitpunk.m3uedit.plugins.filter;
 
 import lombok.Data;
 import org.bitpunk.m3uedit.model.Entry;
@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 public class NameFilter implements Filter {
 
     private final List<String> excludeRegexes = Arrays.asList(".*QVC.*", ".*HSE.*");
+    private final String name = "Name Filter";
     private final String description = "Filters entries based on the channelName using a List of regular expressions";
 
     @Override

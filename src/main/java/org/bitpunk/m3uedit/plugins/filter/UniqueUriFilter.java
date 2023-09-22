@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.filter;
+package org.bitpunk.m3uedit.plugins.filter;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class UniqueUriFilter extends AbstractUniqueFilter implements Filter {
+    private final String name = "Unique URI Filter";
     private final String description = "Filters for unique entries (criteria: channelUri)";
 
     @Override

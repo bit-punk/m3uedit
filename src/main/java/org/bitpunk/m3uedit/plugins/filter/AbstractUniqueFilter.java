@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.filter;
+package org.bitpunk.m3uedit.plugins.filter;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
