@@ -17,6 +17,7 @@ import org.bitpunk.m3uedit.model.PlayList;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,5 +289,17 @@ public class SceneController implements Initializable {
         log.debug("removing de-selected filters: {}", unselectedFilters);
         availableFilterListView.getItems().addAll(unselectedFilters);
         selectedFilterListView.getItems().removeAll(unselectedFilters);
+    }
+
+    @FXML
+    private void applySelectedFilterAction() {
+        ObservableList<String> selectedFilterNames = selectedFilterListView.getItems();
+        for (String selectedFilterName : selectedFilterNames) {
+            Filter filter = FilterPluginService.getInstance().getFilter(selectedFilterName);
+            ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryTableView.getItems()));
+
+            entryTableView.setItems(filteredEntries);
+        }
+
     }
 }

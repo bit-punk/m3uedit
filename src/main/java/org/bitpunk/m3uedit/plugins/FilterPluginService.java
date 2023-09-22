@@ -38,4 +38,13 @@ public class FilterPluginService {
         return filterNames;
     }
 
+    public Filter getFilter(String selectedFilterName) {
+        Filter filter = null;
+        for (Filter currentFilter : loader) {
+            if (selectedFilterName.equals(currentFilter.getName())) {
+                filter = currentFilter;
+            }
+        }
+        return filter;
+    }
 }
