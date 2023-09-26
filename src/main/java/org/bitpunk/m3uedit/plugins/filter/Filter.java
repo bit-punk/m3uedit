@@ -9,5 +9,4 @@ public interface Filter {
 
     String getName();
     String getDescription();
-
 }
