@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.controller;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
@@ -17,6 +18,7 @@ import org.bitpunk.m3uedit.model.PlayList;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
+import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +34,6 @@ public class SceneController implements Initializable {
     public TextField targetFileNameTextField;
     @FXML
     public Button saveFileButton;
-    @FXML
-    public Button openFileButton;
     @FXML
     public TableColumn<Entry, String> indexColumn;
     @FXML
@@ -54,6 +54,10 @@ public class SceneController implements Initializable {
     public Button selectFilterButton;
     @FXML
     public Button unselectFilterButton;
+    @FXML
+    public ComboBox<String> addInputComboBox;
+    @FXML
+    public ListView<TextField> inputListView;
     @FXML
     TableColumn<Entry, String> channelName;
     @FXML
@@ -176,7 +180,16 @@ public class SceneController implements Initializable {
         });
 
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        initAvailabeInputComboBox();
         initAvailableFilterListView();
+    }
+
+    private void initAvailabeInputComboBox() {
+        List<String> inputNames = InputPluginService.getInstance().getInputNames();
+        log.debug("inputNames: {}", inputNames);
+        addInputComboBox.getItems().add("None");
+        addInputComboBox.getItems().addAll(inputNames);
+        addInputComboBox.getSelectionModel().select(0);
     }
 
     private void initAvailableFilterListView() {
@@ -235,13 +248,17 @@ public class SceneController implements Initializable {
 
     @FXML
     private void populateEntryTable() {
-        try {
-            ObservableList<Entry> dataFromFile = FXCollections.observableArrayList();
-            dataFromFile.addAll(readDataFromFile(fileNameTextField.getText()));
-            entryTableView.setItems(dataFromFile);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+        ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
+        for (TextField textField : inputListView.getItems()) {
+            String currentFileName = textField.getText();
+            log.debug("file: {}", currentFileName);
+            try {
+                dataFromInputSource.addAll(readDataFromFile(currentFileName));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
+        entryTableView.setItems(dataFromInputSource);
         addIndexColumn();
 
         channelName.setCellValueFactory(new PropertyValueFactory<>("channelName"));
@@ -300,6 +317,30 @@ public class SceneController implements Initializable {
 
             entryTableView.setItems(filteredEntries);
         }
+
+    }
+
+    @FXML
+    private void addInputAction(ActionEvent actionEvent) {
+        log.debug("addInputAction: {}", actionEvent);
+        if (addInputComboBox.getSelectionModel().getSelectedItem().equals("File Input")) {
+            log.debug("adding new File Input");
+            addNewFileInput();
+        }
+    }
+
+    private void addNewFileInput() {
+        TextField fileInputTextfield = new TextField();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u")
+        );
+        File selectedFile = fileChooser.showOpenDialog(scene.getWindow());
+        log.debug("loading playlist-file: {}", selectedFile);
+        String fileName = selectedFile.getAbsolutePath();
+        fileInputTextfield.setText(fileName);
+        inputListView.getItems().add(fileInputTextfield);
+        addInputComboBox.getSelectionModel().select(0);
 
     }
 }

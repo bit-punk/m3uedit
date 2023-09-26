@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 @Data
 public class NameFilter implements Filter {
 
-    private final List<String> excludeRegexes = Arrays.asList(".*QVC.*", ".*HSE.*");
+    private final List<String> excludeRegexes = Arrays.asList("(?i).*QVC.*", ".*HSE.*", ".*1-2-3.*");
     private final String name = "Name Filter";
     private final String description = "Filters entries based on the channelName using a List of regular expressions";
 
