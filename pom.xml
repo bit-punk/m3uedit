@@ -24,6 +24,7 @@
         <lombok.version>1.18.28</lombok.version>
         <junit-jupiter.version>5.10.0</junit-jupiter.version>
         <hamcrest-library.version>2.2</hamcrest-library.version>
+        <commons-lang3.version>3.13.0</commons-lang3.version>
     </properties>
 
     <dependencies>
@@ -96,6 +97,12 @@
             <artifactId>javafx-web</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>

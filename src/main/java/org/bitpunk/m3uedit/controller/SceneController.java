@@ -27,6 +27,8 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
@@ -91,19 +93,11 @@ public class SceneController implements Initializable {
 
         // make column channelName editable
         channelName.setCellFactory(TextFieldTableCell.forTableColumn());
-        channelName.setOnEditCommit(
-                t -> (t.getTableView().getItems().get(
-                        t.getTablePosition().getRow())
-                ).setChannelName(t.getNewValue())
-        );
+        channelName.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setChannelName(t.getNewValue()));
 
         // make column channelUri editable
         channelUri.setCellFactory(TextFieldTableCell.forTableColumn());
-        channelUri.setOnEditCommit(
-                t -> (t.getTableView().getItems().get(
-                        t.getTablePosition().getRow())
-                ).setChannelName(t.getNewValue())
-        );
+        channelUri.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setChannelName(t.getNewValue()));
 
         // set RowFactory to make rows draggable
 
@@ -159,8 +153,7 @@ public class SceneController implements Initializable {
 
         //Set the right resize-policy
         entryTableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        entryTableView.getColumns().forEach((column) ->
-        {
+        entryTableView.getColumns().forEach((column) -> {
             //Minimal width = columnheader
             Text text = new Text(column.getText());
             double max = text.getLayoutBounds().getWidth();
@@ -201,9 +194,7 @@ public class SceneController implements Initializable {
     private void addIndexColumn() {
         indexColumn.setCellFactory(col -> {
             TableCell<Entry, String> cell = new TableCell<>();
-            cell.textProperty().bind(Bindings.when(cell.emptyProperty())
-                    .then("")
-                    .otherwise(cell.indexProperty().asString()));
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
             return cell;
         });
     }
@@ -226,9 +217,7 @@ public class SceneController implements Initializable {
     @FXML
     private void openFile() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u")
-        );
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u"));
         File selectedFile = fileChooser.showOpenDialog(scene.getWindow());
         log.debug("loading playlist-file: {}", selectedFile);
         String fileName = selectedFile.getAbsolutePath();
@@ -238,11 +227,13 @@ public class SceneController implements Initializable {
 
     private void savePlayListToFile(String targetFileName) {
         log.debug("saving playlist to file: {}", targetFileName);
-        Writer writer = new Writer();
-        try {
-            writer.write(entryTableView.getItems(), new FileOutputStream(targetFileName));
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+        if (isNotEmpty(targetFileName)) {
+            Writer writer = new Writer();
+            try {
+                writer.write(entryTableView.getItems(), new FileOutputStream(targetFileName));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -332,9 +323,7 @@ public class SceneController implements Initializable {
     private void addNewFileInput() {
         TextField fileInputTextfield = new TextField();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u")
-        );
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u"));
         File selectedFile = fileChooser.showOpenDialog(scene.getWindow());
         log.debug("loading playlist-file: {}", selectedFile);
         String fileName = selectedFile.getAbsolutePath();
