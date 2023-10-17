@@ -9,8 +9,7 @@ import java.io.*;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 class ParserTest {
 
@@ -52,6 +51,13 @@ class ParserTest {
         assertThat(entries.get(2).getRadio(), is("false"));
         assertThat(entries.get(2).getTvgLogo(), is("../logo/RTL_TVI.png"));
         assertThat(entries.get(2).getTvgShift(), is("3"));
+    }
+
+    @Test
+    void testParse2() {
+        List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/tvhd_orig.m3u"));
+        assertThat(entries, hasSize(30));
+        assertThat(entries, everyItem(hasProperty("vlcOpts", hasEntry("network-caching", "1000"))));
     }
 
     @Test

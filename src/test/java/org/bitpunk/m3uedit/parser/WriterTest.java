@@ -18,11 +18,12 @@ class WriterTest {
 
     @Test
     void testWrite() {
-        List<Entry> entries = new Parser().parse(WriterTest.class.getResourceAsStream("/test.m3u"));
+        String testFilname = "/tvhd_orig.m3u";
+        List<Entry> entries = new Parser().parse(WriterTest.class.getResourceAsStream(testFilname));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         new Writer().write(entries, baos);
-        assertThat(baos.toString(), is(getOrigFile()));
+        assertThat(baos.toString(), is(getOrigFile(testFilname)));
     }
 
     @Test
@@ -42,8 +43,8 @@ class WriterTest {
                 "http://test.com"));
     }
 
-    private String getOrigFile() {
-        return new BufferedReader(new InputStreamReader(WriterTest.class.getResourceAsStream("/test.m3u")))
+    private String getOrigFile(String fileName) {
+        return new BufferedReader(new InputStreamReader(WriterTest.class.getResourceAsStream(fileName)))
                 .lines()
                 .collect(Collectors.joining(System.lineSeparator()));
     }

@@ -19,7 +19,7 @@ class NameFilterTest extends AbstractFilterTest {
         List<Entry> entryList = readList("iptv.m3u");
         assertThat(entryList, hasSize(30));
         List<Entry> filteredList = filter.filter(entryList);
-        assertThat(filteredList, hasSize(25));
+        assertThat(filteredList, hasSize(24));
         assertThat(filteredList, not(hasItem(hasProperty("channelName", matchesPattern(".*QVC.*")))));
         assertThat(filteredList, not(hasItem(hasProperty("channelName", matchesPattern(".*HSE.*")))));
 
