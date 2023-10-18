@@ -60,6 +60,7 @@
                                 </VBox>
                             </TitledPane>
                             <TitledPane animated="false" text="Sorters">
+                                <ListView fx:id="availableSortersListView"/>
                             </TitledPane>
                             <TitledPane animated="false" text="Resulting List">
                                 <VBox>

@@ -1,0 +1,29 @@
+package org.bitpunk.m3uedit.plugins.sorter;
+
+import org.bitpunk.m3uedit.model.Entry;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class ChannelNameSorter implements Sorter {
+    private final String name = "ChannelName Sorter";
+    private final String description = "sorts list alphabetically";
+
+    @Override
+    public List<Entry> sort(List<Entry> entries) {
+        return entries.stream()
+                .sorted(Comparator.comparing(Entry::getChannelName))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+}
