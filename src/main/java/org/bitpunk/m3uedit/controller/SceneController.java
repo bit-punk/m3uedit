@@ -19,6 +19,7 @@ import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
+import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ public class SceneController implements Initializable {
     public ComboBox<String> addInputComboBox;
     @FXML
     public ListView<TextField> inputListView;
+    @FXML
+    public ListView<String> availableSortersListView;
     @FXML
     TableColumn<Entry, String> channelName;
     @FXML
@@ -175,6 +178,7 @@ public class SceneController implements Initializable {
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         initAvailabeInputComboBox();
         initAvailableFilterListView();
+        initAvailableSorterListView();
     }
 
     private void initAvailabeInputComboBox() {
@@ -189,6 +193,12 @@ public class SceneController implements Initializable {
         List<String> filterNames = FilterPluginService.getInstance().getFilterNames();
         log.debug("filterNames: {}", filterNames);
         availableFilterListView.getItems().addAll(filterNames);
+    }
+
+    private void initAvailableSorterListView() {
+        List<String> sorterNames = SorterPluginService.getInstance().getSorterNames();
+        log.debug("sorterNames: {}", sorterNames);
+        availableSortersListView.getItems().addAll(sorterNames);
     }
 
     private void addIndexColumn() {

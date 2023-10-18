@@ -3,9 +3,10 @@ Small editor for simple m3u-playlist files.
 
 ## Intellij
 * https://openjfx.io/openjfx-docs/#introduction
-* ```
-  --module-path /home/jochen/javafx-sdk-20.0.2/lib --add-modules javafx.controls,javafx.fxml
-  ```
+* To be able to run the JavaFX application from Intellij add the following VM options: 
+    ```
+      --module-path /home/jochen/javafx-sdk-20.0.2/lib --add-modules javafx.controls,javafx.fxml
+    ```
 
 ## Links
 * https://openjfx.io/

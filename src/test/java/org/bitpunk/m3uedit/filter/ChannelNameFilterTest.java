@@ -2,7 +2,7 @@ package org.bitpunk.m3uedit.filter;
 
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.filter.NameFilter;
+import org.bitpunk.m3uedit.plugins.filter.ChannelNameFilter;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
@@ -11,11 +11,11 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-class NameFilterTest extends AbstractFilterTest {
+class ChannelNameFilterTest extends AbstractFilterTest {
 
     @Test
     void testFilter() throws FileNotFoundException {
-        Filter filter = new NameFilter();
+        Filter filter = new ChannelNameFilter();
         List<Entry> entryList = readList("iptv.m3u");
         assertThat(entryList, hasSize(30));
         List<Entry> filteredList = filter.filter(entryList);

@@ -11,7 +11,7 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-class UniqueNameFilterTest extends AbstractFilterTest {
+class UniqueChannelNameFilterTest extends AbstractFilterTest {
 
     @Test
     void testFilter() throws FileNotFoundException {

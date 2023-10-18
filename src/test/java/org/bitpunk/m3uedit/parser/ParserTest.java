@@ -17,7 +17,7 @@ class ParserTest {
     void testParse() {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/test.m3u"));
 
-        assertThat("Should have 3 entries", entries, hasSize(3));
+        assertThat(entries, hasSize(3));
 
         assertThat(entries.get(0).getChannelName(), is("La Une HD"));
         assertThat(entries.get(0).getTvgName(), is("La Une HD"));
@@ -64,7 +64,7 @@ class ParserTest {
     void testParseGlobalTvgShift() {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/test_global_tvg_shift.m3u"));
 
-        assertThat("Should have 3 entries", entries, hasSize(3));
+        assertThat(entries, hasSize(3));
 
         assertThat(entries.get(0).getChannelName(), is("La Une HD"));
         assertThat(entries.get(0).getTvgName(), is("La Une HD"));
