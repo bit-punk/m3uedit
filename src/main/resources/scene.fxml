@@ -38,22 +38,7 @@
                             </TitledPane>
                             <TitledPane animated="false" text="Filters">
                                 <VBox>
-                                    <HBox>
-                                        <VBox>
-                                            <Label text="available Filters"/>
-                                            <ListView fx:id="availableFilterListView"/>
-                                        </VBox>
-                                        <VBox>
-                                            <Button fx:id="selectFilterButton" onAction="#selectFilterAction"
-                                                    text="--&gt;"/>
-                                            <Button fx:id="unselectFilterButton" onAction="#unselectFilterAction"
-                                                    text="&lt;--"/>
-                                        </VBox>
-                                        <VBox>
-                                            <Label text="selected Filters"/>
-                                            <ListView fx:id="selectedFilterListView"/>
-                                        </VBox>
-                                    </HBox>
+                                    <ListView fx:id="availableFiltersListView"/>
                                     <Button mnemonicParsing="false" onAction="#applySelectedFilterAction" text="Apply selected Filters"/>
                                 </VBox>
                             </TitledPane>

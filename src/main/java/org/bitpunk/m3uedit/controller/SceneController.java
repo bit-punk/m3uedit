@@ -37,9 +37,6 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
-
-    private List<String> selectedSorterNames = new ArrayList<>();
-
     @FXML
     public TextField targetFileNameTextField;
     @FXML
@@ -57,13 +54,7 @@ public class SceneController implements Initializable {
     @FXML
     public Scene scene;
     @FXML
-    public ListView<String> availableFilterListView;
-    @FXML
-    public ListView<String> selectedFilterListView;
-    @FXML
-    public Button selectFilterButton;
-    @FXML
-    public Button unselectFilterButton;
+    public ListView<String> availableFiltersListView;
     @FXML
     public ComboBox<String> addInputComboBox;
     @FXML
@@ -74,6 +65,8 @@ public class SceneController implements Initializable {
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
+    private final List<String> selectedSorterNames = new ArrayList<>();
+    private final List<String> selectedFilterNames = new ArrayList<>();
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
@@ -95,11 +88,6 @@ public class SceneController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-
-        // allow multiple selects in availableFilterListView
-        availableFilterListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        // allow multiple selects in selectedFilterListView
-        selectedFilterListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         // make column channelName editable
         channelName.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -197,28 +185,31 @@ public class SceneController implements Initializable {
     }
 
     private void initAvailableFilterListView() {
+        setCellFactory(availableFiltersListView, selectedFilterNames);
         List<String> filterNames = FilterPluginService.getInstance().getFilterNames();
         log.debug("filterNames: {}", filterNames);
-        availableFilterListView.getItems().addAll(filterNames);
+        availableFiltersListView.getItems().addAll(filterNames);
     }
 
     private void initAvailableSorterListView() {
-        availableSortersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
-            BooleanProperty observable = new SimpleBooleanProperty();
-            observable.addListener((obs, wasSelected, isNowSelected) -> {
-                        log.debug("Check box for {} changed from {} to {}", item, wasSelected, isNowSelected);
-                        if (isNowSelected){
-                            selectedSorterNames.add(item);
-                        } else {
-                            selectedSorterNames.remove(item);
-                        }
-                    }
-            );
-            return observable;
-        }));
+        setCellFactory(availableSortersListView, selectedSorterNames);
         List<String> sorterNames = SorterPluginService.getInstance().getSorterNames();
         log.debug("sorterNames: {}", sorterNames);
         availableSortersListView.getItems().addAll(sorterNames);
+    }
+    private void setCellFactory(ListView<String> availableFiltersListView, List<String> selectedItems) {
+        availableFiltersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
+            BooleanProperty observable = new SimpleBooleanProperty();
+            observable.addListener((obs, wasSelected, isNowSelected) -> {
+                log.debug("Check box for {} changed from {} to {}", item, wasSelected, isNowSelected);
+                if (isNowSelected) {
+                    selectedItems.add(item);
+                } else {
+                    selectedItems.remove(item);
+                }
+            });
+            return observable;
+        }));
     }
 
     private void addIndexColumn() {
@@ -314,24 +305,7 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void selectFilterAction() {
-        ObservableList<String> selectedFilters = availableFilterListView.getSelectionModel().getSelectedItems();
-        log.debug("adding selected filters: {}", selectedFilters);
-        selectedFilterListView.getItems().addAll(selectedFilters);
-        availableFilterListView.getItems().removeAll(selectedFilters);
-    }
-
-    @FXML
-    private void unselectFilterAction() {
-        ObservableList<String> unselectedFilters = selectedFilterListView.getSelectionModel().getSelectedItems();
-        log.debug("removing de-selected filters: {}", unselectedFilters);
-        availableFilterListView.getItems().addAll(unselectedFilters);
-        selectedFilterListView.getItems().removeAll(unselectedFilters);
-    }
-
-    @FXML
     private void applySelectedFilterAction() {
-        ObservableList<String> selectedFilterNames = selectedFilterListView.getItems();
         for (String selectedFilterName : selectedFilterNames) {
             Filter filter = FilterPluginService.getInstance().getFilter(selectedFilterName);
             ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryTableView.getItems()));
