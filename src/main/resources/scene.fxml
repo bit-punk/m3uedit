@@ -54,17 +54,18 @@
                                             <ListView fx:id="selectedFilterListView"/>
                                         </VBox>
                                     </HBox>
-                                    <Button mnemonicParsing="false"
-                                            onAction="#applySelectedFilterAction"
-                                            text="Apply selected Filters"/>
+                                    <Button mnemonicParsing="false" onAction="#applySelectedFilterAction" text="Apply selected Filters"/>
                                 </VBox>
                             </TitledPane>
                             <TitledPane animated="false" text="Sorters">
-                                <ListView fx:id="availableSortersListView"/>
+                                <VBox>
+                                    <ListView fx:id="availableSortersListView"/>
+                                    <Button mnemonicParsing="false" onAction="#applySelectedSorterAction" text="Apply selected Sorters"/>
+                                </VBox>
                             </TitledPane>
                             <TitledPane animated="false" text="Resulting List">
                                 <VBox>
-                                    <Button fx:id="loadPlaylistButton" onAction="#populateEntryTable" text="Load Data"/>
+                                    <Button onAction="#populateEntryTable" text="Load Data"/>
                                     <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListener"
                                                prefHeight="409.0" prefWidth="595.0" GridPane.columnIndex="0"
                                                GridPane.columnSpan="1"

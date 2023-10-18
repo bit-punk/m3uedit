@@ -28,4 +28,14 @@ public class SorterPluginService {
         }
         return sorterNames;
     }
+
+    public Sorter getSorter(String selectedSorterName) {
+        Sorter sorter = null;
+        for (Sorter currentSorter : loader) {
+            if (selectedSorterName.equals(currentSorter.getName())) {
+                sorter = currentSorter;
+            }
+        }
+        return sorter;
+    }
 }

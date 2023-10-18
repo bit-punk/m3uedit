@@ -1,6 +1,8 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -8,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
@@ -21,6 +24,7 @@ import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +37,9 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
+
+    private List<String> selectedSorterNames = new ArrayList<>();
+
     @FXML
     public TextField targetFileNameTextField;
     @FXML
@@ -196,6 +203,19 @@ public class SceneController implements Initializable {
     }
 
     private void initAvailableSorterListView() {
+        availableSortersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
+            BooleanProperty observable = new SimpleBooleanProperty();
+            observable.addListener((obs, wasSelected, isNowSelected) -> {
+                        log.debug("Check box for {} changed from {} to {}", item, wasSelected, isNowSelected);
+                        if (isNowSelected){
+                            selectedSorterNames.add(item);
+                        } else {
+                            selectedSorterNames.remove(item);
+                        }
+                    }
+            );
+            return observable;
+        }));
         List<String> sorterNames = SorterPluginService.getInstance().getSorterNames();
         log.debug("sorterNames: {}", sorterNames);
         availableSortersListView.getItems().addAll(sorterNames);
@@ -318,7 +338,16 @@ public class SceneController implements Initializable {
 
             entryTableView.setItems(filteredEntries);
         }
+    }
 
+    @FXML
+    private void applySelectedSorterAction() {
+        for (String selectedSorterName : selectedSorterNames) {
+            Sorter sorter = SorterPluginService.getInstance().getSorter(selectedSorterName);
+            ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryTableView.getItems()));
+
+            entryTableView.setItems(sortedEntries);
+        }
     }
 
     @FXML
@@ -340,6 +369,5 @@ public class SceneController implements Initializable {
         fileInputTextfield.setText(fileName);
         inputListView.getItems().add(fileInputTextfield);
         addInputComboBox.getSelectionModel().select(0);
-
     }
 }
