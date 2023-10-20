@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -37,6 +38,8 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
+    private final List<String> selectedSorterNames = new ArrayList<>();
+    private final List<String> selectedFilterNames = new ArrayList<>();
     @FXML
     public TextField targetFileNameTextField;
     @FXML
@@ -65,8 +68,6 @@ public class SceneController implements Initializable {
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
-    private final List<String> selectedSorterNames = new ArrayList<>();
-    private final List<String> selectedFilterNames = new ArrayList<>();
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
@@ -197,6 +198,7 @@ public class SceneController implements Initializable {
         log.debug("sorterNames: {}", sorterNames);
         availableSortersListView.getItems().addAll(sorterNames);
     }
+
     private void setCellFactory(ListView<String> availableFiltersListView, List<String> selectedItems) {
         availableFiltersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
             BooleanProperty observable = new SimpleBooleanProperty();
@@ -329,19 +331,37 @@ public class SceneController implements Initializable {
         log.debug("addInputAction: {}", actionEvent);
         if (addInputComboBox.getSelectionModel().getSelectedItem().equals("File Input")) {
             log.debug("adding new File Input");
-            addNewFileInput();
+            Path filePath = getPathFromFileDialog(false);
+
+            if (filePath != null) {
+                TextField fileInputTextfield = new TextField();
+                fileInputTextfield.setText(filePath.toAbsolutePath().toString());
+                inputListView.getItems().add(fileInputTextfield);
+            }
+            addInputComboBox.getSelectionModel().select(0);
         }
     }
 
-    private void addNewFileInput() {
-        TextField fileInputTextfield = new TextField();
+    @FXML
+    private void chooseOutputfileAction(ActionEvent actionEvent) {
+        log.debug("chooseOutputfileAction: {}", actionEvent);
+        Path outputPath = getPathFromFileDialog(true);
+        if (outputPath != null) {
+            targetFileNameTextField.setText(outputPath.toAbsolutePath().toString());
+        }
+    }
+
+    private Path getPathFromFileDialog(boolean isSaveFile) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u"));
-        File selectedFile = fileChooser.showOpenDialog(scene.getWindow());
-        log.debug("loading playlist-file: {}", selectedFile);
-        String fileName = selectedFile.getAbsolutePath();
-        fileInputTextfield.setText(fileName);
-        inputListView.getItems().add(fileInputTextfield);
-        addInputComboBox.getSelectionModel().select(0);
+        File selectedFile;
+        if (isSaveFile){
+            selectedFile = fileChooser.showSaveDialog(scene.getWindow());
+        } else {
+            selectedFile = fileChooser.showOpenDialog(scene.getWindow());
+        }
+        log.debug("selected file: {}", selectedFile);
+        return selectedFile == null ? null : selectedFile.toPath();
     }
+
 }
