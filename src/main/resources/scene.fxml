@@ -69,12 +69,14 @@
                             </VBox>
                         </TitledPane>
                         <TitledPane animated="false" text="Output">
-                            <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                                <TextField fx:id="targetFileNameTextField" promptText="Filename"/>
+                            <VBox>
+                                <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
+                                    <TextField fx:id="targetFileNameTextField" promptText="Filename"/>
+                                    <Button onAction="#chooseOutputfileAction" text="..."/>
+                                </HBox>
                                 <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToFile"
                                         text="Save File"/>
-                            </HBox>
-
+                            </VBox>
                         </TitledPane>
                     </panes>
                 </Accordion>
