@@ -12,11 +12,11 @@ public class FileInput implements Input {
 
     private final String name = "File Input";
     private final String description = "Reads a playlist from a local file.";
-    private final String fileName = "";
+    private String source = "";
 
     @Override
     public InputStream read() throws FileNotFoundException {
-        return new DataInputStream(new FileInputStream(fileName));
+        return new DataInputStream(new FileInputStream(source));
     }
 
 }

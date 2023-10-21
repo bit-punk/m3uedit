@@ -8,4 +8,6 @@ public interface Input {
     InputStream read() throws FileNotFoundException;
     String getName();
     String getDescription();
+    String getSource();
+    void setSource(String source);
 }

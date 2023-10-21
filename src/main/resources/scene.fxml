@@ -27,7 +27,7 @@
                         <TitledPane animated="false" text="Input">
                             <VBox>
                                 <ComboBox fx:id="addInputComboBox" onAction="#addInputAction"/>
-                                <ListView fx:id="inputListView"/>
+                                <TableView fx:id="inputTableView"/>
                             </VBox>
                         </TitledPane>
                         <TitledPane animated="false" text="Filters">

@@ -24,6 +24,9 @@ import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.plugins.input.FileInput;
+import org.bitpunk.m3uedit.plugins.input.FritzBoxInput;
+import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +64,7 @@ public class SceneController implements Initializable {
     @FXML
     public ComboBox<String> addInputComboBox;
     @FXML
-    public ListView<TextField> inputListView;
+    public TableView<Input> inputTableView;
     @FXML
     public ListView<String> availableSortersListView;
     @FXML
@@ -72,7 +75,6 @@ public class SceneController implements Initializable {
     private TableView<Entry> entryTableView = new TableView<>();
 
     private boolean deleteDialog(Entry deleteEntry) {
-
         Alert dialog = new Alert(Alert.AlertType.WARNING);
         dialog.setTitle("Delete Entry");
         dialog.setHeaderText("Delete Entry");
@@ -172,9 +174,19 @@ public class SceneController implements Initializable {
         });
 
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        initInputTableView();
         initAvailabeInputComboBox();
         initAvailableFilterListView();
         initAvailableSorterListView();
+    }
+
+    private void initInputTableView() {
+        TableColumn nameColumn = new TableColumn("Name");
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+
+        TableColumn sourceColumn = new TableColumn("Source");
+        sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
+        inputTableView.getColumns().addAll(nameColumn, sourceColumn);
     }
 
     private void initAvailabeInputComboBox() {
@@ -263,11 +275,10 @@ public class SceneController implements Initializable {
     @FXML
     private void populateEntryTable() {
         ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
-        for (TextField textField : inputListView.getItems()) {
-            String currentFileName = textField.getText();
-            log.debug("file: {}", currentFileName);
+        for (Input currentInput : inputTableView.getItems()) {
+            log.debug("reading from: {}", currentInput);
             try {
-                dataFromInputSource.addAll(readDataFromFile(currentFileName));
+                dataFromInputSource.addAll(readData(currentInput));
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -280,10 +291,9 @@ public class SceneController implements Initializable {
         entryTableView.getColumns().setAll(indexColumn, channelName, channelUri);
     }
 
-    private PlayList<Entry> readDataFromFile(String fileName) throws FileNotFoundException {
+    private PlayList<Entry> readData(Input input) throws FileNotFoundException {
         Parser parser = new Parser();
-        InputStream inputStream = new DataInputStream(new FileInputStream(fileName));
-        return parser.parse(inputStream);
+        return parser.parse(input.read());
     }
 
     @FXML
@@ -311,7 +321,6 @@ public class SceneController implements Initializable {
         for (String selectedFilterName : selectedFilterNames) {
             Filter filter = FilterPluginService.getInstance().getFilter(selectedFilterName);
             ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryTableView.getItems()));
-
             entryTableView.setItems(filteredEntries);
         }
     }
@@ -321,7 +330,6 @@ public class SceneController implements Initializable {
         for (String selectedSorterName : selectedSorterNames) {
             Sorter sorter = SorterPluginService.getInstance().getSorter(selectedSorterName);
             ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryTableView.getItems()));
-
             entryTableView.setItems(sortedEntries);
         }
     }
@@ -329,16 +337,21 @@ public class SceneController implements Initializable {
     @FXML
     private void addInputAction(ActionEvent actionEvent) {
         log.debug("addInputAction: {}", actionEvent);
-        if (addInputComboBox.getSelectionModel().getSelectedItem().equals("File Input")) {
+        // ToDo replace with an InputFactory
+        String selectedItem = addInputComboBox.getSelectionModel().getSelectedItem();
+        if (selectedItem.equals("File Input")) {
             log.debug("adding new File Input");
             Path filePath = getPathFromFileDialog(false);
-
             if (filePath != null) {
-                TextField fileInputTextfield = new TextField();
-                fileInputTextfield.setText(filePath.toAbsolutePath().toString());
-                inputListView.getItems().add(fileInputTextfield);
+                FileInput fileInput = new FileInput();
+                fileInput.setSource(filePath.toAbsolutePath().toString());
+                inputTableView.getItems().add(fileInput);
             }
             addInputComboBox.getSelectionModel().select(0);
+        } else if (selectedItem.equals("FritzBox Input")) {
+            log.debug("adding new Fritzbox Input");
+            FritzBoxInput fritzBoxInput = new FritzBoxInput();
+            inputTableView.getItems().add(fritzBoxInput);
         }
     }
 
