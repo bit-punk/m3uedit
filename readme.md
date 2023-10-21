@@ -19,3 +19,4 @@ Small editor for simple m3u-playlist files.
 * [Implementing Plugins with Java’s Service Provider Interface](https://reflectoring.io/service-provider-interface/)
 * [Baeldung: ava Service Provider Interface](https://www.baeldung.com/java-spi)
 * [Class ServiceLoader](https://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html)
+* [Fritz DVB to VLC](https://github.com/passing/fritz-dvb-to-vlc)
