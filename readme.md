@@ -1,26 +1,41 @@
 ![maven workflow](https://github.com/bit-punk/m3uedit/actions/workflows/maven.yml/badge.svg)
 
 # M3UEditor
-Small editor for simple m3u-playlist files.
-* load m3u-playlists from various sources (File, Fritzbox) 
+
+M3UEditor is a small editor written in Java based on JavaFX for managing m3u-playlist files.
+
+* load m3u-playlists from various sources (File, Fritzbox)
 * automatically filter the playlist using the build in Filters
 * sort entries of your playlist using build-in sorters
 * save the resulting playlist to various output-channels
 
+## Prerequisites
+
+* JDK17
+* Linux, Windows, MacOS
+
 ## Building
-To build the m3uedit binaries you should open a terminal-window, navigate to the directory where you have checked ou the sources and invoke the [maven-wrapper](https://maven.apache.org/wrapper/):
+
+To build the m3uedit binaries you should open a terminal-window, navigate to the directory where you have checked ou the
+sources and invoke the [maven-wrapper](https://maven.apache.org/wrapper/):
+
 ```bash
 ./mvnw clean install
 ```
+
 After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`
 
 ## Developing
+
 ### IntelliJ
+
 * To be able to run the JavaFX application from Intellij add the following VM options of your run-configuration:
     ```
       --module-path /home/jochen/javafx-sdk-20.0.2/lib --add-modules javafx.controls,javafx.fxml
     ```
+
 ### Links
+
 * [JavaFX official Homepage](https://openjfx.io/)
 * [JavaFX Downloads](https://gluonhq.com/products/javafx/)
 * [Getting Started with JavaFX](https://openjfx.io/openjfx-docs/#introduction)
