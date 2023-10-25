@@ -8,5 +8,5 @@ import java.io.InputStream;
 public interface Input extends Plugin {
     InputStream read() throws FileNotFoundException;
     String getSource();
-    void setSource(String source);
+    void configure();
 }

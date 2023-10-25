@@ -15,28 +15,30 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import javafx.scene.text.Text;
-import javafx.stage.FileChooser;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.PlayList;
 import org.bitpunk.m3uedit.parser.Parser;
-import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
+import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.FileInput;
 import org.bitpunk.m3uedit.plugins.input.FritzBoxInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.output.FileOutput;
+import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.output.SftpOutput;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileNotFoundException;
 import java.net.URL;
-import java.nio.file.Path;
-import java.util.*;
-
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
 
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
@@ -50,8 +52,6 @@ public class SceneController implements Initializable {
     @FXML
     public TableColumn<Entry, String> indexColumn;
     @FXML
-    public TextField fileNameTextField;
-    @FXML
     public Button addEntryButton;
     @FXML
     public TextField addedChannelNameTextField;
@@ -64,7 +64,11 @@ public class SceneController implements Initializable {
     @FXML
     public ComboBox<String> addInputComboBox;
     @FXML
+    public ComboBox<String> addOutputComboBox;
+    @FXML
     public TableView<Input> inputTableView;
+    @FXML
+    public TableView<Output> outputTableView;
     @FXML
     public ListView<String> availableSortersListView;
     @FXML
@@ -175,9 +179,11 @@ public class SceneController implements Initializable {
 
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         initInputTableView();
+        initOutputTableView();
         initAvailableInputComboBox();
         initAvailableFilterListView();
         initAvailableSorterListView();
+        initAvailableOutputComboBox();
     }
 
     private void initInputTableView() {
@@ -188,13 +194,29 @@ public class SceneController implements Initializable {
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
     }
+    private void initOutputTableView() {
+        TableColumn<Output, String> nameColumn = new TableColumn<>("Name");
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+
+        TableColumn<Output, String> sourceColumn = new TableColumn<>("Destination");
+        sourceColumn.setCellValueFactory(new PropertyValueFactory<>("output"));
+        outputTableView.getColumns().addAll(nameColumn, sourceColumn);
+    }
 
     private void initAvailableInputComboBox() {
         List<String> inputNames = InputPluginService.getInstance().getInputNames();
         log.debug("inputNames: {}", inputNames);
-        addInputComboBox.getItems().add("None");
+        addInputComboBox.getItems().add("add Input");
         addInputComboBox.getItems().addAll(inputNames);
         addInputComboBox.getSelectionModel().select(0);
+    }
+
+    private void initAvailableOutputComboBox() {
+        List<String> outputNames = OutputPluginService.getInstance().getOutputNames();
+        log.debug("outputNames: {}", outputNames);
+        addOutputComboBox.getItems().add("add Output");
+        addOutputComboBox.getItems().addAll(outputNames);
+        addOutputComboBox.getSelectionModel().select(0);
     }
 
     private void initAvailableFilterListView() {
@@ -235,8 +257,11 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void saveListToFile() {
-        savePlayListToFile(targetFileNameTextField.getText());
+    private void saveListToOutputs() {
+        ObservableList<Output> outputs = outputTableView.getItems();
+        for (Output output : outputs) {
+            output.write(entryTableView.getItems());
+        }
     }
 
     @FXML
@@ -247,29 +272,6 @@ public class SceneController implements Initializable {
         entryTableView.getItems().add(entry);
         addedChannelNameTextField.clear();
         addedChannelUriTextField.clear();
-    }
-
-    @FXML
-    private void openFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u"));
-        File selectedFile = fileChooser.showOpenDialog(scene.getWindow());
-        log.debug("loading playlist-file: {}", selectedFile);
-        String fileName = selectedFile.getAbsolutePath();
-        fileNameTextField.setText(fileName);
-        populateEntryTable();
-    }
-
-    private void savePlayListToFile(String targetFileName) {
-        log.debug("saving playlist to file: {}", targetFileName);
-        if (isNotEmpty(targetFileName)) {
-            Writer writer = new Writer();
-            try {
-                writer.write(entryTableView.getItems(), new FileOutputStream(targetFileName));
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     @FXML
@@ -341,40 +343,37 @@ public class SceneController implements Initializable {
         String selectedItem = addInputComboBox.getSelectionModel().getSelectedItem();
         if (selectedItem.equals("File Input")) {
             log.debug("adding new File Input");
-            Path filePath = getPathFromFileDialog(false);
-            if (filePath != null) {
-                FileInput fileInput = new FileInput();
-                fileInput.setSource(filePath.toAbsolutePath().toString());
-                inputTableView.getItems().add(fileInput);
-            }
-            addInputComboBox.getSelectionModel().select(0);
+            FileInput fileInput = new FileInput();
+            fileInput.configure();
+            inputTableView.getItems().add(fileInput);
         } else if (selectedItem.equals("FritzBox Input")) {
             log.debug("adding new Fritzbox Input");
             FritzBoxInput fritzBoxInput = new FritzBoxInput();
             inputTableView.getItems().add(fritzBoxInput);
         }
+        addInputComboBox.getSelectionModel().select(0);
     }
 
     @FXML
-    private void chooseOutputfileAction(ActionEvent actionEvent) {
-        log.debug("chooseOutputfileAction: {}", actionEvent);
-        Path outputPath = getPathFromFileDialog(true);
-        if (outputPath != null) {
-            targetFileNameTextField.setText(outputPath.toAbsolutePath().toString());
-        }
-    }
+    public void addOutputAction(ActionEvent actionEvent) {
+        log.debug("addOutputAction: {}", actionEvent);
+        // ToDo replace with an OutputFactory
+        String selectedItem = addOutputComboBox.getSelectionModel().getSelectedItem();
+        ObservableList<Output> outputs = outputTableView.getItems();
+        if (selectedItem.equals("File Output")) {
+            FileOutput fileOutput = new FileOutput();
+            fileOutput.configure();
 
-    private Path getPathFromFileDialog(boolean isSaveFile) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u"));
-        File selectedFile;
-        if (isSaveFile){
-            selectedFile = fileChooser.showSaveDialog(scene.getWindow());
-        } else {
-            selectedFile = fileChooser.showOpenDialog(scene.getWindow());
+            if (!outputs.contains(fileOutput)) {
+                log.debug("adding new File Output");
+                outputs.add(fileOutput);
+            }
+        } else if (selectedItem.equals("SFTP Output")) {
+            log.debug("adding new SFTP Output");
+            SftpOutput sftpOutput = new SftpOutput();
+            outputs.add(sftpOutput);
         }
-        log.debug("selected file: {}", selectedFile);
-        return selectedFile == null ? null : selectedFile.toPath();
-    }
+        addOutputComboBox.getSelectionModel().select(0);
 
+    }
 }

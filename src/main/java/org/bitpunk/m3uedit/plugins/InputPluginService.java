@@ -31,11 +31,11 @@ public class InputPluginService {
     }
 
     public List<String> getInputNames() {
-        List<String> filterNames = new ArrayList<>();
+        List<String> inputNames = new ArrayList<>();
         for (Input currentInput : loader) {
-            filterNames.add(currentInput.getName());
+            inputNames.add(currentInput.getName());
         }
-        return filterNames;
+        return inputNames;
     }
 
     public Input getInput(String selectedInputName) {
