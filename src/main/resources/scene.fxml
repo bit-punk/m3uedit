@@ -9,7 +9,6 @@
         <top>
             <MenuBar>
                 <Menu text="File">
-                    <MenuItem onAction="#openFile" text="Open"/>
                     <MenuItem onAction="#handleExitAction" text="Exit"/>
                 </Menu>
             </MenuBar>
