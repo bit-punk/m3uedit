@@ -7,6 +7,12 @@ Small editor for simple m3u-playlist files.
     ```
       --module-path /home/jochen/javafx-sdk-20.0.2/lib --add-modules javafx.controls,javafx.fxml
     ```
+## Building
+To build the m3uedit binaries you should open a terminal-window, navigate to the directory where you have checked ou the sources and invoke the maven-wrapper:
+```bash
+./mvnw clean install
+```
+After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`
 
 ## Links
 * https://openjfx.io/
