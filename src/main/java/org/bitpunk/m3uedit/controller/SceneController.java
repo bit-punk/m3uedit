@@ -175,21 +175,21 @@ public class SceneController implements Initializable {
 
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         initInputTableView();
-        initAvailabeInputComboBox();
+        initAvailableInputComboBox();
         initAvailableFilterListView();
         initAvailableSorterListView();
     }
 
     private void initInputTableView() {
-        TableColumn nameColumn = new TableColumn("Name");
+        TableColumn<Input, String> nameColumn = new TableColumn<>("Name");
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
-        TableColumn sourceColumn = new TableColumn("Source");
+        TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
     }
 
-    private void initAvailabeInputComboBox() {
+    private void initAvailableInputComboBox() {
         List<String> inputNames = InputPluginService.getInstance().getInputNames();
         log.debug("inputNames: {}", inputNames);
         addInputComboBox.getItems().add("None");
