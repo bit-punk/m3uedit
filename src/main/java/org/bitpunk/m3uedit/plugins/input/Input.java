@@ -1,13 +1,12 @@
 package org.bitpunk.m3uedit.plugins.input;
 
+import org.bitpunk.m3uedit.plugins.Plugin;
+
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
-public interface Input {
-
+public interface Input extends Plugin {
     InputStream read() throws FileNotFoundException;
-    String getName();
-    String getDescription();
     String getSource();
     void setSource(String source);
 }
