@@ -1,3 +1,5 @@
+![maven workflow](https://github.com/bit-punk/m3uedit/actions/workflows/maven.yml/badge.svg)
+
 # M3UEditor
 Small editor for simple m3u-playlist files.
 * load m3u-playlists from various sources (File, Fritzbox) 
