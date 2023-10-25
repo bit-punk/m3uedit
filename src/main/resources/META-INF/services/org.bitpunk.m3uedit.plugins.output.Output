@@ -1,0 +1,2 @@
+org.bitpunk.m3uedit.plugins.output.FileOutput
+org.bitpunk.m3uedit.plugins.output.SftpOutput

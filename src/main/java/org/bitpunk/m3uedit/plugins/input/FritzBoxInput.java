@@ -44,4 +44,8 @@ public class FritzBoxInput implements Input {
         return new ByteArrayInputStream(responseBody.getBytes());
     }
 
+    @Override
+    public void configure() {
+
+    }
 }

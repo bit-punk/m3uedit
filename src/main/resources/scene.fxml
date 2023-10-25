@@ -62,12 +62,10 @@
                     </TitledPane>
                     <TitledPane animated="false" text="Output">
                         <VBox>
-                            <HBox prefHeight="100.0" prefWidth="595.0" spacing="3.0">
-                                <TextField fx:id="targetFileNameTextField" promptText="Filename"/>
-                                <Button onAction="#chooseOutputfileAction" text="..."/>
-                            </HBox>
-                            <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToFile"
-                                    text="Save File"/>
+                            <ComboBox fx:id="addOutputComboBox" onAction="#addOutputAction"/>
+                            <TableView fx:id="outputTableView"/>
+                            <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToOutputs"
+                                    text="Save Playlist"/>
                         </VBox>
                     </TitledPane>
                 </VBox>
