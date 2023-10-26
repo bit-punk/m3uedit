@@ -12,10 +12,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Getter
 @EqualsAndHashCode
@@ -23,16 +22,16 @@ public class FileOutput implements Output {
     private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
     private final String name = "File Output";
     private final String description = "Writes a playlist to a local file.";
-    private String output = "";
+    private URI output = null;
 
     @Override
     public void write(List<Entry> playlist) {
         log.debug("write()");
-        if (playlist != null && !playlist.isEmpty() && isNotEmpty(output)) {
+        if (playlist != null && !playlist.isEmpty() && output != null) {
             log.debug("writing playlist [{}] to file [{}]", playlist, output);
             Writer writer = new Writer();
             try {
-                writer.write(playlist, new FileOutputStream(output));
+                writer.write(playlist, new FileOutputStream(output.getPath()));
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -43,7 +42,7 @@ public class FileOutput implements Output {
     public void configure() {
         Path outputPath = getOutputPathFromFileDialog();
         if (outputPath != null) {
-            this.output = outputPath.toAbsolutePath().toString();
+            this.output = new File(outputPath.toAbsolutePath().toString()).toURI();
         }
     }
 
