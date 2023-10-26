@@ -21,12 +21,10 @@ import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.input.FileInput;
-import org.bitpunk.m3uedit.plugins.input.FritzBoxInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.output.FileOutput;
+import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.output.SftpOutput;
+import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -333,41 +331,24 @@ public class SceneController implements Initializable {
     @FXML
     private void addInputAction(ActionEvent actionEvent) {
         log.debug("addInputAction: {}", actionEvent);
-        // ToDo replace with an InputFactory
-        String selectedItem = addInputComboBox.getSelectionModel().getSelectedItem();
-        if (selectedItem.equals("File Input")) {
-            log.debug("adding new File Input");
-            FileInput fileInput = new FileInput();
-            fileInput.configure();
-            inputTableView.getItems().add(fileInput);
-        } else if (selectedItem.equals("FritzBox Input")) {
-            log.debug("adding new Fritzbox Input");
-            FritzBoxInput fritzBoxInput = new FritzBoxInput();
-            inputTableView.getItems().add(fritzBoxInput);
-        }
+        String selectedInputName = addInputComboBox.getSelectionModel().getSelectedItem();
+        Input input = InputFactory.getInput(selectedInputName);
+        input.configure();
+        inputTableView.getItems().add(input);
         addInputComboBox.getSelectionModel().select(0);
     }
 
     @FXML
     public void addOutputAction(ActionEvent actionEvent) {
         log.debug("addOutputAction: {}", actionEvent);
-        // ToDo replace with an OutputFactory
-        String selectedItem = addOutputComboBox.getSelectionModel().getSelectedItem();
+        String selectedOutputName = addOutputComboBox.getSelectionModel().getSelectedItem();
+        Output output = OutputFactory.getOutput(selectedOutputName);
+        output.configure();
         ObservableList<Output> outputs = outputTableView.getItems();
-        if (selectedItem.equals("File Output")) {
-            FileOutput fileOutput = new FileOutput();
-            fileOutput.configure();
-
-            if (!outputs.contains(fileOutput)) {
-                log.debug("adding new File Output");
-                outputs.add(fileOutput);
-            }
-        } else if (selectedItem.equals("SFTP Output")) {
-            log.debug("adding new SFTP Output");
-            SftpOutput sftpOutput = new SftpOutput();
-            outputs.add(sftpOutput);
+        if (!outputs.contains(output)) {
+            outputs.add(output);
         }
         addOutputComboBox.getSelectionModel().select(0);
-
     }
+
 }
