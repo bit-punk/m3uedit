@@ -46,8 +46,6 @@ public class SceneController implements Initializable {
     private final List<String> selectedSorterNames = new ArrayList<>();
     private final List<String> selectedFilterNames = new ArrayList<>();
     @FXML
-    public TextField targetFileNameTextField;
-    @FXML
     public Button saveFileButton;
     @FXML
     public TableColumn<Entry, String> indexColumn;
@@ -186,6 +184,7 @@ public class SceneController implements Initializable {
         initAvailableOutputComboBox();
     }
 
+    @SuppressWarnings("unchecked")
     private void initInputTableView() {
         TableColumn<Input, String> nameColumn = new TableColumn<>("Name");
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
@@ -194,6 +193,7 @@ public class SceneController implements Initializable {
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
     }
+    @SuppressWarnings("unchecked")
     private void initOutputTableView() {
         TableColumn<Output, String> nameColumn = new TableColumn<>("Name");
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
@@ -307,12 +307,12 @@ public class SceneController implements Initializable {
     private void deleteKeyListener(KeyEvent keyEvent) {
         final Entry selectedEntry = entryTableView.getSelectionModel().getSelectedItem();
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
-            deleteEntry(selectedEntry);
+            deleteEntryFromEntryTableView(selectedEntry);
             keyEvent.consume();
         }
     }
 
-    private void deleteEntry(Entry selectedEntry) {
+    private void deleteEntryFromEntryTableView(Entry selectedEntry) {
         if (deleteDialog(selectedEntry)) {
             entryTableView.getItems().remove(selectedEntry);
         }
