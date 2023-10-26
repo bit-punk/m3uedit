@@ -16,8 +16,6 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import javafx.scene.text.Text;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.model.PlayList;
-import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
@@ -275,12 +273,13 @@ public class SceneController implements Initializable {
     }
 
     @FXML
+    @SuppressWarnings("unchecked")
     private void populateEntryTable() {
         ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
         for (Input currentInput : inputTableView.getItems()) {
             log.debug("reading from: {}", currentInput);
             try {
-                dataFromInputSource.addAll(readData(currentInput));
+                dataFromInputSource.addAll(currentInput.read());
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -291,11 +290,6 @@ public class SceneController implements Initializable {
         channelName.setCellValueFactory(new PropertyValueFactory<>("channelName"));
         channelUri.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
         entryTableView.getColumns().setAll(indexColumn, channelName, channelUri);
-    }
-
-    private PlayList<Entry> readData(Input input) throws FileNotFoundException {
-        Parser parser = new Parser();
-        return parser.parse(input.read());
     }
 
     @FXML
