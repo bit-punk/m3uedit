@@ -189,6 +189,7 @@ public class SceneController implements Initializable {
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
     }
+
     @SuppressWarnings("unchecked")
     private void initOutputTableView() {
         TableColumn<Output, String> nameColumn = new TableColumn<>("Name");
@@ -333,9 +334,11 @@ public class SceneController implements Initializable {
         log.debug("addInputAction: {}", actionEvent);
         String selectedInputName = addInputComboBox.getSelectionModel().getSelectedItem();
         Input input = InputFactory.getInput(selectedInputName);
-        input.configure();
-        inputTableView.getItems().add(input);
-        addInputComboBox.getSelectionModel().select(0);
+        if (input != null) {
+            input.configure();
+            inputTableView.getItems().add(input);
+            addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
+        }
     }
 
     @FXML
@@ -343,12 +346,14 @@ public class SceneController implements Initializable {
         log.debug("addOutputAction: {}", actionEvent);
         String selectedOutputName = addOutputComboBox.getSelectionModel().getSelectedItem();
         Output output = OutputFactory.getOutput(selectedOutputName);
-        output.configure();
-        ObservableList<Output> outputs = outputTableView.getItems();
-        if (!outputs.contains(output)) {
-            outputs.add(output);
+        if (output != null) {
+            output.configure();
+            ObservableList<Output> outputs = outputTableView.getItems();
+            if (!outputs.contains(output)) {
+                outputs.add(output);
+            }
+            addOutputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Output"
         }
-        addOutputComboBox.getSelectionModel().select(0);
     }
 
 }

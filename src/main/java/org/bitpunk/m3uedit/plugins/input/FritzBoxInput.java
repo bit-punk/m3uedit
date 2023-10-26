@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input;
 
+import javafx.scene.control.TextInputDialog;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -21,7 +23,7 @@ public class FritzBoxInput extends AbstractInput implements Input {
 
     private final String name = "FritzBox Input";
     private final String description = "Downloads a playlist from a FritzBox.";
-    String source = "http://192.168.178.1/dvb/m3u/tvsd.m3u";
+    String source = "http://fritz.box//dvb/m3u/tvsd.m3u";
 
     @Override
     public List<Entry> read() {
@@ -50,6 +52,16 @@ public class FritzBoxInput extends AbstractInput implements Input {
 
     @Override
     public void configure() {
+        log.debug("configure()");
+        TextInputDialog dialog = new TextInputDialog(source);
+        dialog.setTitle("Enter Fritzbox-URL");
+        dialog.setHeaderText("Please enter the FritzBox's URL from which we will download the playlist-data.");
+        dialog.setContentText("FritzBox-URL:");
 
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(url -> {
+            log.debug("FritzBox-URL entered: " + url);
+            this.source = url;
+        });
     }
 }
