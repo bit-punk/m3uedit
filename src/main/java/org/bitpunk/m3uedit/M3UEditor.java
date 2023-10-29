@@ -18,8 +18,6 @@ public class M3UEditor extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        FXMLLoader loader = new FXMLLoader();
-
         Scene scene = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("scene.fxml")));
         primaryStage.setScene(scene);
         primaryStage.show();

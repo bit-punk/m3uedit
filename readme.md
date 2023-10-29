@@ -48,3 +48,7 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [Baeldung: Java Service Provider Interface](https://www.baeldung.com/java-spi)
 * [Class ServiceLoader](https://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html)
 * [Fritz DVB to VLC](https://github.com/passing/fritz-dvb-to-vlc)
+* [JavaFX Dialogs (official)](https://code.makery.ch/blog/javafx-dialogs-official/)
+* [JavaFX Dialog Example](https://examples.javacodegeeks.com/java-development/desktop-java/javafx/dialog-javafx/javafx-dialog-example/)
+* https://stackoverflow.com/questions/49072726/accessing-the-ok-button-from-inside-the-dialog-controller-javafx
+* [JavaFX, JLink and JPackage](https://dev.to/cherrychain/javafx-jlink-and-jpackage-h9)
