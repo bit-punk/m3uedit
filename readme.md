@@ -22,6 +22,10 @@ sources and invoke the [maven-wrapper](https://maven.apache.org/wrapper/):
 ```bash
 ./mvnw clean install
 ```
+To run the application using the _javafx-maven-plugin_ you should use:
+```bash
+./mvnw javafx:run
+```
 
 After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`
 
