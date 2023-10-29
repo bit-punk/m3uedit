@@ -20,7 +20,7 @@ public class Builder {
     private String channelUri;
     private String channelName;
 
-    private Map<String, String> vlcOpts = new HashMap<>();
+    private final Map<String, String> vlcOpts = new HashMap<>();
 
     public Builder duration(String duration) {
         this.duration = duration;
