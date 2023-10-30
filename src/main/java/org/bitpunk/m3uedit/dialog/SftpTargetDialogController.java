@@ -67,7 +67,9 @@ public class SftpTargetDialogController extends Dialog<URI> implements Initializ
 
             @Override
             protected boolean computeValue() {
-                return !(hostnameTextField.getText().trim().isEmpty() || usernameTextField.getText().trim().isEmpty() || passwordField.getText().trim().isEmpty());
+                return !(hostnameTextField.getText().trim().isEmpty() ||
+                        usernameTextField.getText().trim().isEmpty() ||
+                        passwordField.getText().trim().isEmpty());
             }
         };
     }
