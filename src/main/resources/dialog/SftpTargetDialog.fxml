@@ -5,13 +5,15 @@
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.control.ButtonType?>
-<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="500" fx:controller="org.bitpunk.m3uedit.dialog.SftpTargetDialogController">
+<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="500"
+            fx:controller="org.bitpunk.m3uedit.dialog.SftpTargetDialogController">
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Host address:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostnameTextField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-
+            <Label text="Host-URL :" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <TextField fx:id="hostnameTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            <TextField fx:id="hostPortTextField" text="22" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+            <TextField fx:id="hostPathTextField" text="/" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
             <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
             <TextField fx:id="usernameTextField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="2"
                        GridPane.fillWidth="false"/>

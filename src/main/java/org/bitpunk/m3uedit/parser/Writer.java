@@ -22,8 +22,8 @@ public class Writer {
     private static final String RADIO_PATTERN = "radio=\"{0}\" ";
     private static final String CHANNEL_NAME_PATTERN = ",{0}";
 
-    public void write(List<Entry> entries, OutputStream stream) {
-        PrintWriter printWriter = new PrintWriter(stream);
+    public void write(List<Entry> entries, OutputStream outputStream) {
+        PrintWriter printWriter = new PrintWriter(outputStream);
 
         printWriter.println(M3U_START_MARKER);
 
