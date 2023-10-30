@@ -56,3 +56,5 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [JavaFX Dialog Example](https://examples.javacodegeeks.com/java-development/desktop-java/javafx/dialog-javafx/javafx-dialog-example/)
 * https://stackoverflow.com/questions/49072726/accessing-the-ok-button-from-inside-the-dialog-controller-javafx
 * [JavaFX, JLink and JPackage](https://dev.to/cherrychain/javafx-jlink-and-jpackage-h9)
+* [Creating Fat JARs for JavaFX Applications](http://fxapps.blogspot.com/2020/11/creating-fat-jars-for-javafx.html)
+* [JavaFX 11 : Create a jar file with Gradle](https://stackoverflow.com/questions/52569724/javafx-11-create-a-jar-file-with-gradle)

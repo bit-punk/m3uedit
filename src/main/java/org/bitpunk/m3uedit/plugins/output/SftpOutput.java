@@ -60,10 +60,6 @@ public class SftpOutput implements Output {
         SftpTargetDialogController dialogController = new SftpTargetDialogController();
         DialogPane dialogPane;
         try {
-//            FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("dialog/SftpTargetDialog.fxml"));
-//            log.debug("dialogController: {}", dialogController);
-//            log.debug("dialogController.hostnameField: {}", dialogController.hostnameTextField);
-//            dialogPane = loader.load();
             dialogPane = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("dialog/SftpTargetDialog.fxml")));
             dialogController.setDialogPane(dialogPane);
 
