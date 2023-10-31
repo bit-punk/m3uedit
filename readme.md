@@ -60,3 +60,5 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [JavaFX, JLink and JPackage](https://dev.to/cherrychain/javafx-jlink-and-jpackage-h9)
 * [Creating Fat JARs for JavaFX Applications](http://fxapps.blogspot.com/2020/11/creating-fat-jars-for-javafx.html)
 * [JavaFX 11 : Create a jar file with Gradle](https://stackoverflow.com/questions/52569724/javafx-11-create-a-jar-file-with-gradle)
+#### SFTP-Output
+* [com.jcraft.jsch.JSchException: UnknownHostKey](https://stackoverflow.com/questions/2003419/com-jcraft-jsch-jschexception-unknownhostkey)
