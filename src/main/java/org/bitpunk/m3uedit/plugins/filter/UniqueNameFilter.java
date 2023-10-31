@@ -16,7 +16,7 @@ public class UniqueNameFilter extends AbstractUniqueFilter implements Filter {
     @Override
     public List<Entry> filter(List<Entry> list) {
         return list.stream()
-                .filter(distinctByKey(Entry::getChannelName))
+                .filter(distinctByKey(Entry::getName))
                 .collect(Collectors.toList());
     }
 

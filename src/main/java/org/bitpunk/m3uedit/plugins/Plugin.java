@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins;
 
-public interface Plugin {
-    String getName();
+import org.bitpunk.m3uedit.NamedItem;
+
+public interface Plugin extends NamedItem {
     String getDescription();
 }

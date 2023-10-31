@@ -19,35 +19,35 @@ class ParserTest {
 
         assertThat(entries, hasSize(3));
 
-        assertThat(entries.get(0).getChannelName(), is("La Une HD"));
+        assertThat(entries.get(0).getName(), is("La Une HD"));
         assertThat(entries.get(0).getTvgName(), is("La Une HD"));
         assertThat(entries.get(0).getTvgId(), is("La_Une"));
         assertThat(entries.get(0).getChannelUri(), is("http://panel.globepremium.com:8000/live/xxx/yyy/84.ts"));
         assertThat(entries.get(0).getDuration(), is("-1"));
         assertThat(entries.get(0).getGroupTitle(), is("TV"));
-        assertThat(entries.get(0).getChannelName(), is("La Une HD"));
+        assertThat(entries.get(0).getName(), is("La Une HD"));
         assertThat(entries.get(0).getRadio(), is("false"));
         assertThat(entries.get(0).getTvgLogo(), is("../logo/La_Une.png"));
         assertThat(entries.get(0).getTvgShift(), is("1"));
 
-        assertThat(entries.get(1).getChannelName(), is("La Deux HD"));
+        assertThat(entries.get(1).getName(), is("La Deux HD"));
         assertThat(entries.get(1).getTvgName(), is("La Deux HD"));
         assertThat(entries.get(1).getTvgId(), is("La_Deux"));
         assertThat(entries.get(1).getChannelUri(), is("http://panel.globepremium.com:8000/live/xxx/yyy/85.ts"));
         assertThat(entries.get(1).getDuration(), is("-1"));
         assertThat(entries.get(1).getGroupTitle(), is("TV"));
-        assertThat(entries.get(1).getChannelName(), is("La Deux HD"));
+        assertThat(entries.get(1).getName(), is("La Deux HD"));
         assertThat(entries.get(1).getRadio(), is("false"));
         assertThat(entries.get(1).getTvgLogo(), is("../logo/La_Deux.png"));
         assertThat(entries.get(1).getTvgShift(), is("2"));
 
-        assertThat(entries.get(2).getChannelName(), is("RTL TVI HD"));
+        assertThat(entries.get(2).getName(), is("RTL TVI HD"));
         assertThat(entries.get(2).getTvgName(), is("RTL TVI HD"));
         assertThat(entries.get(2).getTvgId(), is("RTL_TVI"));
         assertThat(entries.get(2).getChannelUri(), is("http://panel.globepremium.com:8000/live/xxx/yyy/719.ts"));
         assertThat(entries.get(2).getDuration(), is("-1"));
         assertThat(entries.get(2).getGroupTitle(), is("TV"));
-        assertThat(entries.get(2).getChannelName(), is("RTL TVI HD"));
+        assertThat(entries.get(2).getName(), is("RTL TVI HD"));
         assertThat(entries.get(2).getRadio(), is("false"));
         assertThat(entries.get(2).getTvgLogo(), is("../logo/RTL_TVI.png"));
         assertThat(entries.get(2).getTvgShift(), is("3"));
@@ -66,35 +66,35 @@ class ParserTest {
 
         assertThat(entries, hasSize(3));
 
-        assertThat(entries.get(0).getChannelName(), is("La Une HD"));
+        assertThat(entries.get(0).getName(), is("La Une HD"));
         assertThat(entries.get(0).getTvgName(), is("La Une HD"));
         assertThat(entries.get(0).getTvgId(), is("La_Une"));
         assertThat(entries.get(0).getChannelUri(), is("http://panel.globepremium.com:8000/live/xxx/yyy/84.ts"));
         assertThat(entries.get(0).getDuration(), is("-1"));
         assertThat(entries.get(0).getGroupTitle(), is("TV"));
-        assertThat(entries.get(0).getChannelName(), is("La Une HD"));
+        assertThat(entries.get(0).getName(), is("La Une HD"));
         assertThat(entries.get(0).getRadio(), is("false"));
         assertThat(entries.get(0).getTvgLogo(), is("../logo/La_Une.png"));
         assertThat(entries.get(0).getTvgShift(), is("4"));
 
-        assertThat(entries.get(1).getChannelName(), is("La Deux HD"));
+        assertThat(entries.get(1).getName(), is("La Deux HD"));
         assertThat(entries.get(1).getTvgName(), is("La Deux HD"));
         assertThat(entries.get(1).getTvgId(), is("La_Deux"));
         assertThat(entries.get(1).getChannelUri(), is("http://panel.globepremium.com:8000/live/xxx/yyy/85.ts"));
         assertThat(entries.get(1).getDuration(), is("-1"));
         assertThat(entries.get(1).getGroupTitle(), is("TV"));
-        assertThat(entries.get(1).getChannelName(), is("La Deux HD"));
+        assertThat(entries.get(1).getName(), is("La Deux HD"));
         assertThat(entries.get(1).getRadio(), is("false"));
         assertThat(entries.get(1).getTvgLogo(), is("../logo/La_Deux.png"));
         assertThat(entries.get(1).getTvgShift(), is("4"));
 
-        assertThat(entries.get(2).getChannelName(), is("RTL TVI HD"));
+        assertThat(entries.get(2).getName(), is("RTL TVI HD"));
         assertThat(entries.get(2).getTvgName(), is("RTL TVI HD"));
         assertThat(entries.get(2).getTvgId(), is("RTL_TVI"));
         assertThat(entries.get(2).getChannelUri(), is("http://panel.globepremium.com:8000/live/xxx/yyy/719.ts"));
         assertThat(entries.get(2).getDuration(), is("-1"));
         assertThat(entries.get(2).getGroupTitle(), is("TV"));
-        assertThat(entries.get(2).getChannelName(), is("RTL TVI HD"));
+        assertThat(entries.get(2).getName(), is("RTL TVI HD"));
         assertThat(entries.get(2).getRadio(), is("false"));
         assertThat(entries.get(2).getTvgLogo(), is("../logo/RTL_TVI.png"));
         assertThat(entries.get(2).getTvgShift(), is("4"));

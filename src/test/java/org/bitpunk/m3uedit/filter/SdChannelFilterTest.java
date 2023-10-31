@@ -20,9 +20,9 @@ class SdChannelFilterTest extends AbstractFilterTest {
         assertThat(entryList, hasSize(7));
         List<Entry> filteredList = filter.filter(entryList);
         assertThat(filteredList, hasSize(4));
-        assertThat(filteredList, hasItem(hasProperty("channelName", is("Das Erste HD"))));
-        assertThat(filteredList, hasItem(hasProperty("channelName", is("ZDF HD"))));
-        assertThat(filteredList, hasItem(hasProperty("channelName", is("3sat HD"))));
-        assertThat(filteredList, hasItem(hasProperty("channelName", is("arte HD"))));
+        assertThat(filteredList, hasItem(hasProperty("name", is("Das Erste HD"))));
+        assertThat(filteredList, hasItem(hasProperty("name", is("ZDF HD"))));
+        assertThat(filteredList, hasItem(hasProperty("name", is("3sat HD"))));
+        assertThat(filteredList, hasItem(hasProperty("name", is("arte HD"))));
     }
 }

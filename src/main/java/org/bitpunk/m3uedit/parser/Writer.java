@@ -52,7 +52,7 @@ public class Writer {
         appendIfNotNull(builder, entry.getTvgLogo(), TVG_LOGO_PATTERN);
         appendIfNotNull(builder, entry.getGroupTitle(), GROUP_TITLE_PATTERN);
         builder.deleteCharAt(builder.length() - 1);
-        appendIfNotNull(builder, entry.getChannelName(), CHANNEL_NAME_PATTERN);
+        appendIfNotNull(builder, entry.getName(), CHANNEL_NAME_PATTERN);
         builder.append(System.lineSeparator());
     }
     private void appendExtVlcOptions(Entry entry, StringBuilder builder){

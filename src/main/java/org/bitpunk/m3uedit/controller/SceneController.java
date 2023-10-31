@@ -15,6 +15,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import javafx.scene.text.Text;
+import org.bitpunk.m3uedit.NamedItem;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.*;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -69,26 +70,11 @@ public class SceneController implements Initializable {
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
-    private boolean deletePluginDialog(Plugin deletePlugin) {
+    private boolean deletePluginDialog(NamedItem deleteItem) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
         dialog.setTitle("Delete Plugin");
         dialog.setHeaderText("Delete Plugin");
-        dialog.setContentText("Sure you want to delete:\n" + deletePlugin.getName());
-
-        ButtonType buttonYes = new ButtonType("Yes");
-        ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        dialog.getButtonTypes().setAll(buttonYes, buttonNo);
-        Optional<ButtonType> selectedOption = dialog.showAndWait();
-
-        return selectedOption.isPresent() && selectedOption.get() == buttonYes;
-    }
-
-    private boolean deleteEntryDialog(Entry deleteEntry) {
-        Alert dialog = new Alert(Alert.AlertType.WARNING);
-        dialog.setTitle("Delete Entry");
-        dialog.setHeaderText("Delete Entry");
-        dialog.setContentText("Sure you want to delete:\n" + deleteEntry.getChannelName());
+        dialog.setContentText("Sure you want to delete:\n" + deleteItem.getName());
 
         ButtonType buttonYes = new ButtonType("Yes");
         ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -104,11 +90,11 @@ public class SceneController implements Initializable {
 
         // make column channelName editable
         channelName.setCellFactory(TextFieldTableCell.forTableColumn());
-        channelName.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setChannelName(t.getNewValue()));
+        channelName.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setName(t.getNewValue()));
 
         // make column channelUri editable
         channelUri.setCellFactory(TextFieldTableCell.forTableColumn());
-        channelUri.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setChannelName(t.getNewValue()));
+        channelUri.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setName(t.getNewValue()));
 
         // set RowFactory to make rows draggable
 
@@ -276,7 +262,7 @@ public class SceneController implements Initializable {
     @FXML
     private void addEntry() {
         Entry entry = new Entry();
-        entry.setChannelName(addedChannelNameTextField.getText());
+        entry.setName(addedChannelNameTextField.getText());
         entry.setChannelUri(addedChannelUriTextField.getText());
         entryTableView.getItems().add(entry);
         addedChannelNameTextField.clear();
@@ -298,7 +284,7 @@ public class SceneController implements Initializable {
         entryTableView.setItems(dataFromInputSource);
         addIndexColumn();
 
-        channelName.setCellValueFactory(new PropertyValueFactory<>("channelName"));
+        channelName.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUri.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
         entryTableView.getColumns().setAll(indexColumn, channelName, channelUri);
     }
@@ -309,33 +295,18 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void deleteKeyListenerPluginTableView(KeyEvent keyEvent) {
+    private void deleteKeyListenerTableView(KeyEvent keyEvent) {
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
-            TableView<Plugin> source = (TableView<Plugin>) keyEvent.getSource();
-            final Plugin selectedPlugin = source.getSelectionModel().getSelectedItem();
-            deletePluginFromTableView(selectedPlugin, source);
+            TableView<NamedItem> sourceTableView = (TableView<NamedItem>) keyEvent.getSource();
+            final NamedItem selectedPlugin = sourceTableView.getSelectionModel().getSelectedItem();
+            deletePluginFromTableView(selectedPlugin, sourceTableView);
             keyEvent.consume();
         }
     }
 
-    private void deletePluginFromTableView(Plugin plugin, TableView<Plugin> tableView) {
+    private void deletePluginFromTableView(NamedItem plugin, TableView<NamedItem> tableView) {
         if (deletePluginDialog(plugin)) {
             tableView.getItems().remove(plugin);
-        }
-    }
-
-    @FXML
-    private void deleteKeyListenerEntryTableView(KeyEvent keyEvent) {
-        if (keyEvent.getCode().equals(KeyCode.DELETE)) {
-            final Entry selectedEntry = entryTableView.getSelectionModel().getSelectedItem();
-            deleteEntryFromEntryTableView(selectedEntry);
-            keyEvent.consume();
-        }
-    }
-
-    private void deleteEntryFromEntryTableView(Entry selectedEntry) {
-        if (deleteEntryDialog(selectedEntry)) {
-            entryTableView.getItems().remove(selectedEntry);
         }
     }
 

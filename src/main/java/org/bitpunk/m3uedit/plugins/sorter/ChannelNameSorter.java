@@ -13,7 +13,7 @@ public class ChannelNameSorter implements Sorter {
     @Override
     public List<Entry> sort(List<Entry> entries) {
         return entries.stream()
-                .sorted(Comparator.comparing(Entry::getChannelName))
+                .sorted(Comparator.comparing(Entry::getName))
                 .collect(Collectors.toList());
     }
 

@@ -88,7 +88,7 @@ public class Builder {
         entry.setTvgShift(tvgShift);
         entry.setRadio(radio);
         entry.setChannelUri(channelUri);
-        entry.setChannelName(channelName);
+        entry.setName(channelName);
         entry.setVlcOpts(vlcOpts);
         return entry;
     }

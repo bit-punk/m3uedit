@@ -20,8 +20,8 @@ public class SdChannelFilter implements Filter {
     public List<Entry> filter(List<Entry> list) {
         return list.stream()
                 .filter(entry -> list.stream().noneMatch(e -> {
-                    String entryName = entry.getChannelName();
-                    String currentEntryName = e.getChannelName();
+                    String entryName = entry.getName();
+                    String currentEntryName = e.getName();
                     return !entryName.equals(currentEntryName) && currentEntryName.startsWith(entryName);
                 }))
                 .collect(Collectors.toList());
