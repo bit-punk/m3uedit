@@ -87,7 +87,16 @@ public class SceneController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        initEntryTableView();
+        initInputTableView();
+        initOutputTableView();
+        initAvailableInputComboBox();
+        initAvailableFilterListView();
+        initAvailableSorterListView();
+        initAvailableOutputComboBox();
+    }
 
+    private void initEntryTableView() {
         // make column channelName editable
         channelName.setCellFactory(TextFieldTableCell.forTableColumn());
         channelName.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setName(t.getNewValue()));
@@ -96,8 +105,7 @@ public class SceneController implements Initializable {
         channelUri.setCellFactory(TextFieldTableCell.forTableColumn());
         channelUri.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setName(t.getNewValue()));
 
-        // set RowFactory to make rows draggable
-
+        // set RowFactory for Entry-TableView to make rows draggable
         entryTableView.setRowFactory(tv -> {
             TableRow<Entry> row = new TableRow<>();
 
@@ -170,12 +178,6 @@ public class SceneController implements Initializable {
         });
 
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        initInputTableView();
-        initOutputTableView();
-        initAvailableInputComboBox();
-        initAvailableFilterListView();
-        initAvailableSorterListView();
-        initAvailableOutputComboBox();
     }
 
     @SuppressWarnings("unchecked")
