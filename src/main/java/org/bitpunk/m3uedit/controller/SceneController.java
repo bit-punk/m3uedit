@@ -16,10 +16,7 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import javafx.scene.text.Text;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.FilterPluginService;
-import org.bitpunk.m3uedit.plugins.InputPluginService;
-import org.bitpunk.m3uedit.plugins.OutputPluginService;
-import org.bitpunk.m3uedit.plugins.SorterPluginService;
+import org.bitpunk.m3uedit.plugins.*;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputFactory;
@@ -72,7 +69,22 @@ public class SceneController implements Initializable {
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
-    private boolean deleteDialog(Entry deleteEntry) {
+    private boolean deletePluginDialog(Plugin deletePlugin) {
+        Alert dialog = new Alert(Alert.AlertType.WARNING);
+        dialog.setTitle("Delete Plugin");
+        dialog.setHeaderText("Delete Plugin");
+        dialog.setContentText("Sure you want to delete:\n" + deletePlugin.getName());
+
+        ButtonType buttonYes = new ButtonType("Yes");
+        ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getButtonTypes().setAll(buttonYes, buttonNo);
+        Optional<ButtonType> selectedOption = dialog.showAndWait();
+
+        return selectedOption.isPresent() && selectedOption.get() == buttonYes;
+    }
+
+    private boolean deleteEntryDialog(Entry deleteEntry) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
         dialog.setTitle("Delete Entry");
         dialog.setHeaderText("Delete Entry");
@@ -297,16 +309,32 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void deleteKeyListener(KeyEvent keyEvent) {
-        final Entry selectedEntry = entryTableView.getSelectionModel().getSelectedItem();
+    private void deleteKeyListenerPluginTableView(KeyEvent keyEvent) {
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
+            TableView<Plugin> source = (TableView<Plugin>) keyEvent.getSource();
+            final Plugin selectedPlugin = source.getSelectionModel().getSelectedItem();
+            deletePluginFromTableView(selectedPlugin, source);
+            keyEvent.consume();
+        }
+    }
+
+    private void deletePluginFromTableView(Plugin plugin, TableView<Plugin> tableView) {
+        if (deletePluginDialog(plugin)) {
+            tableView.getItems().remove(plugin);
+        }
+    }
+
+    @FXML
+    private void deleteKeyListenerEntryTableView(KeyEvent keyEvent) {
+        if (keyEvent.getCode().equals(KeyCode.DELETE)) {
+            final Entry selectedEntry = entryTableView.getSelectionModel().getSelectedItem();
             deleteEntryFromEntryTableView(selectedEntry);
             keyEvent.consume();
         }
     }
 
     private void deleteEntryFromEntryTableView(Entry selectedEntry) {
-        if (deleteDialog(selectedEntry)) {
+        if (deleteEntryDialog(selectedEntry)) {
             entryTableView.getItems().remove(selectedEntry);
         }
     }
