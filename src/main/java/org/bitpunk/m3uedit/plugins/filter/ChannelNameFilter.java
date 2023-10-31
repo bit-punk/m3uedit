@@ -28,6 +28,6 @@ public class ChannelNameFilter implements Filter {
 
     @Override
     public List<Entry> filter(List<Entry> list) {
-        return list.stream().filter(entry -> excludeRegexes.stream().noneMatch(regex -> Pattern.matches(regex, entry.getChannelName()))).collect(Collectors.toList());
+        return list.stream().filter(entry -> excludeRegexes.stream().noneMatch(regex -> Pattern.matches(regex, entry.getName()))).collect(Collectors.toList());
     }
 }

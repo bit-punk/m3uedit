@@ -19,9 +19,9 @@ class ChannelNameSorterTest {
         ChannelNameSorter channelNameSorter = new ChannelNameSorter();
         List<Entry> sortedEntries = channelNameSorter.sort(entries);
         assertThat(sortedEntries, hasSize(3));
-        assertThat(sortedEntries.get(0).getChannelName(), is("La Deux HD"));
-        assertThat(sortedEntries.get(1).getChannelName(), is("La Une HD"));
-        assertThat(sortedEntries.get(2).getChannelName(), is("RTL TVI HD"));
+        assertThat(sortedEntries.get(0).getName(), is("La Deux HD"));
+        assertThat(sortedEntries.get(1).getName(), is("La Une HD"));
+        assertThat(sortedEntries.get(2).getName(), is("RTL TVI HD"));
 
     }
 

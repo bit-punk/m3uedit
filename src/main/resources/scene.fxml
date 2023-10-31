@@ -20,7 +20,7 @@
                     <TitledPane animated="false" text="Input">
                         <VBox>
                             <ComboBox fx:id="addInputComboBox" onAction="#addInputAction"/>
-                            <TableView fx:id="inputTableView" onKeyPressed="#deleteKeyListenerPluginTableView"/>
+                            <TableView fx:id="inputTableView" onKeyPressed="#deleteKeyListenerTableView"/>
                         </VBox>
                     </TitledPane>
                     <TitledPane animated="false" text="Filters">
@@ -40,7 +40,7 @@
                     <TitledPane animated="false" text="Resulting List">
                         <VBox>
                             <Button onAction="#populateEntryTable" text="Load Data"/>
-                            <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListenerEntryTableView"
+                            <TableView fx:id="entryTableView" editable="true" onKeyPressed="#deleteKeyListenerTableView"
                                        GridPane.columnIndex="0" GridPane.columnSpan="1" GridPane.hgrow="ALWAYS"
                                        GridPane.rowIndex="0" GridPane.vgrow="ALWAYS">
                                 <columnResizePolicy>
@@ -62,7 +62,7 @@
                     <TitledPane animated="false" text="Output">
                         <VBox>
                             <ComboBox fx:id="addOutputComboBox" onAction="#addOutputAction"/>
-                            <TableView fx:id="outputTableView" onKeyPressed="#deleteKeyListenerPluginTableView"/>
+                            <TableView fx:id="outputTableView" onKeyPressed="#deleteKeyListenerTableView"/>
                             <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToOutputs"
                                     text="Save Playlist"/>
                         </VBox>
