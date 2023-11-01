@@ -47,9 +47,9 @@
                                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                                 </columnResizePolicy>
                                 <columns>
-                                    <TableColumn fx:id="indexColumn" text="Index"/>
-                                    <TableColumn fx:id="channelName" text="Channel Name"/>
-                                    <TableColumn fx:id="channelUri" text="Channel URI"/>
+                                    <TableColumn fx:id="indexColumn" text="Index" maxWidth="70"/>
+                                    <TableColumn fx:id="channelName" text="Channel Name" minWidth="50" prefWidth="150" maxWidth="700"/>
+                                    <TableColumn fx:id="channelUri" text="Channel URI" minWidth="50" prefWidth="300" maxWidth="700"/>
                                 </columns>
                             </TableView>
                             <HBox spacing="3.0">
