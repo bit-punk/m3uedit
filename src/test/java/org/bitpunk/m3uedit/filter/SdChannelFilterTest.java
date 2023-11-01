@@ -17,12 +17,13 @@ class SdChannelFilterTest extends AbstractFilterTest {
     void testFilter() throws FileNotFoundException {
         Filter filter = new SdChannelFilter();
         List<Entry> entryList = readList("sd_channels.m3u");
-        assertThat(entryList, hasSize(7));
+        assertThat(entryList, hasSize(9));
         List<Entry> filteredList = filter.filter(entryList);
-        assertThat(filteredList, hasSize(4));
+        assertThat(filteredList, hasSize(5));
         assertThat(filteredList, hasItem(hasProperty("name", is("Das Erste HD"))));
         assertThat(filteredList, hasItem(hasProperty("name", is("ZDF HD"))));
         assertThat(filteredList, hasItem(hasProperty("name", is("3sat HD"))));
         assertThat(filteredList, hasItem(hasProperty("name", is("arte HD"))));
+        assertThat(filteredList, hasItem(hasProperty("name", is("Bingo-TV ᴴᴰ"))));
     }
 }

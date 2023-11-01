@@ -14,10 +14,12 @@ import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
-import javafx.scene.text.Text;
 import org.bitpunk.m3uedit.NamedItem;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.*;
+import org.bitpunk.m3uedit.plugins.FilterPluginService;
+import org.bitpunk.m3uedit.plugins.InputPluginService;
+import org.bitpunk.m3uedit.plugins.OutputPluginService;
+import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputFactory;
@@ -155,28 +157,6 @@ public class SceneController implements Initializable {
 
             return row;
         });
-
-        //Set the right resize-policy
-        entryTableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        entryTableView.getColumns().forEach((column) -> {
-            //Minimal width = columnheader
-            Text text = new Text(column.getText());
-            double max = text.getLayoutBounds().getWidth();
-            for (int i = 0; i < entryTableView.getItems().size(); i++) {
-                //cell must not be empty
-                if (column.getCellData(i) != null) {
-                    text = new Text(column.getCellData(i).toString());
-                    double calcwidth = text.getLayoutBounds().getWidth();
-                    //remember new max-width
-                    if (calcwidth > max) {
-                        max = calcwidth;
-                    }
-                }
-            }
-            //set the new max-width with some extra space
-            column.setPrefWidth(max + 10.0d);
-        });
-
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
