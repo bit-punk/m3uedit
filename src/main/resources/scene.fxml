@@ -53,9 +53,7 @@
                                 </columns>
                             </TableView>
                             <HBox spacing="3.0">
-                                <TextField fx:id="addedChannelNameTextField" promptText="Channel Name"/>
-                                <TextField fx:id="addedChannelUriTextField" promptText="ChannelUri"/>
-                                <Button fx:id="addEntryButton" mnemonicParsing="false" onAction="#addEntry" text="Add"/>
+                                <Button fx:id="addEntryButton" mnemonicParsing="false" onAction="#addNewEntry" text="Add new Entry"/>
                             </HBox>
                         </VBox>
                     </TitledPane>
