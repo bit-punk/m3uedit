@@ -15,6 +15,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.dialog.EntryDialogController;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
@@ -47,10 +48,6 @@ public class SceneController implements Initializable {
     public TableColumn<Entry, String> indexColumn;
     @FXML
     public Button addEntryButton;
-    @FXML
-    public TextField addedChannelNameTextField;
-    @FXML
-    public TextField addedChannelUriTextField;
     @FXML
     public Scene scene;
     @FXML
@@ -242,13 +239,12 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void addEntry() {
-        Entry entry = new Entry();
-        entry.setName(addedChannelNameTextField.getText());
-        entry.setChannelUri(addedChannelUriTextField.getText());
-        entryTableView.getItems().add(entry);
-        addedChannelNameTextField.clear();
-        addedChannelUriTextField.clear();
+    private void addNewEntry() {
+        EntryDialogController entryDialogController = new EntryDialogController();
+        entryDialogController.showAndWait().ifPresent(entry -> {
+            log.debug("adding new Entry: {}", entry);
+            entryTableView.getItems().add(entry);
+        });
     }
 
     @FXML
@@ -277,6 +273,7 @@ public class SceneController implements Initializable {
     }
 
     @FXML
+    @SuppressWarnings("unchecked")
     private void deleteKeyListenerTableView(KeyEvent keyEvent) {
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
             TableView<NamedItem> sourceTableView = (TableView<NamedItem>) keyEvent.getSource();
