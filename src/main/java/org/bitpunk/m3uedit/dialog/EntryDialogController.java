@@ -135,38 +135,24 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
             String fieldName = error.getPropertyPath().toString();
             String errorMessage = error.getMessage();
             log.debug("Field: {} Message: {}", fieldName, errorMessage);
-            if ("duration".equals(fieldName)) {
-                durationTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                durationTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("groupTitle".equals(fieldName)) {
-                groupTitleTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                groupTitleTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("tvgId".equals(fieldName)) {
-                tvgIdTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                tvgIdTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("tvgName".equals(fieldName)) {
-                tvgNameTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                tvgNameTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("tvgLogo".equals(fieldName)) {
-                tvgLogoTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                tvgLogoTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("tvgShift".equals(fieldName)) {
-                tvgShiftTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                tvgShiftTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("radio".equals(fieldName)) {
-                radioTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                radioTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("channelUri".equals(fieldName)) {
-                channelUriTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                channelUriTextField.setTooltip(new Tooltip(errorMessage));
-            } else if ("name".equals(fieldName)) {
-                nameTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-                nameTextField.setTooltip(new Tooltip(errorMessage));
+            switch(fieldName) {
+                case "duration" -> markField(durationTextField, errorMessage);
+                case "groupTitle" -> markField(groupTitleTextField, errorMessage);
+                case "tvgId" -> markField(tvgIdTextField, errorMessage);
+                case "tvgName" -> markField(tvgNameTextField, errorMessage);
+                case "tvgLogo" -> markField(tvgLogoTextField, errorMessage);
+                case "tvgShift" -> markField(tvgShiftTextField, errorMessage);
+                case "radio" -> markField(radioTextField, errorMessage);
+                case "channelUri" -> markField(channelUriTextField, errorMessage);
+                case "name" -> markField(nameTextField, errorMessage);
             }
             // ToDo color VlcOpts in case of validation errors
-
         }
+    }
 
+    private void markField(TextField textField, String errorMessage) {
+        textField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+        textField.setTooltip(new Tooltip(errorMessage));
     }
 
     private void resetTextFields() {
