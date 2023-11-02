@@ -21,8 +21,8 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 public class EntryDialogController extends Dialog<Entry> implements Initializable {
+    public static final String CSS_INVALID_TEXTFIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red";
     private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
-
     @FXML
     public TextField durationTextField;
     @FXML
@@ -111,7 +111,7 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
                         radioTextField.textProperty(),
                         channelUriTextField.textProperty(),
                         nameTextField.textProperty());
-                        // Todo validate VlcOpts ??
+                // Todo validate VlcOpts ??
             }
 
             @Override
@@ -124,8 +124,70 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
     private boolean isValidBean(Entry entry) {
         PojoValidator<Entry> validator = new PojoValidator<>();
         Set<ConstraintViolation<Entry>> errors = validator.validate(entry);
+        displayValidationErrors(errors);
         log.debug("Validation-errors found: {}", errors);
         return errors.isEmpty();
+    }
+
+    private void displayValidationErrors(Set<ConstraintViolation<Entry>> errors) {
+        resetTextFields();
+        for (ConstraintViolation<Entry> error : errors) {
+            String fieldName = error.getPropertyPath().toString();
+            String errorMessage = error.getMessage();
+            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            if ("duration".equals(fieldName)) {
+                durationTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                durationTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("groupTitle".equals(fieldName)) {
+                groupTitleTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                groupTitleTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("tvgId".equals(fieldName)) {
+                tvgIdTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                tvgIdTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("tvgName".equals(fieldName)) {
+                tvgNameTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                tvgNameTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("tvgLogo".equals(fieldName)) {
+                tvgLogoTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                tvgLogoTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("tvgShift".equals(fieldName)) {
+                tvgShiftTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                tvgShiftTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("radio".equals(fieldName)) {
+                radioTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                radioTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("channelUri".equals(fieldName)) {
+                channelUriTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                channelUriTextField.setTooltip(new Tooltip(errorMessage));
+            } else if ("name".equals(fieldName)) {
+                nameTextField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
+                nameTextField.setTooltip(new Tooltip(errorMessage));
+            }
+            // ToDo color VlcOpts in case of validation errors
+
+        }
+
+    }
+
+    private void resetTextFields() {
+        durationTextField.setStyle(null);
+        durationTextField.setTooltip(null);
+        groupTitleTextField.setStyle(null);
+        groupTitleTextField.setTooltip(null);
+        tvgIdTextField.setStyle(null);
+        tvgIdTextField.setTooltip(null);
+        tvgNameTextField.setStyle(null);
+        tvgNameTextField.setTooltip(null);
+        tvgLogoTextField.setStyle(null);
+        tvgLogoTextField.setTooltip(null);
+        tvgShiftTextField.setStyle(null);
+        tvgShiftTextField.setTooltip(null);
+        radioTextField.setStyle(null);
+        radioTextField.setTooltip(null);
+        channelUriTextField.setStyle(null);
+        channelUriTextField.setTooltip(null);
+        nameTextField.setStyle(null);
+        nameTextField.setTooltip(null);
     }
 
     public void setEntry(Entry entry) {
