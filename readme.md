@@ -63,3 +63,5 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [JavaFX 11 : Create a jar file with Gradle](https://stackoverflow.com/questions/52569724/javafx-11-create-a-jar-file-with-gradle)
 #### SFTP-Output
 * [com.jcraft.jsch.JSchException: UnknownHostKey](https://stackoverflow.com/questions/2003419/com-jcraft-jsch-jschexception-unknownhostkey)
+#### JSR303
+* [JSR 303 Annotations List](https://howtodoinjava.com/spring-mvc/spring-bean-validation-example-with-jsr-303-annotations/#6-jsr-303-annotations-list)

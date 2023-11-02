@@ -22,6 +22,8 @@
         <hamcrest-library.version>2.2</hamcrest-library.version>
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <main.class>org.bitpunk.m3uedit.Main</main.class>
+        <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
+        <expressly.version>5.0.0</expressly.version>
     </properties>
 
     <dependencies>
@@ -104,6 +106,16 @@
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
             <version>0.1.55</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>${hibernate-validator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.expressly</groupId>
+            <artifactId>expressly</artifactId>
+            <version>${expressly.version}</version>
         </dependency>
     </dependencies>
 
