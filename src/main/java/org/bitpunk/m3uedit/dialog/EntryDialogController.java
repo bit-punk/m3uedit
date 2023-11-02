@@ -1,29 +1,52 @@
 package org.bitpunk.m3uedit.dialog;
 
+import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
+import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Modality;
+import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.util.PojoValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 public class EntryDialogController extends Dialog<Entry> implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
 
     @FXML
     public TextField durationTextField;
     @FXML
-    public TextField nameTextField;
+    public TextField groupTitleTextField;
+    @FXML
+    public TextField tvgIdTextField;
+    @FXML
+    public TextField tvgNameTextField;
+    @FXML
+    public TextField tvgLogoTextField;
+    @FXML
+    public TextField tvgShiftTextField;
+    @FXML
+    public TextField radioTextField;
     @FXML
     public TextField channelUriTextField;
+    @FXML
+    public TextField nameTextField;
+    @FXML
+    TableView vlcOptionsTableView;
+    @FXML
+    ButtonType okButtonType;
+    @Getter
+    private BooleanBinding inputsValid;
 
     public EntryDialogController() {
         try {
@@ -42,13 +65,12 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
                 if (!Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
                     return null;
                 }
-
-                Entry newEntry = new Entry();
-                newEntry.setName(nameTextField.getText());
-                newEntry.setDuration(durationTextField.getText());
-                newEntry.setChannelUri(channelUriTextField.getText());
-                return newEntry;
+                return createEntryFromInput();
             });
+
+            dialogPane.lookupButton(okButtonType)
+                    .disableProperty()
+                    .bind(getInputsValid().not());
 
             setOnShowing(dialogEvent -> Platform.runLater(() -> durationTextField.requestFocus()));
         } catch (IOException e) {
@@ -56,8 +78,59 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
         }
     }
 
+    private Entry createEntryFromInput() {
+        Entry entry = new Entry();
+        entry.setDuration(durationTextField.getText());
+        entry.setGroupTitle(groupTitleTextField.getText());
+        entry.setTvgId(tvgIdTextField.getText());
+        entry.setTvgName(tvgNameTextField.getText());
+        entry.setTvgLogo(tvgLogoTextField.getText());
+        entry.setTvgShift(tvgShiftTextField.getText());
+        entry.setRadio(radioTextField.getText());
+        entry.setChannelUri(channelUriTextField.getText());
+        entry.setName(nameTextField.getText());
+        // ToDo set VlcOptions
+//        entry.setVlcOpts(vlcOptionsTableView.getItems());
+        return entry;
+    }
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        initializeBinding();
+    }
 
+    private void initializeBinding() {
+        inputsValid = new BooleanBinding() {
+            {
+                bind(durationTextField.textProperty(),
+                        groupTitleTextField.textProperty(),
+                        tvgIdTextField.textProperty(),
+                        tvgNameTextField.textProperty(),
+                        tvgLogoTextField.textProperty(),
+                        tvgShiftTextField.textProperty(),
+                        radioTextField.textProperty(),
+                        channelUriTextField.textProperty(),
+                        nameTextField.textProperty());
+                        // Todo validate VlcOpts ??
+            }
+
+            @Override
+            protected boolean computeValue() {
+                return isValidBean(createEntryFromInput());
+            }
+        };
+    }
+
+    private boolean isValidBean(Entry entry) {
+        PojoValidator<Entry> validator = new PojoValidator<>();
+        Set<ConstraintViolation<Entry>> errors = validator.validate(entry);
+        log.debug("Validation-errors found: {}", errors);
+        return errors.isEmpty();
+    }
+
+    public void setEntry(Entry entry) {
+        durationTextField.setText(entry.getDuration());
+        nameTextField.setText(entry.getName());
+        channelUriTextField.setText(entry.getChannelUri());
     }
 }
