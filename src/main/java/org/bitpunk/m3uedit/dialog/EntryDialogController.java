@@ -68,9 +68,7 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
                 return createEntryFromInput();
             });
 
-            dialogPane.lookupButton(okButtonType)
-                    .disableProperty()
-                    .bind(getInputsValid().not());
+            dialogPane.lookupButton(okButtonType).disableProperty().bind(getInputsValid().not());
 
             setOnShowing(dialogEvent -> Platform.runLater(() -> durationTextField.requestFocus()));
         } catch (IOException e) {
@@ -102,6 +100,7 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
     private void initializeBinding() {
         inputsValid = new BooleanBinding() {
             {
+                // @formatter:off
                 bind(durationTextField.textProperty(),
                         groupTitleTextField.textProperty(),
                         tvgIdTextField.textProperty(),
@@ -111,6 +110,7 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
                         radioTextField.textProperty(),
                         channelUriTextField.textProperty(),
                         nameTextField.textProperty());
+                // @formatter:on
                 // Todo validate VlcOpts ??
             }
 
@@ -135,7 +135,7 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
             String fieldName = error.getPropertyPath().toString();
             String errorMessage = error.getMessage();
             log.debug("Field: {} Message: {}", fieldName, errorMessage);
-            switch(fieldName) {
+            switch (fieldName) {
                 case "duration" -> markField(durationTextField, errorMessage);
                 case "groupTitle" -> markField(groupTitleTextField, errorMessage);
                 case "tvgId" -> markField(tvgIdTextField, errorMessage);
@@ -156,24 +156,20 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
     }
 
     private void resetTextFields() {
-        durationTextField.setStyle(null);
-        durationTextField.setTooltip(null);
-        groupTitleTextField.setStyle(null);
-        groupTitleTextField.setTooltip(null);
-        tvgIdTextField.setStyle(null);
-        tvgIdTextField.setTooltip(null);
-        tvgNameTextField.setStyle(null);
-        tvgNameTextField.setTooltip(null);
-        tvgLogoTextField.setStyle(null);
-        tvgLogoTextField.setTooltip(null);
-        tvgShiftTextField.setStyle(null);
-        tvgShiftTextField.setTooltip(null);
-        radioTextField.setStyle(null);
-        radioTextField.setTooltip(null);
-        channelUriTextField.setStyle(null);
-        channelUriTextField.setTooltip(null);
-        nameTextField.setStyle(null);
-        nameTextField.setTooltip(null);
+        resetTextField(durationTextField);
+        resetTextField(groupTitleTextField);
+        resetTextField(tvgIdTextField);
+        resetTextField(tvgNameTextField);
+        resetTextField(tvgLogoTextField);
+        resetTextField(tvgShiftTextField);
+        resetTextField(radioTextField);
+        resetTextField(channelUriTextField);
+        resetTextField(nameTextField);
+    }
+
+    private void resetTextField(TextField textField) {
+        textField.setStyle(null);
+        textField.setTooltip(null);
     }
 
     public void setEntry(Entry entry) {
