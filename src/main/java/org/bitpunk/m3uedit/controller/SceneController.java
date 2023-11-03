@@ -12,9 +12,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.*;
 import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.dialog.EntryDialogController;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
@@ -26,6 +26,7 @@ import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.EntryMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,10 +48,6 @@ public class SceneController implements Initializable {
     public TableColumn<Entry, String> indexColumn;
     @FXML
     public Button addEntryButton;
-    @FXML
-    public TextField addedChannelNameTextField;
-    @FXML
-    public TextField addedChannelUriTextField;
     @FXML
     public Scene scene;
     @FXML
@@ -99,14 +96,6 @@ public class SceneController implements Initializable {
     }
 
     private void initEntryTableView() {
-        // make column channelName editable
-        channelName.setCellFactory(TextFieldTableCell.forTableColumn());
-        channelName.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setName(t.getNewValue()));
-
-        // make column channelUri editable
-        channelUri.setCellFactory(TextFieldTableCell.forTableColumn());
-        channelUri.setOnEditCommit(t -> (t.getTableView().getItems().get(t.getTablePosition().getRow())).setName(t.getNewValue()));
-
         // set RowFactory for Entry-TableView to make rows draggable
         entryTableView.setRowFactory(tv -> {
             TableRow<Entry> row = new TableRow<>();
@@ -155,9 +144,26 @@ public class SceneController implements Initializable {
                 }
             });
 
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    Entry entry = row.getItem();
+                    log.debug("double-clicked on: {}", entry);
+                    editEntry(entry);
+                    entryTableView.refresh();
+                }
+            });
             return row;
         });
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+    }
+
+    private void editEntry(Entry entry) {
+        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
+        entryDialogController.setEntry(entry);
+        entryDialogController.showAndWait().ifPresent(entryEdited -> {
+            log.debug("edited Entry: {}", entryEdited);
+            EntryMapper.mapEntry(entryEdited, entry);
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -242,13 +248,13 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void addEntry() {
-        Entry entry = new Entry();
-        entry.setName(addedChannelNameTextField.getText());
-        entry.setChannelUri(addedChannelUriTextField.getText());
-        entryTableView.getItems().add(entry);
-        addedChannelNameTextField.clear();
-        addedChannelUriTextField.clear();
+    private void addNewEntry() {
+        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
+        entryDialogController.showAndWait().ifPresent(entry -> {
+            log.debug("adding new Entry: {}", entry);
+            entryTableView.getItems().add(entry);
+            entryTableView.refresh();
+        });
     }
 
     @FXML
@@ -277,6 +283,7 @@ public class SceneController implements Initializable {
     }
 
     @FXML
+    @SuppressWarnings("unchecked")
     private void deleteKeyListenerTableView(KeyEvent keyEvent) {
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
             TableView<NamedItem> sourceTableView = (TableView<NamedItem>) keyEvent.getSource();
