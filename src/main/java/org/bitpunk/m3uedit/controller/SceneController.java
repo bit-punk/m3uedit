@@ -158,7 +158,7 @@ public class SceneController implements Initializable {
     }
 
     private void editEntry(Entry entry) {
-        EntryDialogController entryDialogController = new EntryDialogController();
+        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
         entryDialogController.setEntry(entry);
         entryDialogController.showAndWait().ifPresent(entryEdited -> {
             log.debug("edited Entry: {}", entryEdited);
@@ -249,7 +249,7 @@ public class SceneController implements Initializable {
 
     @FXML
     private void addNewEntry() {
-        EntryDialogController entryDialogController = new EntryDialogController();
+        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
         entryDialogController.showAndWait().ifPresent(entry -> {
             log.debug("adding new Entry: {}", entry);
             entryTableView.getItems().add(entry);

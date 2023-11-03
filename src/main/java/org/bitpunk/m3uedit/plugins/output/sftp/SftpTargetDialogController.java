@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.util.Callback;
 import lombok.Getter;
+import org.bitpunk.m3uedit.dialog.AbstractDialog;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class SftpTargetDialogController extends Dialog<SftpConnection> implements Initializable {
+public class SftpTargetDialogController extends AbstractDialog<SftpConnection> implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SftpTargetDialogController.class);
     @FXML
     public ButtonType okButtonType;
@@ -82,13 +83,42 @@ public class SftpTargetDialogController extends Dialog<SftpConnection> implement
 
             @Override
             protected boolean computeValue() {
-                PojoValidator<SftpConnection> validator = new PojoValidator<>();
-                SftpConnection sftpConnectionFromInput = createSftpConnectionFromInput();
-                Set<ConstraintViolation<SftpConnection>> errors = validator.validate(sftpConnectionFromInput);
-                log.debug("Validation-errors found: {}", errors);
-                return errors.isEmpty() && sftpConnectionFromInput.isValidUri();
+                return isValidBean(createSftpConnectionFromInput());
             }
         };
+    }
+
+    private boolean isValidBean(SftpConnection sftpConnection) {
+        PojoValidator<SftpConnection> validator = new PojoValidator<>();
+        SftpConnection sftpConnectionFromInput = createSftpConnectionFromInput();
+        Set<ConstraintViolation<SftpConnection>> errors = validator.validate(sftpConnectionFromInput);
+        displayValidationErrors(errors);
+        log.debug("Validation-errors found: {}", errors);
+        return errors.isEmpty() && sftpConnectionFromInput.isValidUri();
+    }
+
+    private void displayValidationErrors(Set<ConstraintViolation<SftpConnection>> errors) {
+        resetTextFields();
+        for (ConstraintViolation<SftpConnection> error : errors) {
+            String errorMessage = error.getMessage();
+            String fieldName = error.getPropertyPath().toString();
+            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            switch (fieldName) {
+                case "hostName" -> markFieldInvalid(hostnameTextField, errorMessage);
+                case "port" -> markFieldInvalid(hostPortTextField, errorMessage);
+                case "path" -> markFieldInvalid(hostPathTextField, errorMessage);
+                case "userName" -> markFieldInvalid(usernameTextField, errorMessage);
+                case "password" -> markFieldInvalid(passwordField, errorMessage);
+            }
+        }
+    }
+
+    private void resetTextFields() {
+        resetTextField(hostnameTextField);
+        resetTextField(hostPortTextField);
+        resetTextField(hostPathTextField);
+        resetTextField(usernameTextField);
+        resetTextField(passwordField);
     }
 
 }
