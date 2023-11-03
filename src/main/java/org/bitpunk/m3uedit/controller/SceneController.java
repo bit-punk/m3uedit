@@ -26,6 +26,7 @@ import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.EntryListNameFormatter;
 import org.bitpunk.m3uedit.util.EntryMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,11 +70,13 @@ public class SceneController implements Initializable {
     @FXML
     private TableView<Entry> entryTableView = new TableView<>();
 
-    private boolean deletePluginDialog(NamedItem deleteItem) {
+    private boolean deletePluginDialog(ObservableList<NamedItem> deleteItems) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
         dialog.setTitle("Delete Plugin");
+        dialog.setResizable(true);
         dialog.setHeaderText("Delete Plugin");
-        dialog.setContentText("Sure you want to delete:\n" + deleteItem.getName());
+        String deleteConfirmMessage = String.format("Sure you want to delete %d entries:\n\n%s", deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
+        dialog.setContentText(deleteConfirmMessage);
 
         ButtonType buttonYes = new ButtonType("Yes");
         ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -117,7 +120,6 @@ public class SceneController implements Initializable {
                 if (db.hasContent(SERIALIZED_MIME_TYPE) && (row.getIndex() != (Integer) db.getContent(SERIALIZED_MIME_TYPE))) {
                     event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
                     event.consume();
-
                 }
             });
 
@@ -174,6 +176,7 @@ public class SceneController implements Initializable {
         TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
+        inputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     @SuppressWarnings("unchecked")
@@ -184,6 +187,7 @@ public class SceneController implements Initializable {
         TableColumn<Output, String> sourceColumn = new TableColumn<>("Destination");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("output"));
         outputTableView.getColumns().addAll(nameColumn, sourceColumn);
+        outputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     private void initAvailableInputComboBox() {
@@ -287,15 +291,15 @@ public class SceneController implements Initializable {
     private void deleteKeyListenerTableView(KeyEvent keyEvent) {
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
             TableView<NamedItem> sourceTableView = (TableView<NamedItem>) keyEvent.getSource();
-            final NamedItem selectedPlugin = sourceTableView.getSelectionModel().getSelectedItem();
-            deletePluginFromTableView(selectedPlugin, sourceTableView);
+            final ObservableList<NamedItem> selectedPlugins = sourceTableView.getSelectionModel().getSelectedItems();
+            deletePluginsFromTableView(selectedPlugins, sourceTableView);
             keyEvent.consume();
         }
     }
 
-    private void deletePluginFromTableView(NamedItem plugin, TableView<NamedItem> tableView) {
-        if (deletePluginDialog(plugin)) {
-            tableView.getItems().remove(plugin);
+    private void deletePluginsFromTableView(ObservableList<NamedItem> deletePlugins, TableView<NamedItem> tableView) {
+        if (deletePluginDialog(deletePlugins)) {
+            tableView.getItems().removeAll(deletePlugins);
         }
     }
 
