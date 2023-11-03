@@ -5,7 +5,6 @@ import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.stage.Modality;
 import lombok.Getter;
@@ -20,8 +19,7 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class EntryDialogController extends Dialog<Entry> implements Initializable {
-    public static final String CSS_INVALID_TEXTFIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red";
+public class EntryDialogController<T> extends AbstractDialog<T> {
     private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
     @FXML
     public TextField durationTextField;
@@ -65,7 +63,7 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
                 if (!Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
                     return null;
                 }
-                return createEntryFromInput();
+                return (T) createEntryFromInput();
             });
 
             dialogPane.lookupButton(okButtonType).disableProperty().bind(getInputsValid().not());
@@ -136,23 +134,18 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
             String errorMessage = error.getMessage();
             log.debug("Field: {} Message: {}", fieldName, errorMessage);
             switch (fieldName) {
-                case "duration" -> markField(durationTextField, errorMessage);
-                case "groupTitle" -> markField(groupTitleTextField, errorMessage);
-                case "tvgId" -> markField(tvgIdTextField, errorMessage);
-                case "tvgName" -> markField(tvgNameTextField, errorMessage);
-                case "tvgLogo" -> markField(tvgLogoTextField, errorMessage);
-                case "tvgShift" -> markField(tvgShiftTextField, errorMessage);
-                case "radio" -> markField(radioTextField, errorMessage);
-                case "channelUri" -> markField(channelUriTextField, errorMessage);
-                case "name" -> markField(nameTextField, errorMessage);
+                case "duration" -> markFieldInvalid(durationTextField, errorMessage);
+                case "groupTitle" -> markFieldInvalid(groupTitleTextField, errorMessage);
+                case "tvgId" -> markFieldInvalid(tvgIdTextField, errorMessage);
+                case "tvgName" -> markFieldInvalid(tvgNameTextField, errorMessage);
+                case "tvgLogo" -> markFieldInvalid(tvgLogoTextField, errorMessage);
+                case "tvgShift" -> markFieldInvalid(tvgShiftTextField, errorMessage);
+                case "radio" -> markFieldInvalid(radioTextField, errorMessage);
+                case "channelUri" -> markFieldInvalid(channelUriTextField, errorMessage);
+                case "name" -> markFieldInvalid(nameTextField, errorMessage);
             }
             // ToDo color VlcOpts in case of validation errors
         }
-    }
-
-    private void markField(TextField textField, String errorMessage) {
-        textField.setStyle(CSS_INVALID_TEXTFIELD_INPUT);
-        textField.setTooltip(new Tooltip(errorMessage));
     }
 
     private void resetTextFields() {
@@ -165,11 +158,6 @@ public class EntryDialogController extends Dialog<Entry> implements Initializabl
         resetTextField(radioTextField);
         resetTextField(channelUriTextField);
         resetTextField(nameTextField);
-    }
-
-    private void resetTextField(TextField textField) {
-        textField.setStyle(null);
-        textField.setTooltip(null);
     }
 
     public void setEntry(Entry entry) {

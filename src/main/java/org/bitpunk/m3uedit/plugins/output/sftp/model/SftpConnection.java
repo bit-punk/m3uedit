@@ -14,14 +14,16 @@ import java.net.URISyntaxException;
 @Data
 public class SftpConnection {
     public static final String SFTP_SCHEMA = "sftp";
+    public static final String REGEX_PATH = "^/.*$";
     private static final Logger log = LoggerFactory.getLogger(SftpConnection.class);
     private String schema = SFTP_SCHEMA;
     @NotEmpty(message = "Hostname must not be empty")
     private String hostName;
-    @Positive(message = "Port must be a positive integer") @Digits(message = "", integer = 5, fraction = 0)
+    @Positive(message = "Port must be a positive integer")
+    @Digits(message = "", integer = 5, fraction = 0)
     //    @Pattern(regexp = "\\d*", message = "The port-number must be a numeric input!")
     private int port;
-    @Pattern(regexp = "^/.*$", message = "Path must start with '/'")
+    @Pattern(regexp = REGEX_PATH, message = "Path must start with '/'")
     private String path;
     @NotEmpty(message = "Username must not be empty")
     private String userName;
