@@ -83,12 +83,12 @@ public class SftpTargetDialogController extends AbstractDialog<SftpConnection> i
 
             @Override
             protected boolean computeValue() {
-                return isValidBean(createSftpConnectionFromInput());
+                return isValidBean();
             }
         };
     }
 
-    private boolean isValidBean(SftpConnection sftpConnection) {
+    private boolean isValidBean() {
         PojoValidator<SftpConnection> validator = new PojoValidator<>();
         SftpConnection sftpConnectionFromInput = createSftpConnectionFromInput();
         Set<ConstraintViolation<SftpConnection>> errors = validator.validate(sftpConnectionFromInput);
