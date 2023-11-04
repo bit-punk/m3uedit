@@ -10,10 +10,10 @@ import java.util.stream.Collectors;
 
 @Data
 public class ChannelNameFilter implements Filter {
-    private static final String filterResourceName = "filter/name_filter.properties";
+    private static final String filterResourceName = "plugin/filter/ChannelNameFilter.properties";
 
     private final List<String> excludeRegexes = getFilterExpressionsFromResourcefile();
-    private final String name = "Name Filter";
+    private final String name = "ChannelName Filter";
     private final String description = "Filters entries based on the channelName using a List of regular expressions";
 
     private static List<String> getFilterExpressionsFromResourcefile() {
