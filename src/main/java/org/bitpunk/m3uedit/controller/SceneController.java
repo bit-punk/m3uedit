@@ -1,6 +1,5 @@
 package org.bitpunk.m3uedit.controller;
 
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
@@ -12,9 +11,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.*;
-import org.bitpunk.m3uedit.NamedItem;
-import org.bitpunk.m3uedit.dialog.EntryDialogController;
+import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
@@ -26,29 +23,21 @@ import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
-import org.bitpunk.m3uedit.util.EntryListNameFormatter;
-import org.bitpunk.m3uedit.util.EntryMapper;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
-    private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
     private final List<String> selectedSorterNames = new ArrayList<>();
     private final List<String> selectedFilterNames = new ArrayList<>();
     @FXML
     public Button saveFileButton;
-    @FXML
-    public TableColumn<Entry, String> indexColumn;
-    @FXML
-    public Button addEntryButton;
     @FXML
     public Scene scene;
     @FXML
@@ -64,32 +53,10 @@ public class SceneController implements Initializable {
     @FXML
     public ListView<String> availableSortersListView;
     @FXML
-    TableColumn<Entry, String> channelName;
-    @FXML
-    TableColumn<Entry, String> channelUri;
-    @FXML
-    private TableView<Entry> entryTableView = new TableView<>();
-
-    private boolean deletePluginDialog(ObservableList<NamedItem> deleteItems) {
-        Alert dialog = new Alert(Alert.AlertType.WARNING);
-        dialog.setTitle("Delete Plugin");
-        dialog.setResizable(true);
-        dialog.setHeaderText("Delete Plugin");
-        String deleteConfirmMessage = String.format("Sure you want to delete %d entries:\n\n%s", deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
-        dialog.setContentText(deleteConfirmMessage);
-
-        ButtonType buttonYes = new ButtonType("Yes");
-        ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        dialog.getButtonTypes().setAll(buttonYes, buttonNo);
-        Optional<ButtonType> selectedOption = dialog.showAndWait();
-
-        return selectedOption.isPresent() && selectedOption.get() == buttonYes;
-    }
+    public EntryListController entryList;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        initEntryTableView();
         initInputTableView();
         initOutputTableView();
         initAvailableInputComboBox();
@@ -98,81 +65,10 @@ public class SceneController implements Initializable {
         initAvailableOutputComboBox();
     }
 
-    private void initEntryTableView() {
-        // set RowFactory for Entry-TableView to make rows draggable
-        entryTableView.setRowFactory(tv -> {
-            TableRow<Entry> row = new TableRow<>();
-
-            row.setOnDragDetected(event -> {
-                if (!row.isEmpty()) {
-                    Integer index = row.getIndex();
-                    Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
-                    db.setDragView(row.snapshot(null, null));
-                    ClipboardContent cc = new ClipboardContent();
-                    cc.put(SERIALIZED_MIME_TYPE, index);
-                    db.setContent(cc);
-                    event.consume();
-                }
-            });
-
-            row.setOnDragOver(event -> {
-                Dragboard db = event.getDragboard();
-                if (db.hasContent(SERIALIZED_MIME_TYPE) && (row.getIndex() != (Integer) db.getContent(SERIALIZED_MIME_TYPE))) {
-                    event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-                    event.consume();
-                }
-            });
-
-            row.setOnDragDropped(event -> {
-                Dragboard db = event.getDragboard();
-                if (db.hasContent(SERIALIZED_MIME_TYPE)) {
-                    int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
-                    Entry draggedEntry = entryTableView.getItems().remove(draggedIndex);
-
-                    int dropIndex;
-
-                    if (row.isEmpty()) {
-                        dropIndex = entryTableView.getItems().size();
-                    } else {
-                        dropIndex = row.getIndex();
-                        log.debug("Entry dragged to index: {}", dropIndex);
-                    }
-
-                    entryTableView.getItems().add(dropIndex, draggedEntry);
-
-                    event.setDropCompleted(true);
-                    entryTableView.getSelectionModel().select(dropIndex);
-                    event.consume();
-                }
-            });
-
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                    Entry entry = row.getItem();
-                    log.debug("double-clicked on: {}", entry);
-                    editEntry(entry);
-                    entryTableView.refresh();
-                }
-            });
-            return row;
-        });
-        entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-    }
-
-    private void editEntry(Entry entry) {
-        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
-        entryDialogController.setEntry(entry);
-        entryDialogController.showAndWait().ifPresent(entryEdited -> {
-            log.debug("edited Entry: {}", entryEdited);
-            EntryMapper.mapEntry(entryEdited, entry);
-        });
-    }
-
     @SuppressWarnings("unchecked")
     private void initInputTableView() {
         TableColumn<Input, String> nameColumn = new TableColumn<>("Name");
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-
         TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
@@ -235,50 +131,12 @@ public class SceneController implements Initializable {
         }));
     }
 
-    private void addIndexColumn() {
-        indexColumn.setCellFactory(col -> {
-            TableCell<Entry, String> cell = new TableCell<>();
-            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
-            return cell;
-        });
-    }
-
     @FXML
     private void saveListToOutputs() {
         ObservableList<Output> outputs = outputTableView.getItems();
         for (Output output : outputs) {
-            output.write(entryTableView.getItems());
+            output.write(entryList.getItems());
         }
-    }
-
-    @FXML
-    private void addNewEntry() {
-        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
-        entryDialogController.showAndWait().ifPresent(entry -> {
-            log.debug("adding new Entry: {}", entry);
-            entryTableView.getItems().add(entry);
-            entryTableView.refresh();
-        });
-    }
-
-    @FXML
-    @SuppressWarnings("unchecked")
-    private void populateEntryTable() {
-        ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
-        for (Input currentInput : inputTableView.getItems()) {
-            log.debug("reading from: {}", currentInput);
-            try {
-                dataFromInputSource.addAll(currentInput.read());
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        entryTableView.setItems(dataFromInputSource);
-        addIndexColumn();
-
-        channelName.setCellValueFactory(new PropertyValueFactory<>("name"));
-        channelUri.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
-        entryTableView.getColumns().setAll(indexColumn, channelName, channelUri);
     }
 
     @FXML
@@ -287,28 +145,11 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    @SuppressWarnings("unchecked")
-    private void deleteKeyListenerTableView(KeyEvent keyEvent) {
-        if (keyEvent.getCode().equals(KeyCode.DELETE)) {
-            TableView<NamedItem> sourceTableView = (TableView<NamedItem>) keyEvent.getSource();
-            final ObservableList<NamedItem> selectedPlugins = sourceTableView.getSelectionModel().getSelectedItems();
-            deletePluginsFromTableView(selectedPlugins, sourceTableView);
-            keyEvent.consume();
-        }
-    }
-
-    private void deletePluginsFromTableView(ObservableList<NamedItem> deletePlugins, TableView<NamedItem> tableView) {
-        if (deletePluginDialog(deletePlugins)) {
-            tableView.getItems().removeAll(deletePlugins);
-        }
-    }
-
-    @FXML
     private void applySelectedFilterAction() {
         for (String selectedFilterName : selectedFilterNames) {
             Filter filter = FilterPluginService.getInstance().getFilter(selectedFilterName);
-            ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryTableView.getItems()));
-            entryTableView.setItems(filteredEntries);
+            ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryList.getItems()));
+            entryList.setItems(filteredEntries);
         }
     }
 
@@ -316,8 +157,8 @@ public class SceneController implements Initializable {
     private void applySelectedSorterAction() {
         for (String selectedSorterName : selectedSorterNames) {
             Sorter sorter = SorterPluginService.getInstance().getSorter(selectedSorterName);
-            ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryTableView.getItems()));
-            entryTableView.setItems(sortedEntries);
+            ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryList.getItems()));
+            entryList.setItems(sortedEntries);
         }
     }
 
@@ -348,4 +189,7 @@ public class SceneController implements Initializable {
         }
     }
 
+    public void deleteKeyListenerTableView(KeyEvent keyEvent) {
+        ListControllerUtil.deleteKeyListenerTableView(keyEvent);
+    }
 }
