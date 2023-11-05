@@ -22,23 +22,23 @@ public class ListControllerUtil {
         if (keyEvent.getCode().equals(KeyCode.DELETE)) {
             TableView<NamedItem> targetTableView = (TableView<NamedItem>) keyEvent.getTarget();
             final ObservableList<NamedItem> selectedPlugins = targetTableView.getSelectionModel().getSelectedItems();
-            deletePluginsFromTableView(selectedPlugins, targetTableView);
+            deleteNamedItemsFromTableView(selectedPlugins, targetTableView);
             keyEvent.consume();
         }
     }
 
-    private static void deletePluginsFromTableView(ObservableList<NamedItem> deletePlugins, TableView<NamedItem> tableView) {
-        if (deletePluginDialog(deletePlugins)) {
+    private static void deleteNamedItemsFromTableView(ObservableList<NamedItem> deletePlugins, TableView<NamedItem> tableView) {
+        if (deleteNamedItemsDialog(deletePlugins)) {
             tableView.getItems().removeAll(deletePlugins);
         }
     }
 
-    private static boolean deletePluginDialog(ObservableList<NamedItem> deleteItems) {
+    private static boolean deleteNamedItemsDialog(ObservableList<NamedItem> deleteItems) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
-        dialog.setTitle("Delete Plugin");
+        dialog.setTitle("Delete Item");
         dialog.setResizable(true);
-        dialog.setHeaderText("Delete Plugin");
-        String deleteConfirmMessage = String.format("Sure you want to delete %d entries:\n\n%s", deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
+        dialog.setHeaderText("Delete Item");
+        String deleteConfirmMessage = String.format("Sure you want to delete %d items:\n\n%s", deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
         dialog.setContentText(deleteConfirmMessage);
 
         ButtonType buttonYes = new ButtonType("Yes");
