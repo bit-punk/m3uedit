@@ -33,7 +33,7 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 
 ### IntelliJ
 
-* To be able to run the JavaFX application from Intellij add the following VM options of your run-configuration:
+* To be able to run the JavaFX application from IntelliJ add the following VM options of your run-configuration:
     ```
       --module-path /home/jochen/javafx-sdk-20.0.2/lib --add-modules javafx.controls,javafx.fxml
     ```
