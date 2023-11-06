@@ -53,7 +53,7 @@ public class SceneController implements Initializable {
     @FXML
     public ListView<String> availableSortersListView;
     @FXML
-    public EntryListController entryList;
+    public EntryListController entryListController;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -135,7 +135,7 @@ public class SceneController implements Initializable {
     private void saveListToOutputs() {
         ObservableList<Output> outputs = outputTableView.getItems();
         for (Output output : outputs) {
-            output.write(entryList.getItems());
+            output.write(entryListController.getItems());
         }
     }
 
@@ -148,8 +148,8 @@ public class SceneController implements Initializable {
     private void applySelectedFilterAction() {
         for (String selectedFilterName : selectedFilterNames) {
             Filter filter = FilterPluginService.getInstance().getFilter(selectedFilterName);
-            ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryList.getItems()));
-            entryList.setItems(filteredEntries);
+            ObservableList<Entry> filteredEntries = FXCollections.observableList(filter.filter(entryListController.getItems()));
+            entryListController.setItems(filteredEntries);
         }
     }
 
@@ -157,8 +157,8 @@ public class SceneController implements Initializable {
     private void applySelectedSorterAction() {
         for (String selectedSorterName : selectedSorterNames) {
             Sorter sorter = SorterPluginService.getInstance().getSorter(selectedSorterName);
-            ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryList.getItems()));
-            entryList.setItems(sortedEntries);
+            ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryListController.getItems()));
+            entryListController.setItems(sortedEntries);
         }
     }
 
