@@ -6,6 +6,7 @@
 <?import javafx.scene.Scene?>
 <?import org.bitpunk.m3uedit.controller.EntryListController?>
 <?import org.bitpunk.m3uedit.controller.InputController?>
+<?import org.bitpunk.m3uedit.controller.OutputController?>
 <Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
        fx:controller="org.bitpunk.m3uedit.controller.SceneController" stylesheets="@css/scene.css">
     <BorderPane>
@@ -52,16 +53,7 @@
                     </Tab>
                     <Tab text="Outputs">
                         <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                        <VBox>
-                            <ComboBox fx:id="addOutputComboBox" onAction="#addOutputAction"/>
-                            <TableView fx:id="outputTableView" onKeyPressed="#deleteKeyListenerTableView">
-                                <columnResizePolicy>
-                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                                </columnResizePolicy>
-                            </TableView>
-                            <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToOutputs"
-                                    text="Save Playlist"/>
-                        </VBox>
+                        <OutputController entryListController="$entryListController"/>
                         <!--                        </AnchorPane>-->
                     </Tab>
                 </TabPane>

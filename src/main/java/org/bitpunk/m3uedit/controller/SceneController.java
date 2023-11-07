@@ -4,24 +4,17 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.ListView;
 import javafx.scene.control.cell.CheckBoxListCell;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
-import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
-import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,16 +28,11 @@ public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private final List<String> selectedSorterNames = new ArrayList<>();
     private final List<String> selectedFilterNames = new ArrayList<>();
-    @FXML
-    public Button saveFileButton;
+
     @FXML
     public Scene scene;
     @FXML
     public ListView<String> availableFiltersListView;
-    @FXML
-    public ComboBox<String> addOutputComboBox;
-    @FXML
-    public TableView<Output> outputTableView;
     @FXML
     public ListView<String> availableSortersListView;
     @FXML
@@ -54,30 +42,8 @@ public class SceneController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        initOutputTableView();
         initAvailableFilterListView();
         initAvailableSorterListView();
-        initAvailableOutputComboBox();
-    }
-
-
-    @SuppressWarnings("unchecked")
-    private void initOutputTableView() {
-        TableColumn<Output, String> nameColumn = new TableColumn<>("Name");
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-
-        TableColumn<Output, String> sourceColumn = new TableColumn<>("Destination");
-        sourceColumn.setCellValueFactory(new PropertyValueFactory<>("output"));
-        outputTableView.getColumns().addAll(nameColumn, sourceColumn);
-        outputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-    }
-
-    private void initAvailableOutputComboBox() {
-        List<String> outputNames = OutputPluginService.getInstance().getOutputNames();
-        log.debug("outputNames: {}", outputNames);
-        addOutputComboBox.getItems().add("add Output");
-        addOutputComboBox.getItems().addAll(outputNames);
-        addOutputComboBox.getSelectionModel().select(0);
     }
 
     private void initAvailableFilterListView() {
@@ -110,14 +76,6 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void saveListToOutputs() {
-        ObservableList<Output> outputs = outputTableView.getItems();
-        for (Output output : outputs) {
-            output.write(entryListController.getItems());
-        }
-    }
-
-    @FXML
     private void handleExitAction() {
         System.exit(0);
     }
@@ -138,25 +96,6 @@ public class SceneController implements Initializable {
             ObservableList<Entry> sortedEntries = FXCollections.observableList(sorter.sort(entryListController.getItems()));
             entryListController.setItems(sortedEntries);
         }
-    }
-
-    @FXML
-    public void addOutputAction(ActionEvent actionEvent) {
-        log.debug("addOutputAction: {}", actionEvent);
-        String selectedOutputName = addOutputComboBox.getSelectionModel().getSelectedItem();
-        Output output = OutputFactory.getOutput(selectedOutputName);
-        if (output != null) {
-            output.configure();
-            ObservableList<Output> outputs = outputTableView.getItems();
-            if (!outputs.contains(output)) {
-                outputs.add(output);
-            }
-            addOutputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Output"
-        }
-    }
-
-    public void deleteKeyListenerTableView(KeyEvent keyEvent) {
-        ListControllerUtil.deleteKeyListenerTableView(keyEvent);
     }
 
     @FXML
