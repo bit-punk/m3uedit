@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.Scene?>
 <?import org.bitpunk.m3uedit.controller.EntryListController?>
+<?import org.bitpunk.m3uedit.controller.InputController?>
 <Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
        fx:controller="org.bitpunk.m3uedit.controller.SceneController" stylesheets="@css/scene.css">
     <BorderPane>
@@ -16,62 +18,51 @@
         </top>
         <center>
             <ScrollPane fitToHeight="true" fitToWidth="true">
-                <TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-                         rotateGraphic="true"
-                         prefHeight="400.0"
-                         prefWidth="600.0" side="LEFT" tabClosingPolicy="UNAVAILABLE"
-                         xmlns:fx="http://javafx.com/fxml/1"
-                         xmlns="http://javafx.com/javafx/17.0.2-ea">
-                    <Tab text="Inputs" >
-<!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                            <VBox>
-                                <TableView fx:id="inputTableView" onKeyPressed="#deleteKeyListenerTableView">
-                                    <columnResizePolicy>
-                                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                                    </columnResizePolicy>
-                                </TableView>
-                                <ComboBox fx:id="addInputComboBox" onAction="#addInputAction"/>
-                            </VBox>
-<!--                        </AnchorPane>-->
+                <TabPane rotateGraphic="true"
+                        side="LEFT" tabClosingPolicy="UNAVAILABLE"
+                        xmlns:fx="http://javafx.com/fxml/1"
+                        xmlns="http://javafx.com/javafx/17.0.2-ea">
+                    <Tab text="Inputs">
+                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
+                        <InputController/>
+                        <!--                        </AnchorPane>-->
                     </Tab>
                     <Tab text="Filters">
-<!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                            <VBox>
-                                <ListView fx:id="availableFiltersListView"/>
-                                <Button mnemonicParsing="false" onAction="#applySelectedFilterAction"
-                                        text="Apply selected Filters"/>
-                            </VBox>
-<!--                        </AnchorPane>-->
+                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
+                        <VBox>
+                            <ListView fx:id="availableFiltersListView"/>
+                            <Button mnemonicParsing="false" onAction="#applySelectedFilterAction"
+                                    text="Apply selected Filters"/>
+                        </VBox>
+                        <!--                        </AnchorPane>-->
                     </Tab>
                     <Tab text="Sorters">
-<!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                            <VBox>
-                                <ListView fx:id="availableSortersListView"/>
-                                <Button mnemonicParsing="false" onAction="#applySelectedSorterAction"
-                                        text="Apply selected Sorters"/>
-                            </VBox>
-<!--                        </AnchorPane>-->
+                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
+                        <VBox>
+                            <ListView fx:id="availableSortersListView"/>
+                            <Button mnemonicParsing="false" onAction="#applySelectedSorterAction"
+                                    text="Apply selected Sorters"/>
+                        </VBox>
+                        <!--                        </AnchorPane>-->
                     </Tab>
                     <Tab text="Playlist">
-<!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                            <EntryListController inputTableView="$inputTableView" fx:id="entryListController"/>
-<!--                        </AnchorPane>-->
+                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
+                        <EntryListController inputTableView="$inputTableView" fx:id="entryListController"/>
+                        <!--                        </AnchorPane>-->
                     </Tab>
                     <Tab text="Outputs">
-<!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                            <VBox>
-                                <TableView fx:id="outputTableView" onKeyPressed="#deleteKeyListenerTableView">
-                                    <columnResizePolicy>
-                                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                                    </columnResizePolicy>
-                                </TableView>
-                                <HBox>
-                                    <ComboBox fx:id="addOutputComboBox" onAction="#addOutputAction"/>
-                                    <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToOutputs"
-                                            text="Save Playlist"/>
-                                </HBox>
-                            </VBox>
-<!--                        </AnchorPane>-->
+                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
+                        <VBox>
+                            <ComboBox fx:id="addOutputComboBox" onAction="#addOutputAction"/>
+                            <TableView fx:id="outputTableView" onKeyPressed="#deleteKeyListenerTableView">
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                </columnResizePolicy>
+                            </TableView>
+                            <Button fx:id="saveFileButton" mnemonicParsing="false" onAction="#saveListToOutputs"
+                                    text="Save Playlist"/>
+                        </VBox>
+                        <!--                        </AnchorPane>-->
                     </Tab>
                 </TabPane>
             </ScrollPane>
