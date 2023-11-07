@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -20,7 +19,6 @@ import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -30,18 +28,19 @@ public class EntryListController extends VBox implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
 
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
-
-    @Getter
-    @Setter
-    private TableView<Input> inputTableView;
     @FXML
-    private TableView<Entry> entryTableView = new TableView<>();
+    public TableColumn<Entry, String> indexColumn;
     @FXML
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
+    @Getter
+    @Setter
+    private TableView<Input> inputTableView;
     @FXML
-    public TableColumn<Entry, String> indexColumn;
+    private final TableView<Entry> entryTableView = new TableView<>();
+    @FXML
+    private Button addNewEntryButton;
 
     public EntryListController() {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/EntryList.fxml"));
@@ -59,6 +58,7 @@ public class EntryListController extends VBox implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initEntryTableView();
+        addNewEntryButton.setOnAction(actionEvent -> addNewEntry());
     }
 
     private void initEntryTableView() {
@@ -126,6 +126,7 @@ public class EntryListController extends VBox implements Initializable {
         channelName.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUri.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
         entryTableView.getColumns().setAll(indexColumn, channelName, channelUri);
+        entryTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
 
     }
 
@@ -154,21 +155,6 @@ public class EntryListController extends VBox implements Initializable {
             entryTableView.getItems().add(entry);
             entryTableView.refresh();
         });
-    }
-
-    @FXML
-    @SuppressWarnings("unchecked")
-    private void populateEntryTable() {
-        ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
-        for (Input currentInput : inputTableView.getItems()) {
-            log.debug("reading from: {}", currentInput);
-            try {
-                dataFromInputSource.addAll(currentInput.read());
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        entryTableView.setItems(dataFromInputSource);
     }
 
     public List<Entry> getItems() {

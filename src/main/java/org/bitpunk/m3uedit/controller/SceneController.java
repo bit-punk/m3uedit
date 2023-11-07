@@ -14,12 +14,10 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
-import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
@@ -27,6 +25,7 @@ import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,37 +42,24 @@ public class SceneController implements Initializable {
     @FXML
     public ListView<String> availableFiltersListView;
     @FXML
-    public ComboBox<String> addInputComboBox;
-    @FXML
     public ComboBox<String> addOutputComboBox;
-    @FXML
-    public TableView<Input> inputTableView;
     @FXML
     public TableView<Output> outputTableView;
     @FXML
     public ListView<String> availableSortersListView;
     @FXML
     public EntryListController entryListController;
+    @FXML
+    public InputController inputController;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        initInputTableView();
         initOutputTableView();
-        initAvailableInputComboBox();
         initAvailableFilterListView();
         initAvailableSorterListView();
         initAvailableOutputComboBox();
     }
 
-    @SuppressWarnings("unchecked")
-    private void initInputTableView() {
-        TableColumn<Input, String> nameColumn = new TableColumn<>("Name");
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
-        sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
-        inputTableView.getColumns().addAll(nameColumn, sourceColumn);
-        inputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-    }
 
     @SuppressWarnings("unchecked")
     private void initOutputTableView() {
@@ -84,14 +70,6 @@ public class SceneController implements Initializable {
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("output"));
         outputTableView.getColumns().addAll(nameColumn, sourceColumn);
         outputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-    }
-
-    private void initAvailableInputComboBox() {
-        List<String> inputNames = InputPluginService.getInstance().getInputNames();
-        log.debug("inputNames: {}", inputNames);
-        addInputComboBox.getItems().add("add Input");
-        addInputComboBox.getItems().addAll(inputNames);
-        addInputComboBox.getSelectionModel().select(0);
     }
 
     private void initAvailableOutputComboBox() {
@@ -163,18 +141,6 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void addInputAction(ActionEvent actionEvent) {
-        log.debug("addInputAction: {}", actionEvent);
-        String selectedInputName = addInputComboBox.getSelectionModel().getSelectedItem();
-        Input input = InputFactory.getInput(selectedInputName);
-        if (input != null) {
-            input.configure();
-            inputTableView.getItems().add(input);
-            addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
-        }
-    }
-
-    @FXML
     public void addOutputAction(ActionEvent actionEvent) {
         log.debug("addOutputAction: {}", actionEvent);
         String selectedOutputName = addOutputComboBox.getSelectionModel().getSelectedItem();
@@ -191,5 +157,20 @@ public class SceneController implements Initializable {
 
     public void deleteKeyListenerTableView(KeyEvent keyEvent) {
         ListControllerUtil.deleteKeyListenerTableView(keyEvent);
+    }
+
+    @FXML
+    @SuppressWarnings("unchecked")
+    private void populateEntryTable() {
+        ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
+        for (Input currentInput : inputController.getSelectedInputs()) {
+            log.debug("reading from: {}", currentInput);
+            try {
+                dataFromInputSource.addAll(currentInput.read());
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        entryListController.setItems(dataFromInputSource);
     }
 }
