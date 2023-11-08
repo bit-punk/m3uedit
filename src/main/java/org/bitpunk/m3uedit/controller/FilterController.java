@@ -29,6 +29,7 @@ public class FilterController extends VBox implements Initializable, ModelAware 
     public ListView<Filter> availableFiltersListView;
 
     public FilterController() {
+        // ToDo duplicate code
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/Filter.fxml"));
 
         fxmlLoader.setRoot(this);

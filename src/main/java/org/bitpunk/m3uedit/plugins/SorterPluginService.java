@@ -21,21 +21,12 @@ public class SorterPluginService {
         return sorterPluginService;
     }
 
-    public List<String> getSorterNames() {
-        List<String> sorterNames = new ArrayList<>();
+    public List<Sorter> getSorterPlugins() {
+        List<Sorter> sorterPlugins = new ArrayList<>();
         for (Sorter currentSorter : loader) {
-            sorterNames.add(currentSorter.getName());
+            sorterPlugins.add(currentSorter);
         }
-        return sorterNames;
+        return sorterPlugins;
     }
 
-    public Sorter getSorter(String selectedSorterName) {
-        Sorter sorter = null;
-        for (Sorter currentSorter : loader) {
-            if (selectedSorterName.equals(currentSorter.getName())) {
-                sorter = currentSorter;
-            }
-        }
-        return sorter;
-    }
 }
