@@ -4,9 +4,6 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.Scene?>
-<?import org.bitpunk.m3uedit.controller.EntryListController?>
-<?import org.bitpunk.m3uedit.controller.InputController?>
-<?import org.bitpunk.m3uedit.controller.OutputController?>
 <Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
        fx:controller="org.bitpunk.m3uedit.controller.SceneController" stylesheets="@css/scene.css">
     <BorderPane>
@@ -23,39 +20,19 @@
                         side="LEFT" tabClosingPolicy="UNAVAILABLE"
                         xmlns:fx="http://javafx.com/fxml/1"
                         xmlns="http://javafx.com/javafx/17.0.2-ea">
-                    <Tab text="Inputs">
-                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                        <InputController/>
-                        <!--                        </AnchorPane>-->
-                    </Tab>
+                    <Tab text="Inputs" fx:id="inputTab"/>
                     <Tab text="Filters">
-                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
                         <VBox>
                             <ListView fx:id="availableFiltersListView"/>
-                            <Button mnemonicParsing="false" onAction="#applySelectedFilterAction"
-                                    text="Apply selected Filters"/>
                         </VBox>
-                        <!--                        </AnchorPane>-->
                     </Tab>
                     <Tab text="Sorters">
-                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
                         <VBox>
                             <ListView fx:id="availableSortersListView"/>
-                            <Button mnemonicParsing="false" onAction="#applySelectedSorterAction"
-                                    text="Apply selected Sorters"/>
                         </VBox>
-                        <!--                        </AnchorPane>-->
                     </Tab>
-                    <Tab text="Playlist">
-                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                        <EntryListController fx:id="entryListController"/>
-                        <!--                        </AnchorPane>-->
-                    </Tab>
-                    <Tab text="Outputs">
-                        <!--                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">-->
-                        <OutputController entryListController="$entryListController"/>
-                        <!--                        </AnchorPane>-->
-                    </Tab>
+                    <Tab text="Playlist" fx:id="entryTab"/>
+                    <Tab text="Outputs" fx:id="outputTab"/>
                 </TabPane>
             </ScrollPane>
         </center>

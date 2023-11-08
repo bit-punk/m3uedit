@@ -9,8 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
-import lombok.Getter;
-import lombok.Setter;
+import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
@@ -23,7 +22,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class OutputController extends VBox implements Initializable {
+public class OutputController extends VBox implements Initializable, ModelAware {
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
 
     @FXML
@@ -32,10 +31,8 @@ public class OutputController extends VBox implements Initializable {
     public TableView<Output> outputTableView;
     @FXML
     public Button saveFileButton;
-    @FXML
-    @Getter
-    @Setter
-    public EntryListController entryListController;
+
+    private DataModel dataModel;
 
     public OutputController() {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/Output.fxml"));
@@ -84,7 +81,7 @@ public class OutputController extends VBox implements Initializable {
         Output output = OutputFactory.getOutput(selectedOutputName);
         if (output != null) {
             output.configure();
-            ObservableList<Output> outputs = outputTableView.getItems();
+            ObservableList<Output> outputs = dataModel.getOutputs();
             if (!outputs.contains(output)) {
                 outputs.add(output);
             }
@@ -94,13 +91,16 @@ public class OutputController extends VBox implements Initializable {
 
     @FXML
     private void saveListToOutputs() {
-        ObservableList<Output> outputs = outputTableView.getItems();
-        for (Output output : outputs) {
-            output.write(entryListController.getItems());
-        }
+        dataModel.saveEntries();
     }
 
     public void deleteKeyListenerTableView(KeyEvent keyEvent) {
         ListControllerUtil.deleteKeyListenerTableView(keyEvent);
+    }
+
+    @Override
+    public void initModel(DataModel dataModel) {
+        this.dataModel = dataModel;
+        outputTableView.setItems(this.dataModel.getOutputs());
     }
 }

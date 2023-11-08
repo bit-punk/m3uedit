@@ -58,6 +58,9 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [Accessing the OK button from inside the dialog controller - javaFX](https://stackoverflow.com/questions/49072726/accessing-the-ok-button-from-inside-the-dialog-controller-javafx)
 * [Java FX create Custom Dialog with fxml file. How to set or get result from it?](https://stackoverflow.com/questions/64964471/java-fx-create-custom-dialog-with-fxml-file-how-to-set-or-get-result-from-it)
 * [Creating a Custom Control with FXML](https://docs.oracle.com/javafx/2/fxml_get_started/custom_control.htm#BABDAAHE)
+#### MVC in JavaFx
+* [Applying MVC With JavaFx](https://stackoverflow.com/questions/32342864/applying-mvc-with-javafx)
+* [How to apply MVC in JavaFX](https://edencoding.com/mvc-in-javafx/)
 #### Packaging JavaFX applications
 * [JavaFX, JLink and JPackage](https://dev.to/cherrychain/javafx-jlink-and-jpackage-h9)
 * [Creating Fat JARs for JavaFX Applications](http://fxapps.blogspot.com/2020/11/creating-fat-jars-for-javafx.html)
