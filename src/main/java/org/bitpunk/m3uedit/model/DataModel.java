@@ -38,8 +38,9 @@ public class DataModel {
         }
     }
     public void saveEntries() {
-        for (Output output : outputs) {
+        outputs.forEach(output -> {
+            log.debug("saving {} to output {}", entries.size(), output);
             output.write(entries);
-        }
+        });
     }
 }

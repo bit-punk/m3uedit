@@ -12,7 +12,6 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.cell.CheckBoxListCell;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +24,8 @@ import java.util.ResourceBundle;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private final List<String> selectedSorterNames = new ArrayList<>();
-    private final List<String> selectedFilterNames = new ArrayList<>();
     public Tab inputTab;
+    public Tab filterTab;
     public Tab outputTab;
     public Tab entryTab;
 
@@ -35,23 +34,29 @@ public class SceneController implements Initializable {
     @FXML
     public Scene scene;
     @FXML
-    public ListView<String> availableFiltersListView;
-    @FXML
     public ListView<String> availableSortersListView;
     @FXML
     public EntryListController entryListController;
     @FXML
     public InputController inputController;
+    @FXML
+    public FilterController filterController;
     public Label statusLabel;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         initInputs();
+        initFilters();
         initOutputs();
         initEntries();
-        initAvailableFilterListView();
         initAvailableSorterListView();
         initStatusLabel();
+    }
+
+    private void initFilters() {
+        filterController = new FilterController();
+        filterController.initModel(dataModel);
+        filterTab.setContent(filterController);
     }
 
     private void initStatusLabel(){
@@ -79,13 +84,6 @@ public class SceneController implements Initializable {
         inputController = new InputController();
         inputController.initModel(dataModel);
         inputTab.setContent(inputController);
-    }
-
-    private void initAvailableFilterListView() {
-        setCellFactory(availableFiltersListView, selectedFilterNames);
-        List<String> filterNames = FilterPluginService.getInstance().getFilterNames();
-        log.debug("filterNames: {}", filterNames);
-        availableFiltersListView.getItems().addAll(filterNames);
     }
 
     private void initAvailableSorterListView() {
