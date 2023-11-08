@@ -2,13 +2,16 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.cell.CheckBoxListCell;
 import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.slf4j.Logger;
@@ -39,6 +42,7 @@ public class SceneController implements Initializable {
     public EntryListController entryListController;
     @FXML
     public InputController inputController;
+    public Label statusLabel;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -47,6 +51,16 @@ public class SceneController implements Initializable {
         initEntries();
         initAvailableFilterListView();
         initAvailableSorterListView();
+        initStatusLabel();
+    }
+
+    private void initStatusLabel(){
+        dataModel.getEntries().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatuslabel());
+    }
+
+    private void updateStatuslabel() {
+        String statusMessage = String.format("%s entries currently loaded", dataModel.getEntries().size());
+        statusLabel.setText(statusMessage);
     }
 
     private void initOutputs() {

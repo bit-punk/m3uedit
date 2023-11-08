@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.Scene?>
 <Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
@@ -36,5 +37,10 @@
                 </TabPane>
             </ScrollPane>
         </center>
+        <bottom>
+            <HBox>
+                <Label fx:id="statusLabel"/>
+            </HBox>
+        </bottom>
     </BorderPane>
 </Scene>
