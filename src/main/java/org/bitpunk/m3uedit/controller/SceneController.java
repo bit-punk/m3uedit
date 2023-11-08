@@ -59,7 +59,7 @@ public class SceneController implements Initializable {
     }
 
     private void updateStatuslabel() {
-        String statusMessage = String.format("%s entries currently loaded", dataModel.getEntries().size());
+        String statusMessage = String.format("%s entries loaded", dataModel.getEntries().size());
         statusLabel.setText(statusMessage);
     }
 
