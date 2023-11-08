@@ -22,11 +22,7 @@
                         xmlns:fx="http://javafx.com/fxml/1"
                         xmlns="http://javafx.com/javafx/17.0.2-ea">
                     <Tab text="Inputs" fx:id="inputTab"/>
-                    <Tab text="Filters">
-                        <VBox>
-                            <ListView fx:id="availableFiltersListView"/>
-                        </VBox>
-                    </Tab>
+                    <Tab text="Filters" fx:id="filterTab"/>
                     <Tab text="Sorters">
                         <VBox>
                             <ListView fx:id="availableSortersListView"/>

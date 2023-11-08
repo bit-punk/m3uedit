@@ -30,21 +30,12 @@ public class FilterPluginService {
         return Optional.ofNullable(filterDescription);
     }
 
-    public List<String> getFilterNames() {
-        List<String> filterNames = new ArrayList<>();
+    public List<Filter> getFilterPlugins() {
+        List<Filter> filterPlugins = new ArrayList<>();
         for (Filter currentFilter : loader) {
-            filterNames.add(currentFilter.getName());
+            filterPlugins.add(currentFilter);
         }
-        return filterNames;
+        return filterPlugins;
     }
 
-    public Filter getFilter(String selectedFilterName) {
-        Filter filter = null;
-        for (Filter currentFilter : loader) {
-            if (selectedFilterName.equals(currentFilter.getName())) {
-                filter = currentFilter;
-            }
-        }
-        return filter;
-    }
 }
