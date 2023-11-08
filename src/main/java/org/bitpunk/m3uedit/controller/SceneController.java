@@ -100,7 +100,7 @@ public class SceneController implements Initializable {
 
     @FXML
     @SuppressWarnings("unchecked")
-    private void populateEntryTable() {
+    public void loadPlayListData() {
         ObservableList<Entry> dataFromInputSource = FXCollections.observableArrayList();
         for (Input currentInput : inputController.getSelectedInputs()) {
             log.debug("reading from: {}", currentInput);
