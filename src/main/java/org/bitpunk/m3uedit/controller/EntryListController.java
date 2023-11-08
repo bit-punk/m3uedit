@@ -9,11 +9,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
 import javafx.scene.layout.VBox;
-import lombok.Getter;
-import lombok.Setter;
 import org.bitpunk.m3uedit.dialog.EntryDialogController;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.util.EntryMapper;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
@@ -34,9 +31,6 @@ public class EntryListController extends VBox implements Initializable {
     TableColumn<Entry, String> channelName;
     @FXML
     TableColumn<Entry, String> channelUri;
-    @Getter
-    @Setter
-    private TableView<Input> inputTableView;
     @FXML
     private final TableView<Entry> entryTableView = new TableView<>();
     @FXML
