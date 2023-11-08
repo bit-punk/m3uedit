@@ -3,7 +3,6 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.Scene?>
 <Scene fx:id="scene" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
        fx:controller="org.bitpunk.m3uedit.controller.SceneController" stylesheets="@css/scene.css">
@@ -23,11 +22,7 @@
                         xmlns="http://javafx.com/javafx/17.0.2-ea">
                     <Tab text="Inputs" fx:id="inputTab"/>
                     <Tab text="Filters" fx:id="filterTab"/>
-                    <Tab text="Sorters">
-                        <VBox>
-                            <ListView fx:id="availableSortersListView"/>
-                        </VBox>
-                    </Tab>
+                    <Tab text="Sorters" fx:id="sorterTab"/>
                     <Tab text="Playlist" fx:id="entryTab"/>
                     <Tab text="Outputs" fx:id="outputTab"/>
                 </TabPane>
