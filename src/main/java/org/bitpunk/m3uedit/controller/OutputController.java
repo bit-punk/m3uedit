@@ -3,12 +3,9 @@ package org.bitpunk.m3uedit.controller;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.VBox;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.output.Output;
@@ -17,12 +14,11 @@ import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class OutputController extends VBox implements Initializable, ModelAware {
+public class OutputController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
 
     @FXML
@@ -35,16 +31,7 @@ public class OutputController extends VBox implements Initializable, ModelAware 
     private DataModel dataModel;
 
     public OutputController() {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/Output.fxml"));
-
-        fxmlLoader.setRoot(this);
-        fxmlLoader.setController(this);
-
-        try {
-            fxmlLoader.load();
-        } catch (IOException exception) {
-            throw new RuntimeException(exception);
-        }
+        super("fxml/Output.fxml");
     }
 
     @Override

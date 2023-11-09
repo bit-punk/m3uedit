@@ -3,11 +3,8 @@ package org.bitpunk.m3uedit.controller;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.scene.control.ListView;
 import javafx.scene.control.cell.CheckBoxListCell;
-import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
@@ -15,12 +12,11 @@ import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class SorterController extends VBox implements Initializable, ModelAware {
+public class SorterController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(FilterController.class);
     private DataModel dataModel;
 
@@ -29,16 +25,7 @@ public class SorterController extends VBox implements Initializable, ModelAware 
 
     public SorterController() {
         // ToDo duplicate code
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/Sorter.fxml"));
-
-        fxmlLoader.setRoot(this);
-        fxmlLoader.setController(this);
-
-        try {
-            fxmlLoader.load();
-        } catch (IOException exception) {
-            throw new RuntimeException(exception);
-        }
+        super("fxml/Sorter.fxml");
     }
 
     @Override
