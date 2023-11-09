@@ -106,7 +106,6 @@ public class EntryListController extends AbstractController {
 
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
-        entryTableView.getColumns().setAll(indexColumn, channelNameColumn, channelUriColumn);
         entryTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
     }
 

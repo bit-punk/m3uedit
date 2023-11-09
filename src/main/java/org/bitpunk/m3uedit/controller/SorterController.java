@@ -24,7 +24,6 @@ public class SorterController extends AbstractController {
     public ListView<Sorter> availableSortersListView;
 
     public SorterController() {
-        // ToDo duplicate code
         super("fxml/Sorter.fxml");
     }
 
