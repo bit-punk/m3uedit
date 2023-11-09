@@ -47,7 +47,6 @@ public class FilterController extends AbstractController {
         dataModel.getFilters().forEach(filter -> filter.filter(dataModel.getEntries()));
     }
 
-    // ToDo duplicate code
     private void setCellFactory(ListView<Filter> availableFiltersListView, ObservableList<Filter> selectedItems) {
         availableFiltersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
             BooleanProperty observable = new SimpleBooleanProperty();
