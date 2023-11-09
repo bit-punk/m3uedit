@@ -31,6 +31,14 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 
 ## Developing
 
+### GitFlow
+
+[gitflow-maven-plugin](https://github.com/aleksandr-m/gitflow-maven-plugin)
+
+```bash
+./mvnw gitflow:feature-start
+```
+
 ### IntelliJ
 
 * To be able to run the JavaFX application from IntelliJ add the following VM options of your run-configuration:
