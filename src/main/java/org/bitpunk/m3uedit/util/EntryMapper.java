@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.util;
 import org.bitpunk.m3uedit.model.Entry;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class EntryMapper {
     private EntryMapper() {
@@ -18,7 +19,10 @@ public class EntryMapper {
         targetEntry.setRadio(sourceEntry.getRadio());
         targetEntry.setChannelUri(sourceEntry.getChannelUri());
         targetEntry.setName(sourceEntry.getName());
-        targetEntry.setVlcOpts(new HashMap<>(sourceEntry.getVlcOpts()));
+        Map<String, String> sourceVlcOpts = sourceEntry.getVlcOpts();
+        if (sourceVlcOpts != null) {
+            targetEntry.setVlcOpts(new HashMap<>(sourceVlcOpts));
+        }
     }
 
 }
