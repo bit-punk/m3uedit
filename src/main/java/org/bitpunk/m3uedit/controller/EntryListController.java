@@ -2,12 +2,9 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
-import javafx.scene.layout.VBox;
 import org.bitpunk.m3uedit.dialog.EntryDialogController;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
@@ -16,11 +13,10 @@ import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class EntryListController extends VBox implements Initializable, ModelAware {
+public class EntryListController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
 
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
@@ -37,16 +33,7 @@ public class EntryListController extends VBox implements Initializable, ModelAwa
     private DataModel dataModel;
 
     public EntryListController() {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/EntryList.fxml"));
-
-        fxmlLoader.setRoot(this);
-        fxmlLoader.setController(this);
-
-        try {
-            fxmlLoader.load();
-        } catch (IOException exception) {
-            throw new RuntimeException(exception);
-        }
+        super("fxml/EntryList.fxml");
     }
 
     @Override
