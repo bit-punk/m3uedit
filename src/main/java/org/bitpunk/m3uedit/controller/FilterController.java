@@ -20,12 +20,13 @@ import java.util.ResourceBundle;
 
 public class FilterController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(FilterController.class);
+    public static final String FXML_FILTER = "fxml/Filter.fxml";
     @FXML
     public ListView<Filter> availableFiltersListView;
     private DataModel dataModel;
 
     public FilterController() {
-        super("fxml/Filter.fxml");
+        super(FXML_FILTER);
     }
 
     @Override

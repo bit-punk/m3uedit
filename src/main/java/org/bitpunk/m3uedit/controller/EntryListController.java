@@ -5,7 +5,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
-import org.bitpunk.m3uedit.dialog.EntryDialogController;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.EntryMapper;
@@ -20,12 +19,13 @@ public class EntryListController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
 
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
+    public static final String FXML_ENTRY_LIST = "fxml/EntryList.fxml";
     @FXML
-    public TableColumn<Entry, String> indexColumn;
+    private TableColumn<Entry, String> indexColumn;
     @FXML
-    TableColumn<Entry, String> channelNameColumn;
+    private TableColumn<Entry, String> channelNameColumn;
     @FXML
-    TableColumn<Entry, String> channelUriColumn;
+    private TableColumn<Entry, String> channelUriColumn;
     @FXML
     private TableView<Entry> entryTableView;
     @FXML
@@ -33,7 +33,7 @@ public class EntryListController extends AbstractController {
     private DataModel dataModel;
 
     public EntryListController() {
-        super("fxml/EntryList.fxml");
+        super(FXML_ENTRY_LIST);
     }
 
     @Override

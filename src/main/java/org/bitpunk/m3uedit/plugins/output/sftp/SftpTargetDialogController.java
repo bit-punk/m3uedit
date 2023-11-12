@@ -4,11 +4,13 @@ import jakarta.validation.ConstraintViolation;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.stage.Modality;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.util.Callback;
 import lombok.Getter;
-import org.bitpunk.m3uedit.dialog.AbstractDialog;
+import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
@@ -19,8 +21,9 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class SftpTargetDialogController extends AbstractDialog<SftpConnection> implements Initializable {
+public class SftpTargetDialogController extends AbstractDialogController<SftpConnection> implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SftpTargetDialogController.class);
+    public static final String FXML_PLUGIN_OUTPUT_SFTP = "plugin/output/sftp/SftpTargetDialog.fxml";
     @FXML
     public ButtonType okButtonType;
     @FXML
@@ -37,9 +40,8 @@ public class SftpTargetDialogController extends AbstractDialog<SftpConnection> i
     private BooleanBinding inputsFull;
 
     public SftpTargetDialogController() {
-        initModality(Modality.APPLICATION_MODAL);
+        super(FXML_PLUGIN_OUTPUT_SFTP,"Enter SFTP-Connection");
         setResizable(true);
-        setTitle("Enter SFTP-Connection");
         setResultConverter(getURIResultConverter());
     }
 
