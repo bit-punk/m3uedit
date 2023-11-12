@@ -18,13 +18,14 @@ import java.util.ResourceBundle;
 
 public class SorterController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(FilterController.class);
+    public static final String FXML_SORTER = "fxml/Sorter.fxml";
     private DataModel dataModel;
 
     @FXML
     public ListView<Sorter> availableSortersListView;
 
     public SorterController() {
-        super("fxml/Sorter.fxml");
+        super(FXML_SORTER);
     }
 
     @Override
