@@ -4,9 +4,12 @@ import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.PojoValidator;
@@ -93,6 +96,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeBinding();
+        initKeyEventHandler();
     }
 
     private void initializeBinding() {
@@ -109,7 +113,6 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
                         channelUriTextField.textProperty(),
                         nameTextField.textProperty());
                 // @formatter:on
-                // Todo validate VlcOpts ??
             }
 
             @Override
@@ -117,6 +120,15 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
                 return isValidBean(getEntry());
             }
         };
+    }
+
+    private void initKeyEventHandler() {
+        Scene scene = getDialogPane().getScene();
+        scene.addEventHandler(KeyEvent.KEY_RELEASED, (KeyEvent event) -> {
+            if (KeyCode.ESCAPE == event.getCode()) {
+                close();
+            }
+        });
     }
 
     private boolean isValidBean(Entry entry) {
@@ -144,7 +156,6 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
                 case "channelUri" -> markFieldInvalid(channelUriTextField, errorMessage);
                 case "name" -> markFieldInvalid(nameTextField, errorMessage);
             }
-            // ToDo color VlcOpts in case of validation errors
         }
     }
 
