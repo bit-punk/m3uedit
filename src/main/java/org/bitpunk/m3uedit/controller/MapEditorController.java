@@ -83,10 +83,7 @@ public class MapEditorController extends AbstractController {
     }
 
     private boolean isUniqueKey(String newKey) {
-        long numberOfMatches = vlcOptionsTableView.getItems().stream().filter(e -> e.getKey().equals(newKey)).count();
-        log.debug("items: {}", vlcOptionsTableView.getItems());
-        log.debug("new key {} is unique {}", newKey, numberOfMatches);
-        return numberOfMatches <= 1;
+        return vlcOptionsTableView.getItems().stream().noneMatch(e -> e.getKey().equals(newKey));
     }
 
     @Override

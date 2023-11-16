@@ -1,9 +1,6 @@
 package org.bitpunk.m3uedit.control;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.css.PseudoClass;
+import javafx.beans.binding.StringBinding;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
@@ -14,42 +11,52 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Predicate;
 
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+public class ValidatingEditingCell<T> extends TableCell<T, String> {
 
-public class ValidatingEditingCell<S> extends TableCell<S, String> {
-
-    private static final PseudoClass INVALID = PseudoClass.getPseudoClass("invalid");
+    public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
     private static final Logger log = LoggerFactory.getLogger(ValidatingEditingCell.class);
+    private final TextField textField = new TextField();
+    private StringBinding isInputValid;
 
-    private final TextField textField;
-    private final BooleanProperty booleanProperty = new SimpleBooleanProperty();
 
     public ValidatingEditingCell(Predicate<String> validator) {
-        this.textField = new TextField();
-        booleanProperty.bind(Bindings.createBooleanBinding(() ->
-                isNotEmpty(textField.getText()) && validator.test(textField.getText()),
-                textField.textProperty()));
-        booleanProperty.addListener((obs, wasValid, isValid) -> pseudoClassStateChanged(INVALID, !isValid));
-        pseudoClassStateChanged(INVALID, !booleanProperty.get());
-
-        textField.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
-            if (e.getCode() == KeyCode.ENTER && booleanProperty.get()) {
-                commitEdit(textField.getText());
-                getScene().getRoot().requestFocus();
-            }
-            if (e.getCode() == KeyCode.ESCAPE) {
-                cancelEdit();
-            }
-        });
+        initializeBinding(validator);
+        initTextField();
+        textField.styleProperty().bind(isInputValid);
 
         setGraphic(textField);
         setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
+    private void initTextField() {
+        textField.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+            if (e.getCode() == KeyCode.ENTER && isInputValid.get().isEmpty()) {
+                commitEdit(textField.getText());
+                e.consume();
+            }
+            if (e.getCode() == KeyCode.ESCAPE) {
+                cancelEdit();
+            }
+        });
+    }
+
+    private void initializeBinding(Predicate<String> validator) {
+        isInputValid = new StringBinding() {
+            {
+                bind(textField.textProperty());
+            }
+
+            @Override
+            protected String computeValue() {
+                return validator.test(textField.getText()) ? "" : CSS_INVALID_TEXT_FIELD_INPUT;
+            }
+        };
+    }
+
     @Override
     protected void updateItem(String item, boolean empty) {
-        log.debug("updateItem({}, {})", item, empty);
         super.updateItem(item, empty);
+        log.debug("updateItem({}, {})", item, empty);
         setText(empty ? null : item);
         textField.setText(empty ? null : item);
         setContentDisplay(isEditing() ? ContentDisplay.GRAPHIC_ONLY : ContentDisplay.TEXT_ONLY);
@@ -57,24 +64,25 @@ public class ValidatingEditingCell<S> extends TableCell<S, String> {
 
     @Override
     public void cancelEdit() {
-        log.debug("cancelEdit()");
         super.cancelEdit();
+        log.debug("cancelEdit()");
         setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
     @Override
     public void commitEdit(String newValue) {
-        log.debug("commitEdit({})", newValue);
         super.commitEdit(newValue);
+        log.debug("commitEdit({})", newValue);
         setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
     @Override
     public void startEdit() {
-        log.debug("startEdit()");
         super.startEdit();
+        log.debug("startEdit()");
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         textField.selectAll();
         textField.requestFocus();
     }
+
 }
