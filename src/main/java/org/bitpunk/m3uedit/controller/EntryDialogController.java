@@ -10,7 +10,6 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
@@ -47,8 +46,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     public MapEditorController mapEditorController;
     @FXML
     ButtonType okButtonType;
-    @Getter
-    private BooleanBinding inputsValid;
+    private BooleanBinding isInputValid;
 
     public EntryDialogController() {
 
@@ -60,7 +58,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
             return (T) getEntry();
         });
 
-        getDialogPane().lookupButton(okButtonType).disableProperty().bind(getInputsValid().not());
+        getDialogPane().lookupButton(okButtonType).disableProperty().bind(isInputValid.not());
 
         setOnShowing(dialogEvent -> Platform.runLater(() -> durationTextField.requestFocus()));
     }
@@ -100,7 +98,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     private void initializeBinding() {
-        inputsValid = new BooleanBinding() {
+        isInputValid = new BooleanBinding() {
             {
                 // @formatter:off
                 bind(durationTextField.textProperty(),
