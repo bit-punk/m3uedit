@@ -8,14 +8,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class SceneController implements Initializable {
-    private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     public Tab inputTab;
     public Tab filterTab;
     public Tab sorterTab;

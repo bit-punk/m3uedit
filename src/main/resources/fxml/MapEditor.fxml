@@ -1,0 +1,19 @@
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml" stylesheets="@css/validating-cell.css">
+    <TableView fx:id="vlcOptionsTableView" editable="true">
+        <columns>
+            <TableColumn fx:id="keyColumn" maxWidth="70" text="Key"/>
+            <TableColumn fx:id="valueColumn" maxWidth="70" text="Value"/>
+        </columns>
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+        </columnResizePolicy>
+    </TableView>
+    <HBox>
+        <TextField fx:id="newKeyTextField" promptText="key"/>
+        <TextField fx:id="newValueTextField" promptText="value"/>
+        <Button fx:id="addNewPropertyButton" text="Add"/>
+    </HBox>
+</fx:root>

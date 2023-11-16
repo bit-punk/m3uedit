@@ -1,26 +1,29 @@
-package org.bitpunk.m3uedit.dialog;
+package org.bitpunk.m3uedit.controller;
 
 import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.control.*;
-import javafx.stage.Modality;
-import lombok.Getter;
+import javafx.scene.Scene;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class EntryDialogController<T> extends AbstractDialog<T> {
+public class EntryDialogController<T> extends AbstractDialogController<T> {
+    public static final String FXML_ENTRY_DIALOG = "fxml/EntryDialog.fxml";
     private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
+
     @FXML
     public TextField durationTextField;
     @FXML
@@ -40,41 +43,27 @@ public class EntryDialogController<T> extends AbstractDialog<T> {
     @FXML
     public TextField nameTextField;
     @FXML
-    TableView vlcOptionsTableView;
+    public MapEditorController mapEditorController;
     @FXML
     ButtonType okButtonType;
-    @Getter
-    private BooleanBinding inputsValid;
+    private BooleanBinding isInputValid;
 
     public EntryDialogController() {
-        try {
-            FXMLLoader loader = new FXMLLoader();
-            loader.setLocation(getClass().getClassLoader().getResource("dialog/EntryDialog.fxml"));
-            loader.setController(this);
 
-            DialogPane dialogPane = loader.load();
+        super(FXML_ENTRY_DIALOG, "Edit Entry");
+        setResultConverter(buttonType -> {
+            if (!Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
+                return null;
+            }
+            return (T) getEntry();
+        });
 
-            initModality(Modality.APPLICATION_MODAL);
+        getDialogPane().lookupButton(okButtonType).disableProperty().bind(isInputValid.not());
 
-            setResizable(true);
-            setTitle("Edit Entry");
-            setDialogPane(dialogPane);
-            setResultConverter(buttonType -> {
-                if (!Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
-                    return null;
-                }
-                return (T) createEntryFromInput();
-            });
-
-            dialogPane.lookupButton(okButtonType).disableProperty().bind(getInputsValid().not());
-
-            setOnShowing(dialogEvent -> Platform.runLater(() -> durationTextField.requestFocus()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        setOnShowing(dialogEvent -> Platform.runLater(() -> durationTextField.requestFocus()));
     }
 
-    private Entry createEntryFromInput() {
+    private Entry getEntry() {
         Entry entry = new Entry();
         entry.setDuration(durationTextField.getText());
         entry.setGroupTitle(groupTitleTextField.getText());
@@ -85,18 +74,31 @@ public class EntryDialogController<T> extends AbstractDialog<T> {
         entry.setRadio(radioTextField.getText());
         entry.setChannelUri(channelUriTextField.getText());
         entry.setName(nameTextField.getText());
-        // ToDo set VlcOptions
-//        entry.setVlcOpts(vlcOptionsTableView.getItems());
+        entry.setVlcOpts(mapEditorController.getMap());
         return entry;
+    }
+
+    public void setEntry(Entry entry) {
+        durationTextField.setText(entry.getDuration());
+        groupTitleTextField.setText(entry.getGroupTitle());
+        tvgIdTextField.setText(entry.getTvgId());
+        tvgNameTextField.setText(entry.getTvgName());
+        tvgLogoTextField.setText(entry.getTvgLogo());
+        tvgShiftTextField.setText(entry.getTvgShift());
+        radioTextField.setText(entry.getRadio());
+        channelUriTextField.setText(entry.getChannelUri());
+        nameTextField.setText(entry.getName());
+        mapEditorController.setMap(entry.getVlcOpts());
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeBinding();
+        initKeyEventHandler();
     }
 
     private void initializeBinding() {
-        inputsValid = new BooleanBinding() {
+        isInputValid = new BooleanBinding() {
             {
                 // @formatter:off
                 bind(durationTextField.textProperty(),
@@ -109,14 +111,22 @@ public class EntryDialogController<T> extends AbstractDialog<T> {
                         channelUriTextField.textProperty(),
                         nameTextField.textProperty());
                 // @formatter:on
-                // Todo validate VlcOpts ??
             }
 
             @Override
             protected boolean computeValue() {
-                return isValidBean(createEntryFromInput());
+                return isValidBean(getEntry());
             }
         };
+    }
+
+    private void initKeyEventHandler() {
+        Scene scene = getDialogPane().getScene();
+        scene.addEventHandler(KeyEvent.KEY_RELEASED, (KeyEvent event) -> {
+            if (KeyCode.ESCAPE == event.getCode()) {
+                close();
+            }
+        });
     }
 
     private boolean isValidBean(Entry entry) {
@@ -144,7 +154,6 @@ public class EntryDialogController<T> extends AbstractDialog<T> {
                 case "channelUri" -> markFieldInvalid(channelUriTextField, errorMessage);
                 case "name" -> markFieldInvalid(nameTextField, errorMessage);
             }
-            // ToDo color VlcOpts in case of validation errors
         }
     }
 
@@ -160,9 +169,4 @@ public class EntryDialogController<T> extends AbstractDialog<T> {
         resetTextField(nameTextField);
     }
 
-    public void setEntry(Entry entry) {
-        durationTextField.setText(entry.getDuration());
-        nameTextField.setText(entry.getName());
-        channelUriTextField.setText(entry.getChannelUri());
-    }
 }

@@ -31,6 +31,14 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 
 ## Developing
 
+### GitFlow
+
+[gitflow-maven-plugin](https://github.com/aleksandr-m/gitflow-maven-plugin)
+
+```bash
+./mvnw gitflow:feature-start
+```
+
 ### IntelliJ
 
 * To be able to run the JavaFX application from IntelliJ add the following VM options of your run-configuration:
@@ -69,3 +77,6 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [com.jcraft.jsch.JSchException: UnknownHostKey](https://stackoverflow.com/questions/2003419/com-jcraft-jsch-jschexception-unknownhostkey)
 #### JSR303
 * [JSR 303 Annotations List](https://howtodoinjava.com/spring-mvc/spring-bean-validation-example-with-jsr-303-annotations/#6-jsr-303-annotations-list)
+#### TableView validation
+* [ListView validate edit and prevent commit](https://stackoverflow.com/questions/35281105/listview-validate-edit-and-prevent-commit)
+* [JavaFX 8 TableView Cell Renderer](https://code.makery.ch/blog/javafx-8-tableview-cell-renderer/)

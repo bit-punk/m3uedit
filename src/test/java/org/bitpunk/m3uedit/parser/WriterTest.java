@@ -18,12 +18,13 @@ class WriterTest {
 
     @Test
     void testWrite() {
-        String testFilname = "/tvhd_orig.m3u";
-        List<Entry> entries = new Parser().parse(WriterTest.class.getResourceAsStream(testFilname));
+        String testFilename = "/tvhd_orig.m3u";
+        String referenceFilename = "/tvhd_reference.m3u";
+        List<Entry> entries = new Parser().parse(WriterTest.class.getResourceAsStream(testFilename));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         new Writer().write(entries, baos);
-        assertThat(baos.toString(), is(getOrigFile(testFilname)));
+        assertThat(baos.toString(), is(getOrigFile(referenceFilename)));
     }
 
     @Test

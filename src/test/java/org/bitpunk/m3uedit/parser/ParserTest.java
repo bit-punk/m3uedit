@@ -5,7 +5,9 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,10 +56,19 @@ class ParserTest {
     }
 
     @Test
-    void testParse2() {
+    void testParseVlcOption() {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/tvhd_orig.m3u"));
         assertThat(entries, hasSize(30));
         assertThat(entries, everyItem(hasProperty("vlcOpts", hasEntry("network-caching", "1000"))));
+    }
+
+    @Test
+    void testParseMultipleVlcOpts() {
+        List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/tvhd_orig.m3u"));
+        assertThat(entries, hasSize(30));
+        Entry entry = entries.get(0);
+        assertThat(entry.getName(), is("Das Erste HD"));
+        assertThat(entry.getVlcOpts(), aMapWithSize(3));
     }
 
     @Test
@@ -121,6 +132,7 @@ class ParserTest {
     @Test
     void testWrongStream() throws IOException {
         InputStream stream = ParserTest.class.getResourceAsStream("/test_global_tvg_shift.m3u");
+        assertThat(stream, is(notNullValue()));
         stream.close();
         Assertions.assertThrows(ParsingException.class, () -> new Parser().parse(stream));
     }

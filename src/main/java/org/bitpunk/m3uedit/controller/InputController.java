@@ -22,6 +22,7 @@ import java.util.ResourceBundle;
 
 public class InputController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(InputController.class);
+    public static final String FXML_INPUT = "fxml/Input.fxml";
     @FXML
     public ComboBox<String> addInputComboBox;
     @FXML
@@ -29,7 +30,7 @@ public class InputController extends AbstractController {
     private DataModel dataModel;
 
     public InputController() {
-        super("fxml/Input.fxml");
+        super(FXML_INPUT);
     }
 
     @Override
