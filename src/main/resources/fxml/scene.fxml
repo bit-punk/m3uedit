@@ -12,6 +12,9 @@
                 <Menu text="File">
                     <MenuItem onAction="#handleExitAction" text="Exit"/>
                 </Menu>
+                <Menu text="Help">
+                    <MenuItem onAction="#handleAboutAction" text="About"/>
+                </Menu>
             </MenuBar>
         </top>
         <center>
