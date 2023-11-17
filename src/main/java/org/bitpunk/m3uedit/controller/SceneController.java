@@ -87,4 +87,9 @@ public class SceneController implements Initializable {
         System.exit(0);
     }
 
+    public void handleAboutAction() {
+        AboutDialogController aboutDialogController = new AboutDialogController("fxml/AboutDialog.fxml", "About m3uedit");
+        aboutDialogController.show();
+    }
+
 }
