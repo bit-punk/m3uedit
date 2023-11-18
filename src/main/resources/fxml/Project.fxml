@@ -1,0 +1,16 @@
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml" stylesheets="@css/project.css">
+    <ScrollPane fitToHeight="true" fitToWidth="true">
+        <TabPane rotateGraphic="true"
+                 side="LEFT" tabClosingPolicy="UNAVAILABLE"
+                 xmlns:fx="http://javafx.com/fxml/1"
+                 xmlns="http://javafx.com/javafx/17.0.2-ea">
+            <Tab text="Inputs" fx:id="inputTab"/>
+            <Tab text="Filters" fx:id="filterTab"/>
+            <Tab text="Sorters" fx:id="sorterTab"/>
+            <Tab text="Playlist" fx:id="entryTab"/>
+            <Tab text="Outputs" fx:id="outputTab"/>
+        </TabPane>
+    </ScrollPane>
+</fx:root>
