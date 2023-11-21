@@ -16,6 +16,22 @@
                             <KeyCodeCombination alt="UP" code="N" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                         </accelerator>
                     </MenuItem>
+                    <MenuItem onAction="#handleOpenProjectAction" text="Open Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <MenuItem fx:id="saveProjectMenuItem" onAction="#handleSaveProjectAction" text="Save Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <MenuItem fx:id="closeProjectMenuItem" disable="true" onAction="#handleCloseProjectAction" text="Close Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="W" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <SeparatorMenuItem/>
                     <MenuItem onAction="#handleExitAction" text="Exit"/>
                 </Menu>
                 <Menu text="Help">

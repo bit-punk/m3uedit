@@ -11,6 +11,7 @@ import javafx.stage.Modality;
 import java.io.IOException;
 
 abstract public class AbstractDialogController<T> extends Dialog<T> implements Initializable {
+    // ToDo re-style, align with other CSS-styles
     public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red";
 
     public AbstractDialogController(String fxmlFileName, String dialogTitle) {

@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 @Data
 public class DataModel {
     private static final Logger log = LoggerFactory.getLogger(DataModel.class);
+    private String name;
 
     private ObservableList<Input> inputs = FXCollections.observableArrayList();
     private ObservableList<Filter> filters = FXCollections.observableArrayList();
@@ -43,4 +44,5 @@ public class DataModel {
             output.write(entries);
         });
     }
+
 }
