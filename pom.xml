@@ -24,6 +24,7 @@
         <main.class>org.bitpunk.m3uedit.Main</main.class>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <expressly.version>5.0.0</expressly.version>
+        <xstream.version>1.4.20</xstream.version>
     </properties>
 
     <dependencies>
@@ -106,6 +107,12 @@
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
             <version>0.1.55</version>
+        </dependency>
+        <!-- serialisation of project-data to XML-file -->
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>${xstream.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>

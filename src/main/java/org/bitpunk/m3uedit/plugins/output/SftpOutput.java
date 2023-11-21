@@ -1,19 +1,17 @@
 package org.bitpunk.m3uedit.plugins.output;
 
 import com.jcraft.jsch.*;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.DialogPane;
 import lombok.Getter;
-import org.bitpunk.m3uedit.plugins.output.sftp.SftpTargetDialogController;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
+import org.bitpunk.m3uedit.plugins.output.sftp.SftpTargetDialogController;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -65,19 +63,11 @@ public class SftpOutput implements Output {
         log.debug("configure()");
         SftpTargetDialogController dialogController;
         DialogPane dialogPane;
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("plugin/output/sftp/SftpTargetDialog.fxml"));
-            dialogPane = loader.load();
-            dialogController = loader.getController();
-            dialogController.setDialogPane(dialogPane);
-
-            dialogPane.lookupButton(dialogController.okButtonType)
-                    .disableProperty()
-                    .bind(dialogController.getInputsFull().not());
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        dialogController = new SftpTargetDialogController();
+        dialogPane = dialogController.getDialogPane();
+        dialogPane.lookupButton(dialogController.okButtonType)
+                .disableProperty()
+                .bind(dialogController.getInputsFull().not());
         dialogController.showAndWait().ifPresent(uri -> sftpConnection = uri);
     }
 
