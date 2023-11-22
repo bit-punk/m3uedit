@@ -82,6 +82,7 @@ public class ProjectPersisterUtil {
                 "org.bitpunk.m3uedit.plugins.sorter.*",
                 "org.bitpunk.m3uedit.model.DataModel",
                 "org.bitpunk.m3uedit.model.Entry",
+                "com.sun.javafx.collections.ObservableListWrapper",
                 "java.lang.String"
         });
         // @formatter:on

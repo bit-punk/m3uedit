@@ -1,0 +1,88 @@
+<Project>
+  <name>Kurt</name>
+  <inputs class="com.sun.javafx.collections.ObservableListWrapper">
+    <FileInput>
+      <name>File Input</name>
+      <description>Reads a playlist from a local file.</description>
+      <source></source>
+    </FileInput>
+    <FritzBoxInput>
+      <name>FritzBox Input</name>
+      <description>Downloads a playlist from a FritzBox.</description>
+      <source>http://fritz.box//dvb/m3u/tvsd.m3u</source>
+    </FritzBoxInput>
+  </inputs>
+  <filters class="com.sun.javafx.collections.ObservableListWrapper">
+    <ChannelNameFilter>
+      <excludeRegexes>
+        <string>(?i).*QVC.*</string>
+        <string>.*HSE.*</string>
+        <string>.*1-2-3.*</string>
+      </excludeRegexes>
+      <name>ChannelName Filter</name>
+      <description>Filters entries based on the channelName using a List of regular expressions</description>
+    </ChannelNameFilter>
+    <UniqueNameFilter>
+      <name>Unique Name Filter</name>
+      <description>Filters for unique entries (criteria: channelName)</description>
+    </UniqueNameFilter>
+    <SdChannelFilter>
+      <name>SD Channel Filter</name>
+      <description>Filters for SD channels (criteria: the same channelName exists with a &apos;HD&apos; suffix)</description>
+    </SdChannelFilter>
+  </filters>
+  <sorters class="com.sun.javafx.collections.ObservableListWrapper">
+    <ChannelNameSorter>
+      <name>ChannelName Sorter</name>
+      <description>sorts list alphabetically</description>
+    </ChannelNameSorter>
+  </sorters>
+  <entries class="com.sun.javafx.collections.ObservableListWrapper">
+    <Entry>
+      <duration>-1</duration>
+      <groupTitle>TV</groupTitle>
+      <tvgId>La_Une</tvgId>
+      <tvgName>La Une HD</tvgName>
+      <tvgLogo>../logo/La_Une.png</tvgLogo>
+      <tvgShift>1</tvgShift>
+      <radio>false</radio>
+      <channelUri>http://panel.globepremium.com:8000/live/xxx/yyy/84.ts</channelUri>
+      <name>La Une HD</name>
+      <vlcOpts/>
+    </Entry>
+    <Entry>
+      <duration>-1</duration>
+      <groupTitle>TV</groupTitle>
+      <tvgId>La_Deux</tvgId>
+      <tvgName>La Deux HD</tvgName>
+      <tvgLogo>../logo/La_Deux.png</tvgLogo>
+      <tvgShift>2</tvgShift>
+      <radio>false</radio>
+      <channelUri>http://panel.globepremium.com:8000/live/xxx/yyy/85.ts</channelUri>
+      <name>La Deux HD</name>
+      <vlcOpts/>
+    </Entry>
+    <Entry>
+      <duration>-1</duration>
+      <groupTitle>TV</groupTitle>
+      <tvgId>RTL_TVI</tvgId>
+      <tvgName>RTL TVI HD</tvgName>
+      <tvgLogo>../logo/RTL_TVI.png</tvgLogo>
+      <tvgShift>3</tvgShift>
+      <radio>false</radio>
+      <channelUri>http://panel.globepremium.com:8000/live/xxx/yyy/719.ts</channelUri>
+      <name>RTL TVI HD</name>
+      <vlcOpts/>
+    </Entry>
+  </entries>
+  <outputs class="com.sun.javafx.collections.ObservableListWrapper">
+    <FileOutput>
+      <name>File Output</name>
+      <description>Writes a playlist to a local file.</description>
+    </FileOutput>
+    <SftpOutput>
+      <name>SFTP Output</name>
+      <description>writes a playlist to a SFTP server.</description>
+    </SftpOutput>
+  </outputs>
+</Project>
