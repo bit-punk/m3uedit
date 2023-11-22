@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogEvent;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -25,42 +26,50 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
 
     @FXML
-    public TextField durationTextField;
+    private TextField durationTextField;
     @FXML
-    public TextField groupTitleTextField;
+    private TextField groupTitleTextField;
     @FXML
-    public TextField tvgIdTextField;
+    private TextField tvgIdTextField;
     @FXML
-    public TextField tvgNameTextField;
+    private TextField tvgNameTextField;
     @FXML
-    public TextField tvgLogoTextField;
+    private TextField tvgLogoTextField;
     @FXML
-    public TextField tvgShiftTextField;
+    private TextField tvgShiftTextField;
     @FXML
-    public TextField radioTextField;
+    private TextField radioTextField;
     @FXML
-    public TextField channelUriTextField;
+    private TextField channelUriTextField;
     @FXML
-    public TextField nameTextField;
+    private TextField nameTextField;
     @FXML
-    public MapEditorController mapEditorController;
+    private MapEditorController mapEditorController;
     @FXML
-    ButtonType okButtonType;
+    private ButtonType okButtonType;
     private BooleanBinding isInputValid;
 
     public EntryDialogController() {
-
         super(FXML_ENTRY_DIALOG, "Edit Entry");
+        setResultConverter();
+        disableOkButtonOnInvalidInput();
+        setOnShowing(this::requestFocus);
+    }
+
+    private void setResultConverter() {
         setResultConverter(buttonType -> {
             if (!Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
                 return null;
             }
             return (T) getEntry();
         });
+    }
 
+    private void disableOkButtonOnInvalidInput() {
         getDialogPane().lookupButton(okButtonType).disableProperty().bind(isInputValid.not());
-
-        setOnShowing(dialogEvent -> Platform.runLater(() -> durationTextField.requestFocus()));
+    }
+    private void requestFocus(DialogEvent dialogEvent) {
+        Platform.runLater(() -> durationTextField.requestFocus());
     }
 
     private Entry getEntry() {

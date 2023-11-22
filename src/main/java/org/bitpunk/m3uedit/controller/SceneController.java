@@ -9,7 +9,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.util.DataModelMapper;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +44,14 @@ public class SceneController implements Initializable {
 
     public void handleNewProjectAction() {
         String newProjectName = getNewProjectName();
-        if (isNotEmpty(newProjectName)) {
-            Tab newProjectTab = new Tab(newProjectName);
-            newProjectTab.setContent(addNewProject(newProjectName));
+        addNewProjectTab(newProjectName, new DataModel());
+    }
+
+    private void addNewProjectTab(String projectName, DataModel dataModel) {
+        ProjectController projectController = getProjectController(projectName, dataModel);
+        if (isNotEmpty(projectName)) {
+            Tab newProjectTab = new Tab(projectName);
+            newProjectTab.setContent(projectController);
             newProjectTab.setOnClosed(this::closeSelectedProjectTab);
             tabPane.getTabs().add(newProjectTab);
         }
@@ -69,11 +73,6 @@ public class SceneController implements Initializable {
         dialog.setContentText("Please enter the name of your new project:");
         Optional<String> result = dialog.showAndWait();
         return result.orElse("");
-    }
-
-    private ProjectController addNewProject(String newProjectName) {
-        DataModel dataModel = new DataModel();
-        return getProjectController(newProjectName, dataModel);
     }
 
     private ProjectController getProjectController(String newProjectName, DataModel dataModel) {
@@ -110,14 +109,15 @@ public class SceneController implements Initializable {
         DataModel dataModel;
         log.debug("Loading new Project ...");
         try {
-            dataModel = DataModelMapper.mapToDataModel(ProjectPersisterUtil.loadProject());
+            dataModel = ProjectPersisterUtil.openFileDialogAndLoadProject();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         dataModelMap.put(dataModel.getName(), dataModel);
+        addNewProjectTab(dataModel.getName(), dataModel);
     }
 
-    public void handleSaveProjectAction() throws IOException {
+    public void handleSaveProjectAction() {
         ProjectPersisterUtil.openSaveDialogAndSaveProject(getCurrentlySelectedProject().getDataModel());
     }
 

@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.model;
 
+import jakarta.validation.constraints.NotNull;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -16,6 +17,7 @@ import java.io.FileNotFoundException;
 @Data
 public class DataModel {
     private static final Logger log = LoggerFactory.getLogger(DataModel.class);
+    @NotNull
     private String name;
 
     private ObservableList<Input> inputs = FXCollections.observableArrayList();
