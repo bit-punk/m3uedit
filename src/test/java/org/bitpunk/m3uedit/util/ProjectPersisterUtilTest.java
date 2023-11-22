@@ -39,7 +39,7 @@ class ProjectPersisterUtilTest {
 
     @Test
     void testReadProjectFile() {
-        DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of("target/testproject.m3uproj"));
+        DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of("src/test/resources/project/testproject.m3uproj"));
         assertThat(dataModel, is(notNullValue()));
         assertThat(dataModel.getSorters(), hasSize(1));
     }
