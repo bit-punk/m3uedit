@@ -4,7 +4,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.model.Project;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.filter.ChannelNameFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -32,15 +31,15 @@ class ProjectPersisterUtilTest {
 
     @Test
     void testWriteProjectFile() {
-        Project project = DataModelMapper.mapToProject(getDataModel());
+        DataModel dataModel = getDataModel();
         String fileName = "target/testproject.m3uproj";
-        ProjectPersisterUtil.saveProjectFile(fileName, project);
+        ProjectPersisterUtil.saveProjectFile(fileName, dataModel);
         assertThat(Files.exists(Path.of(fileName)), is(true));
     }
 
     @Test
     void testReadProjectFile() {
-        DataModel dataModel = DataModelMapper.mapToDataModel(ProjectPersisterUtil.loadProject(Path.of("target/testproject.m3uproj")));
+        DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of("target/testproject.m3uproj"));
         assertThat(dataModel, is(notNullValue()));
         assertThat(dataModel.getSorters(), hasSize(1));
     }
