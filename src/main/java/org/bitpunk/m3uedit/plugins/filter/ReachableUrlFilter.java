@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.filter;
 
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
@@ -17,7 +18,9 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = false)
 public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(ReachableUrlFilter.class);
+    @XStreamOmitField
     private final String name = "Reachable URL Filter";
+    @XStreamOmitField
     private final String description = "Filters for entries with an unreachable URL";
 
     @Override

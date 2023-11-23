@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input;
 
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.TextInputDialog;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,8 +21,9 @@ import java.util.Optional;
 @Data
 @Slf4j
 public class FritzBoxInput extends AbstractInput implements Input {
-
+    @XStreamOmitField
     private final String name = "FritzBox Input";
+    @XStreamOmitField
     private final String description = "Downloads a playlist from a FritzBox.";
     String source = "http://fritz.box//dvb/m3u/tvsd.m3u";
 

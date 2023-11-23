@@ -27,13 +27,13 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private final ObservableMap<String, DataModel> dataModelMap = FXCollections.observableMap(new HashMap<>());
+    public Label statusLabel;
+    public MenuItem saveProjectMenuItem;
+    public MenuItem closeProjectMenuItem;
     @FXML
     private Scene scene;
     @FXML
     private TabPane tabPane;
-    public Label statusLabel;
-    public MenuItem saveProjectMenuItem;
-    public MenuItem closeProjectMenuItem;
 
     @FXML
     private void handleExitAction() {
@@ -93,10 +93,11 @@ public class SceneController implements Initializable {
         tabPane.getSelectionModel().selectedItemProperty().addListener((ov, t, t1) -> updateStatusLabel(t1));
     }
 
-    private void updateStatusLabel(Tab t1) {
-        log.debug("changed Tab to: {}", t1);
-        if (t1 != null) {
-            ((ProjectController) t1.getContent()).updateStatusLabel();
+    private void updateStatusLabel(Tab selectedTab) {
+        if (selectedTab != null) {
+            ProjectController projectController = (ProjectController) selectedTab.getContent();
+            log.debug("changed Tab to: {}", projectController.getDataModel());
+            projectController.updateStatusLabel();
         }
     }
 
