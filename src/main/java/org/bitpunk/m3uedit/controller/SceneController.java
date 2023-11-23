@@ -7,8 +7,12 @@ import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -25,9 +28,9 @@ public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private final ObservableMap<String, DataModel> dataModelMap = FXCollections.observableMap(new HashMap<>());
     @FXML
-    public Scene scene;
+    private Scene scene;
     @FXML
-    public TabPane tabPane;
+    private TabPane tabPane;
     public Label statusLabel;
     public MenuItem saveProjectMenuItem;
     public MenuItem closeProjectMenuItem;
@@ -43,12 +46,13 @@ public class SceneController implements Initializable {
     }
 
     public void handleNewProjectAction() {
-        String newProjectName = getNewProjectName();
-        addNewProjectTab(newProjectName, new DataModel());
+        String newProjectName = DialogUtil.getNewProjectName();
+        addNewProjectTab(new DataModel(newProjectName));
     }
 
-    private void addNewProjectTab(String projectName, DataModel dataModel) {
-        ProjectController projectController = getProjectController(projectName, dataModel);
+    private void addNewProjectTab(DataModel dataModel) {
+        ProjectController projectController = getProjectController(dataModel);
+        String projectName = dataModel.getName();
         if (isNotEmpty(projectName)) {
             Tab newProjectTab = new Tab(projectName);
             newProjectTab.setContent(projectController);
@@ -66,17 +70,8 @@ public class SceneController implements Initializable {
         dataModelMap.remove(closeTab.getText());
     }
 
-    private String getNewProjectName() {
-        Dialog<String> dialog = new TextInputDialog();
-        dialog.setTitle("Create a new project");
-        dialog.setHeaderText("New project name");
-        dialog.setContentText("Please enter the name of your new project:");
-        Optional<String> result = dialog.showAndWait();
-        return result.orElse("");
-    }
-
-    private ProjectController getProjectController(String newProjectName, DataModel dataModel) {
-        dataModelMap.put(newProjectName, dataModel);
+    private ProjectController getProjectController(DataModel dataModel) {
+        dataModelMap.put(dataModel.getName(), dataModel);
         ProjectController projectController = new ProjectController(dataModel);
         projectController.initModel(dataModel);
         projectController.setStatusLabel(statusLabel);
@@ -114,7 +109,7 @@ public class SceneController implements Initializable {
             throw new RuntimeException(e);
         }
         dataModelMap.put(dataModel.getName(), dataModel);
-        addNewProjectTab(dataModel.getName(), dataModel);
+        addNewProjectTab(dataModel);
     }
 
     public void handleSaveProjectAction() {

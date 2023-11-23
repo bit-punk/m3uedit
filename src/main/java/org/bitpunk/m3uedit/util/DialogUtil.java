@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
+import javafx.scene.control.Dialog;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -7,11 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Optional;
 
-public class FileChooserUtil {
-    private static final Logger log = LoggerFactory.getLogger(FileChooserUtil.class);
+public class DialogUtil {
+    private static final Logger log = LoggerFactory.getLogger(DialogUtil.class);
 
-    private FileChooserUtil() {
+    private DialogUtil() {
     }
 
     public static Path getSaveFilePath(String description, String... extension) {
@@ -29,5 +32,14 @@ public class FileChooserUtil {
         selectedFile = isSave ? fileChooser.showSaveDialog(new Stage()) : fileChooser.showOpenDialog(new Stage());
         log.debug("selected open-file: {}", selectedFile);
         return selectedFile == null ? null : selectedFile.toPath();
+    }
+
+    public static String getNewProjectName() {
+        Dialog<String> dialog = new TextInputDialog();
+        dialog.setTitle("Create a new project");
+        dialog.setHeaderText("New project name");
+        dialog.setContentText("Please enter the name of your new project:");
+        Optional<String> result = dialog.showAndWait();
+        return result.orElse("");
     }
 }

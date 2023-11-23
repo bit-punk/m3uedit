@@ -32,20 +32,21 @@ class ProjectPersisterUtilTest {
     @Test
     void testWriteProjectFile() {
         DataModel dataModel = getDataModel();
-        String fileName = "target/testproject.m3uproj";
-        ProjectPersisterUtil.saveProjectFile(fileName, dataModel);
-        assertThat(Files.exists(Path.of(fileName)), is(true));
+        String projectFileName = "target/testproject.m3uproj";
+        ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
+        assertThat(Files.exists(Path.of(projectFileName)), is(true));
     }
 
     @Test
     void testReadProjectFile() {
-        DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of("src/test/resources/project/testproject.m3uproj"));
+        String projectFileName = "src/test/resources/project/testproject.m3uproj";
+        DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
         assertThat(dataModel, is(notNullValue()));
         assertThat(dataModel.getSorters(), hasSize(1));
     }
 
     private static DataModel getDataModel() {
-        DataModel dataModel = new DataModel();
+        DataModel dataModel = new DataModel("test");
         dataModel.setFilters(getFilters());
         dataModel.setSorters(getSorters());
         dataModel.setInputs(getInputs());
