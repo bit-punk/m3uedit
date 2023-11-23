@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.output;
 
 import com.jcraft.jsch.*;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
@@ -19,7 +20,9 @@ import java.util.List;
 @Getter
 public class SftpOutput implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
+    @XStreamOmitField
     private final String name = "SFTP Output";
+    @XStreamOmitField
     private final String description = "writes a playlist to a SFTP server.";
     private SftpConnection sftpConnection = null;
 

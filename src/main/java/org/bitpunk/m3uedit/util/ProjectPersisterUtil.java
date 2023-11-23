@@ -65,6 +65,7 @@ public class ProjectPersisterUtil {
         xstream.addPermission(NoTypePermission.NONE); //forbid everything
         xstream.addPermission(NullPermission.NULL);   // allow "null"
         xstream.addPermission(PrimitiveTypePermission.PRIMITIVES); // allow primitive types
+        xstream.autodetectAnnotations(true);
         xstream.registerConverter(new ObservableListConverter(xstream.getMapper()));
         // define class-aliases to not expose package-names in the xml-file
         // ToDo can i set class-aliases dynamically?

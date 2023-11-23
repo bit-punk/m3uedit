@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input;
 
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
@@ -18,10 +19,11 @@ import java.util.List;
 public class FileInput extends AbstractInput implements Input {
     private static final Logger log = LoggerFactory.getLogger(FileInput.class);
 
-
+    @XStreamOmitField
     private final String name = "File Input";
+    @XStreamOmitField
     private final String description = "Reads a playlist from a local file.";
-    private String source = "";
+    private String source;
 
     @Override
     public List<Entry> read() throws FileNotFoundException {
