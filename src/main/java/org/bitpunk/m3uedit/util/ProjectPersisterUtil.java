@@ -35,7 +35,7 @@ public class ProjectPersisterUtil {
     }
 
     public static DataModel openFileDialogAndLoadProject() throws IOException {
-        Path projectFilePath = FileChooserUtil.getOpenFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
+        Path projectFilePath = DialogUtil.getOpenFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
         return loadProject(projectFilePath);
     }
 
@@ -49,8 +49,12 @@ public class ProjectPersisterUtil {
                 log.error("Exception trying to load project-file: {}", projectFilePath, e);
             }
         }
-        if (dataModel == null || isEmpty(dataModel.getName())) {
-            log.error("DataModel loaded from xml-file was null, or has an empty name: {}", dataModel);
+        if (dataModel == null) {
+            log.error("DataModel loaded from xml-file was null");
+            return null;
+        }
+        if (isEmpty(dataModel.getName())) {
+            log.error("DataModel loaded has an empty name: {}", dataModel);
             return null;
         }
         return dataModel;
@@ -101,7 +105,7 @@ public class ProjectPersisterUtil {
 
     public static void openSaveDialogAndSaveProject(DataModel dataModel) {
         log.debug("Saving the Project");
-        Path saveFilePath = FileChooserUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
+        Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
         if (saveFilePath != null) {
             String projectFileName = Objects.requireNonNull(saveFilePath).getFileName().toAbsolutePath().toString();
             ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);

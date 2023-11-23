@@ -3,7 +3,7 @@ package org.bitpunk.m3uedit.plugins.input;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.util.FileChooserUtil;
+import org.bitpunk.m3uedit.util.DialogUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +30,7 @@ public class FileInput extends AbstractInput implements Input {
 
     @Override
     public void configure() {
-        Path inputPath = FileChooserUtil.getOpenFilePath("M3U-Playlist Files (*.m3u)", "*.m3u");
+        Path inputPath = DialogUtil.getOpenFilePath("M3U-Playlist Files (*.m3u)", "*.m3u");
         if (inputPath != null) {
             this.source = inputPath.toAbsolutePath().toString();
         }

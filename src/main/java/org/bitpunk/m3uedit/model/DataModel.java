@@ -26,7 +26,8 @@ public class DataModel {
     private ObservableList<Entry> entries = FXCollections.observableArrayList();
     private ObservableList<Output> outputs = FXCollections.observableArrayList();
 
-    public DataModel() {
+    public DataModel(String name) {
+        this.name = name;
         inputs.addListener((ListChangeListener<? super Input>) listChangeListener -> loadEntries());
     }
 
