@@ -1,16 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
-<fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml" stylesheets="@css/project.css">
-    <ScrollPane fitToHeight="true" fitToWidth="true">
-        <TabPane rotateGraphic="true"
-                 side="LEFT" tabClosingPolicy="UNAVAILABLE"
-                 xmlns:fx="http://javafx.com/fxml/1"
-                 xmlns="http://javafx.com/javafx/17.0.2-ea">
-            <Tab text="Inputs" fx:id="inputTab"/>
-            <Tab text="Filters" fx:id="filterTab"/>
-            <Tab text="Sorters" fx:id="sorterTab"/>
-            <Tab text="Playlist" fx:id="entryTab"/>
-            <Tab text="Outputs" fx:id="outputTab"/>
+<fx:root stylesheets="@css/project.css" type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml/1"
+         xmlns="http://javafx.com/javafx/17.0.2-ea">
+    <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="ALWAYS">
+        <TabPane rotateGraphic="true" side="LEFT" tabClosingPolicy="UNAVAILABLE"
+                 xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1">
+            <Tab fx:id="inputTab" text="Inputs"/>
+            <Tab fx:id="filterTab" text="Filters"/>
+            <Tab fx:id="sorterTab" text="Sorters"/>
+            <Tab fx:id="entryTab" text="Playlist"/>
+            <Tab fx:id="outputTab" text="Outputs"/>
         </TabPane>
     </ScrollPane>
 </fx:root>
