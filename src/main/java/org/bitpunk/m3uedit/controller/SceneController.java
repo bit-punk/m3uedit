@@ -109,7 +109,6 @@ public class SceneController implements Initializable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        dataModelMap.put(dataModel.getName(), dataModel);
         addNewProjectTab(dataModel);
     }
 
