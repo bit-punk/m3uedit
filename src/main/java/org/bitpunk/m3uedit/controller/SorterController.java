@@ -1,11 +1,10 @@
 package org.bitpunk.m3uedit.controller;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.cell.CheckBoxListCell;
-import javafx.util.StringConverter;
+import javafx.scene.control.Tooltip;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
@@ -17,12 +16,11 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class SorterController extends AbstractController {
-    private static final Logger log = LoggerFactory.getLogger(FilterController.class);
     public static final String FXML_SORTER = "fxml/Sorter.fxml";
-    private DataModel dataModel;
-
+    private static final Logger log = LoggerFactory.getLogger(SorterController.class);
     @FXML
     public ListView<Sorter> availableSortersListView;
+    private DataModel dataModel;
 
     public SorterController() {
         super(FXML_SORTER);
@@ -33,35 +31,48 @@ public class SorterController extends AbstractController {
     }
 
     private void initAvailableSorterListView() {
-        setCellFactory(availableSortersListView, dataModel.getSorters());
+        setCellFactory(availableSortersListView);
         List<Sorter> sorterPlugins = SorterPluginService.getInstance().getSorterPlugins();
         log.debug("sorter-plugins: {}", sorterPlugins);
         availableSortersListView.getItems().addAll(sorterPlugins);
     }
 
-    private void setCellFactory(ListView<Sorter> availableFiltersListView, List<Sorter> selectedItems) {
-        availableFiltersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
-            BooleanProperty observable = new SimpleBooleanProperty();
-            observable.addListener((obs, wasSelected, isNowSelected) -> {
-                log.debug("Check box for {} changed from {} to {}", item, wasSelected, isNowSelected);
-                if (isNowSelected) {
-                    selectedItems.add(item);
-                } else {
-                    selectedItems.remove(item);
-                }
-            });
-            return observable;
-        }, new StringConverter<>() {
-            @Override
-            public String toString(Sorter sorter) {
-                return sorter.getName();
-            }
+    private void setCellFactory(ListView<Sorter> availableSortersListView) {
+        availableSortersListView.setCellFactory((ListView<Sorter> param) -> new ListCell<>() {
+            private CheckBox checkBox;
 
             @Override
-            public Sorter fromString(String string) {
-                return null;
+            public void updateItem(Sorter sorter, boolean empty) {
+                super.updateItem(sorter, empty);
+                if (!(empty || sorter == null)) {
+                    getCheckBox().setSelected(dataModel.getSorters().stream().anyMatch(s -> s.getName().equals(sorter.getName())));
+                    setGraphic(getCheckBox());
+                    setText(sorter.getName());
+                    setTooltip(new Tooltip(sorter.getDescription()));
+                } else {
+                    setGraphic(null);
+                    setText(null);
+                }
             }
-        }));
+
+            private CheckBox getCheckBox() {
+                if (checkBox == null) {
+                    checkBox = new CheckBox();
+                    checkBox.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+                        if (getItem() != null) {
+                            if (isNowSelected) {
+                                dataModel.getSorters().add(getItem());
+                            } else {
+                                dataModel.getSorters().remove(getItem());
+                            }
+                        }
+                        log.debug("Currently selected Sorters: {}", dataModel.getSorters());
+                    });
+                }
+                return checkBox;
+            }
+
+        });
     }
 
     @Override
