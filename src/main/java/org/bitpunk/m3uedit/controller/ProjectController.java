@@ -13,7 +13,7 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 public class ProjectController extends AbstractController {
-    public static final String FXML_OUTPUT = "fxml/Project.fxml";
+    public static final String FXML_PROJECT = "fxml/Project.fxml";
     public Tab inputTab;
     public Tab filterTab;
     public Tab sorterTab;
@@ -33,7 +33,7 @@ public class ProjectController extends AbstractController {
     private DataModel dataModel;
 
     public ProjectController(DataModel dataModel) {
-        super(FXML_OUTPUT);
+        super(FXML_PROJECT);
         this.dataModel = dataModel;
     }
 
