@@ -22,7 +22,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Objects;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
@@ -108,8 +107,7 @@ public class ProjectPersisterUtil {
         log.debug("Saving the Project");
         Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
         if (saveFilePath != null) {
-            String projectFileName = Objects.requireNonNull(saveFilePath).getFileName().toAbsolutePath().toString();
-            ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
+            ProjectPersisterUtil.saveProjectFile(saveFilePath.toString(), dataModel);
         }
     }
 
