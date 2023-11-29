@@ -6,7 +6,6 @@ import javafx.collections.ObservableMap;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
@@ -31,8 +30,6 @@ public class SceneController implements Initializable {
     public MenuItem saveProjectMenuItem;
     public MenuItem closeProjectMenuItem;
     @FXML
-    private Scene scene;
-    @FXML
     private TabPane tabPane;
 
     @FXML
@@ -40,7 +37,8 @@ public class SceneController implements Initializable {
         System.exit(0);
     }
 
-    public void handleAboutAction() {
+    @FXML
+    private void handleAboutAction() {
         var aboutDialogController = new AboutDialogController<>();
         aboutDialogController.show();
     }
@@ -63,11 +61,18 @@ public class SceneController implements Initializable {
 
     private void closeSelectedProjectTab(Event e) {
         Tab closeTab = (Tab) e.getSource();
-        TabPane closeTabTabPane = closeTab.getTabPane();
-        if (closeTabTabPane != null) {
-            closeTabTabPane.getTabs().remove(closeTab);
+        if (canTabBeClosed(closeTab)) {
+            TabPane closeTabTabPane = closeTab.getTabPane();
+            if (closeTabTabPane != null) {
+                closeTabTabPane.getTabs().remove(closeTab);
+            }
+            dataModelMap.remove(closeTab.getText());
         }
-        dataModelMap.remove(closeTab.getText());
+    }
+
+    private boolean canTabBeClosed(Tab closeTab) {
+        DataModel dataModel = ((ProjectController) closeTab.getContent()).getDataModel();
+        return dataModel.isChanged() && DialogUtil.canProjectBeClosed(dataModel.getName());
     }
 
     private ProjectController getProjectController(DataModel dataModel) {
@@ -101,7 +106,8 @@ public class SceneController implements Initializable {
         }
     }
 
-    public void handleOpenProjectAction() {
+    @FXML
+    private void handleOpenProjectAction() {
         DataModel dataModel;
         log.debug("Loading new Project ...");
         try {
@@ -110,9 +116,11 @@ public class SceneController implements Initializable {
             throw new RuntimeException(e);
         }
         addNewProjectTab(dataModel);
+        dataModel.setChanged(false);
     }
 
-    public void handleSaveProjectAction() {
+    @FXML
+    private void handleSaveProjectAction() {
         ProjectPersisterUtil.openSaveDialogAndSaveProject(getCurrentlySelectedProject().getDataModel());
     }
 
@@ -120,7 +128,8 @@ public class SceneController implements Initializable {
         return (ProjectController) tabPane.getSelectionModel().getSelectedItem().getContent();
     }
 
-    public void handleCloseProjectAction() {
+    @FXML
+    private void handleCloseProjectAction() {
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
         Event.fireEvent(tab, new Event(Tab.CLOSED_EVENT));
     }
