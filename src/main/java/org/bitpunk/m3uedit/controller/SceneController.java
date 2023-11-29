@@ -55,7 +55,7 @@ public class SceneController implements Initializable {
         if (isNotEmpty(projectName)) {
             Tab newProjectTab = new Tab(projectName);
             newProjectTab.setContent(projectController);
-            newProjectTab.setOnClosed(this::closeSelectedProjectTab);
+            newProjectTab.setOnCloseRequest(this::closeSelectedProjectTab);
             tabPane.getTabs().add(newProjectTab);
         }
     }
