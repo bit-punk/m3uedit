@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
+import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -86,7 +87,20 @@ public class SceneController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initMenuItemDisableListeners();
+        initDataModelMapListener();
         initTabPane();
+    }
+
+    /**
+     * Initializes a listener for the dataModelMap.
+     * This listener checks if the dataModelMap is empty, and if so, sets the text of the statusLabel to an empty string.
+     */
+    private void initDataModelMapListener() {
+        dataModelMap.addListener((MapChangeListener<? super String, ? super DataModel>) change -> {
+            if (dataModelMap.isEmpty()) {
+                statusLabel.setText("");
+            }
+        });
     }
 
     private void initMenuItemDisableListeners() {
