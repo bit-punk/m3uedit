@@ -61,7 +61,7 @@ public class ProjectPersisterUtil {
 
     private static XStream getXStream() {
         XStream xstream = new XStream();
-        xstream.addPermission(NoTypePermission.NONE); //forbid everything
+        xstream.addPermission(NoTypePermission.NONE); // forbid everything
         xstream.addPermission(NullPermission.NULL);   // allow "null"
         xstream.addPermission(PrimitiveTypePermission.PRIMITIVES); // allow primitive types
         xstream.autodetectAnnotations(true);
