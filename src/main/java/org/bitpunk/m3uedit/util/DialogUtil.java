@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TextInputDialog;
 import javafx.stage.FileChooser;
@@ -41,5 +43,14 @@ public class DialogUtil {
         dialog.setContentText("Please enter the name of your new project:");
         Optional<String> result = dialog.showAndWait();
         return result.orElse("");
+    }
+
+    public static boolean canProjectBeClosed(String projectName) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Close Project");
+        alert.setHeaderText("Project '" + projectName + "' contains unsaved data!");
+        alert.setContentText("Do you want to close the project without saving the changed data?");
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
     }
 }
