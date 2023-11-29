@@ -54,7 +54,7 @@ public class FilterController extends AbstractController {
             public void updateItem(Filter filter, boolean empty) {
                 super.updateItem(filter, empty);
                 if (!(empty || filter == null)) {
-                    getCheckBox().setSelected(dataModel.getFilters().contains(filter));
+                    getCheckBox().setSelected(dataModel.getFilters().stream().anyMatch(f -> f.getName().equals(filter.getName())));
                     setGraphic(getCheckBox());
                     setText(filter.getName());
                     setTooltip(new Tooltip(filter.getDescription()));
