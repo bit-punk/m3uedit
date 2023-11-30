@@ -3,21 +3,36 @@ package org.bitpunk.m3uedit.plugins.output;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
 public class OutputFactory {
     private static final Logger log = LoggerFactory.getLogger(OutputFactory.class);
+    private static final Map<String, Supplier<Output>> outputMap = new HashMap<>();
+
+    static {
+        initMap();
+    }
 
     private OutputFactory() {
     }
 
-    public static Output getOutput(String outputName) {
-        Output output = null;
-        if (outputName.equals("File Output")) {
+    private static void initMap() {
+        outputMap.put("File Output", () -> {
             log.debug("creating new File Output");
-            output = new FileOutput();
-        } else if (outputName.equals("SFTP Output")) {
+            return new FileOutput();
+        });
+        outputMap.put("SFTP Output", () -> {
             log.debug("creating new SFTP Output");
-            output = new SftpOutput();
+            return new SftpOutput();
+        });
+    }
+
+    public static Output getOutput(String outputName) {
+        if (outputMap.containsKey(outputName)) {
+            return outputMap.get(outputName).get();
         }
-        return output;
+        return null;
     }
 }

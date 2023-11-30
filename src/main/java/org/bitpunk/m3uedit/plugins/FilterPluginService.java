@@ -2,42 +2,19 @@ package org.bitpunk.m3uedit.plugins;
 
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ServiceLoader;
 
-public class FilterPluginService implements PluginService {
-    private static FilterPluginService filterPluginService;
-    private final ServiceLoader<Filter> loader;
+public class FilterPluginService<T extends Plugin> extends AbstractPluginService<T> {
 
-
-    private FilterPluginService() {
-        this.loader = ServiceLoader.load(Filter.class);
+    private FilterPluginService(ServiceLoader<T> loader) {
+        super(loader);
     }
 
-    public static synchronized FilterPluginService getInstance() {
-        if (filterPluginService == null) {
-            filterPluginService = new FilterPluginService();
-        }
-        return filterPluginService;
+    public static FilterPluginService<Filter> getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
-    @Override
-    public List<Filter> getAllPlugins() {
-        List<Filter> filterPlugins = new ArrayList<>();
-        for (Filter currentFilter : loader) {
-            filterPlugins.add(currentFilter);
-        }
-        return filterPlugins;
+    private static class SingletonHolder {
+        private static final FilterPluginService<Filter> INSTANCE = new FilterPluginService<>(ServiceLoader.load(Filter.class));
     }
-
-    @Override
-    public List<String> getAllPluginNames() {
-        List<String> filterNames = new ArrayList<>();
-        for (Filter currentFilter : loader) {
-            filterNames.add(currentFilter.getName());
-        }
-        return filterNames;
-    }
-
 }

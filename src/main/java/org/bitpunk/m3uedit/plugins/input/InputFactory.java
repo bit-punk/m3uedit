@@ -10,14 +10,16 @@ public class InputFactory {
     }
 
     public static Input getInput(String inputName) {
-        Input input = null;
-        if (inputName.equals("File Input")) {
-            log.debug("creating new File Input");
-            input = new FileInput();
-        } else if (inputName.equals("FritzBox Input")) {
-            log.debug("creating new Fritzbox Input");
-            input = new FritzBoxInput();
-        }
-        return input;
+        InputType inputType = InputType.fromString(inputName);
+        return switch (inputType) {
+            case FILE_INPUT -> {
+                log.debug("creating new File Input");
+                yield new FileInput();
+            }
+            case FRITZBOX_INPUT -> {
+                log.debug("creating new Fritzbox Input");
+                yield new FritzBoxInput();
+            }
+        };
     }
 }
