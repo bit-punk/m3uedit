@@ -6,10 +6,7 @@ import com.thoughtworks.xstream.security.NullPermission;
 import com.thoughtworks.xstream.security.PrimitiveTypePermission;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.FilterPluginService;
-import org.bitpunk.m3uedit.plugins.InputPluginService;
-import org.bitpunk.m3uedit.plugins.OutputPluginService;
-import org.bitpunk.m3uedit.plugins.SorterPluginService;
+import org.bitpunk.m3uedit.plugins.*;
 import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,9 +61,10 @@ public class ProjectPersisterUtil {
         xStream.registerConverter(new ObservableListConverter(xStream.getMapper()));
         // define class-aliases to not expose package-names in the xml-file
         xStream.alias("Project", DataModel.class);
-        addPluginAliases(xStream);
         xStream.alias("Entry", Entry.class);
-        addOutputPluginAliases(xStream);
+
+        addPluginAliases(xStream);
+
         // @formatter:off
         xStream.allowTypesByWildcard(new String[]{
                 "org.bitpunk.m3uedit.plugins.input.*",
@@ -80,6 +78,19 @@ public class ProjectPersisterUtil {
         });
         // @formatter:on
         return xStream;
+    }
+
+    private static void addPluginAliases(XStream xStream) {
+        PluginService[] pluginServices = new PluginService[] {
+                InputPluginService.getInstance(),
+                OutputPluginService.getInstance(),
+                FilterPluginService.getInstance(),
+                SorterPluginService.getInstance()
+        };
+
+        for (PluginService pluginService : pluginServices) {
+            addPluginAliases(xStream, pluginService);
+        }
     }
 
     public static void saveProjectFile(String fileName, DataModel dataModel) {
@@ -100,35 +111,8 @@ public class ProjectPersisterUtil {
         }
     }
 
-    private static void addPluginAliases(XStream xStream) {
-        addInputPluginAliases(xStream);
-        addFilterPluginAliases(xStream);
-        addSorterPluginAliases(xStream);
-    }
-    private static void addInputPluginAliases(XStream xStream) {
-        InputPluginService inputPluginService = InputPluginService.getInstance();
-        for (var entry : inputPluginService.getAllPlugins()) {
-            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
-        }
-    }
-
-    private static void addFilterPluginAliases(XStream xStream) {
-        FilterPluginService filterPluginService = FilterPluginService.getInstance();
-        for (var entry : filterPluginService.getAllPlugins()) {
-            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
-        }
-    }
-
-    private static void addSorterPluginAliases(XStream xStream) {
-        SorterPluginService sorterPluginService = SorterPluginService.getInstance();
-        for (var entry : sorterPluginService.getAllPlugins()) {
-            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
-        }
-    }
-
-    private static void addOutputPluginAliases(XStream xStream) {
-        OutputPluginService outputPluginService = OutputPluginService.getInstance();
-        for (var entry : outputPluginService.getAllPlugins()) {
+    private static void addPluginAliases(XStream xStream, PluginService pluginService) {
+        for (var entry : pluginService.getAllPlugins()) {
             xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
         }
     }
