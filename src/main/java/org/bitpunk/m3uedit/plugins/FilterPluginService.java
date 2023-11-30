@@ -40,9 +40,4 @@ public class FilterPluginService implements PluginService {
         return filterNames;
     }
 
-    @Override
-    public Filter getPlugin(String pluginName) {
-        throw new UnsupportedOperationException("method not implemented");
-    }
-
 }

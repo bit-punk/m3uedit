@@ -40,14 +40,4 @@ public class InputPluginService implements PluginService {
         return inputNames;
     }
 
-    @Override
-    public Input getPlugin(String selectedInputName) {
-        Input input = null;
-        for (Input currentInput : loader) {
-            if (selectedInputName.equals(currentInput.getName())) {
-                input = currentInput;
-            }
-        }
-        return input;
-    }
 }

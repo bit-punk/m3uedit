@@ -39,14 +39,4 @@ public class OutputPluginService implements PluginService {
         return outputNames;
     }
 
-    @Override
-    public Output getPlugin(String pluginName) {
-        Output output = null;
-        for (Output currentOutput : loader) {
-            if (pluginName.equals(currentOutput.getName())) {
-                output = currentOutput;
-            }
-        }
-        return output;
-    }
 }
