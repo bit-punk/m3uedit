@@ -63,7 +63,7 @@ public class ProjectPersisterUtil {
         xStream.alias("Project", DataModel.class);
         xStream.alias("Entry", Entry.class);
 
-        addPluginAliases(xStream);
+        addAllPluginAliases(xStream);
 
         // @formatter:off
         xStream.allowTypesByWildcard(new String[]{
@@ -78,19 +78,6 @@ public class ProjectPersisterUtil {
         });
         // @formatter:on
         return xStream;
-    }
-
-    private static void addPluginAliases(XStream xStream) {
-        PluginService[] pluginServices = new PluginService[] {
-                InputPluginService.getInstance(),
-                OutputPluginService.getInstance(),
-                FilterPluginService.getInstance(),
-                SorterPluginService.getInstance()
-        };
-
-        for (PluginService pluginService : pluginServices) {
-            addPluginAliases(xStream, pluginService);
-        }
     }
 
     public static void saveProjectFile(String fileName, DataModel dataModel) {
@@ -108,6 +95,19 @@ public class ProjectPersisterUtil {
         Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
         if (saveFilePath != null) {
             ProjectPersisterUtil.saveProjectFile(saveFilePath.toString(), dataModel);
+        }
+    }
+
+    private static void addAllPluginAliases(XStream xStream) {
+        PluginService[] pluginServices = new PluginService[] {
+                InputPluginService.getInstance(),
+                OutputPluginService.getInstance(),
+                FilterPluginService.getInstance(),
+                SorterPluginService.getInstance()
+        };
+
+        for (PluginService pluginService : pluginServices) {
+            addPluginAliases(xStream, pluginService);
         }
     }
 

@@ -39,9 +39,4 @@ public class SorterPluginService implements PluginService {
         return sorterNames;
     }
 
-    @Override
-    public Sorter getPlugin(String pluginName) {
-        throw new UnsupportedOperationException("method not implemented");
-    }
-
 }
