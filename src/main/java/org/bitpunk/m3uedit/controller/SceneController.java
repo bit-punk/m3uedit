@@ -130,7 +130,7 @@ public class SceneController implements Initializable {
             throw new RuntimeException(e);
         }
         addNewProjectTab(dataModel);
-        dataModel.setChanged(false);
+        dataModel.setChanged(false);    // clear dirty-flag
     }
 
     @FXML
@@ -145,6 +145,6 @@ public class SceneController implements Initializable {
     @FXML
     private void handleCloseProjectAction() {
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
-        Event.fireEvent(tab, new Event(Tab.CLOSED_EVENT));
+        Event.fireEvent(tab, new Event(Tab.TAB_CLOSE_REQUEST_EVENT));
     }
 }
