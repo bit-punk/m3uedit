@@ -66,7 +66,7 @@ public class InputController extends AbstractController {
     }
 
     private void initAvailableInputComboBox() {
-        List<String> inputNames = InputPluginService.getInstance().getInputNames();
+        List<String> inputNames = InputPluginService.getInstance().getAllPluginNames();
         log.debug("inputNames: {}", inputNames);
         addInputComboBox.getItems().add("add Input");
         addInputComboBox.getItems().addAll(inputNames);

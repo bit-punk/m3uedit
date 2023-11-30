@@ -2,9 +2,11 @@ package org.bitpunk.m3uedit.plugins;
 
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
 
-public class FilterPluginService {
+public class FilterPluginService implements PluginService {
     private static FilterPluginService filterPluginService;
     private final ServiceLoader<Filter> loader;
 
@@ -20,22 +22,27 @@ public class FilterPluginService {
         return filterPluginService;
     }
 
-    public Optional<String> getFilterDescription(String name) {
-        String filterDescription = null;
-        Iterator<Filter> filterIterator = loader.iterator();
-        while (filterDescription == null && filterIterator.hasNext()) {
-            Filter currentFilter = filterIterator.next();
-            filterDescription = currentFilter.getDescription();
-        }
-        return Optional.ofNullable(filterDescription);
-    }
-
-    public List<Filter> getFilterPlugins() {
+    @Override
+    public List<Filter> getAllPlugins() {
         List<Filter> filterPlugins = new ArrayList<>();
         for (Filter currentFilter : loader) {
             filterPlugins.add(currentFilter);
         }
         return filterPlugins;
+    }
+
+    @Override
+    public List<String> getAllPluginNames() {
+        List<String> filterNames = new ArrayList<>();
+        for (Filter currentFilter : loader) {
+            filterNames.add(currentFilter.getName());
+        }
+        return filterNames;
+    }
+
+    @Override
+    public Filter getPlugin(String pluginName) {
+        throw new UnsupportedOperationException("method not implemented");
     }
 
 }

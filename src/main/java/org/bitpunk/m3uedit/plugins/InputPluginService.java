@@ -2,9 +2,11 @@ package org.bitpunk.m3uedit.plugins;
 
 import org.bitpunk.m3uedit.plugins.input.Input;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
 
-public class InputPluginService {
+public class InputPluginService implements PluginService {
     private static InputPluginService inputPluginService;
     private final ServiceLoader<Input> loader;
 
@@ -20,17 +22,17 @@ public class InputPluginService {
         return inputPluginService;
     }
 
-    public Optional<String> getInputDescription(String name) {
-        String inputDescription = null;
-        Iterator<Input> inputIterator = loader.iterator();
-        while (inputDescription == null && inputIterator.hasNext()) {
-            Input currentInput = inputIterator.next();
-            inputDescription = currentInput.getDescription();
+    @Override
+    public List<? extends Plugin> getAllPlugins() {
+        List<Input> inputPlugins = new ArrayList<>();
+        for (Input currentInput : loader) {
+            inputPlugins.add(currentInput);
         }
-        return Optional.ofNullable(inputDescription);
+        return inputPlugins;
     }
 
-    public List<String> getInputNames() {
+    @Override
+    public List<String> getAllPluginNames() {
         List<String> inputNames = new ArrayList<>();
         for (Input currentInput : loader) {
             inputNames.add(currentInput.getName());
@@ -38,7 +40,8 @@ public class InputPluginService {
         return inputNames;
     }
 
-    public Input getInput(String selectedInputName) {
+    @Override
+    public Input getPlugin(String selectedInputName) {
         Input input = null;
         for (Input currentInput : loader) {
             if (selectedInputName.equals(currentInput.getName())) {

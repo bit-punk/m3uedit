@@ -32,7 +32,7 @@ public class SorterController extends AbstractController {
 
     private void initAvailableSorterListView() {
         setCellFactory(availableSortersListView);
-        List<Sorter> sorterPlugins = SorterPluginService.getInstance().getSorterPlugins();
+        List<Sorter> sorterPlugins = SorterPluginService.getInstance().getAllPlugins();
         log.debug("sorter-plugins: {}", sorterPlugins);
         availableSortersListView.getItems().addAll(sorterPlugins);
     }
