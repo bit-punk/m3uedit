@@ -27,9 +27,12 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private final ObservableMap<String, DataModel> dataModelMap = FXCollections.observableMap(new HashMap<>());
-    public Label statusLabel;
-    public MenuItem saveProjectMenuItem;
-    public MenuItem closeProjectMenuItem;
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private MenuItem saveProjectMenuItem;
+    @FXML
+    private MenuItem closeProjectMenuItem;
     @FXML
     private TabPane tabPane;
 
@@ -44,7 +47,8 @@ public class SceneController implements Initializable {
         aboutDialogController.show();
     }
 
-    public void handleNewProjectAction() {
+    @FXML
+    private void handleNewProjectAction() {
         String newProjectName = DialogUtil.getNewProjectName();
         addNewProjectTab(new DataModel(newProjectName));
     }
