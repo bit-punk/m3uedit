@@ -33,7 +33,7 @@ public class FilterController extends AbstractController {
 
     private void initAvailableFilterListView() {
         setCellFactory(availableFiltersListView);
-        List<Filter> filterPlugins = FilterPluginService.getInstance().getFilterPlugins();
+        List<Filter> filterPlugins = FilterPluginService.getInstance().getAllPlugins();
         log.debug("filterNames: {}", filterPlugins);
         availableFiltersListView.getItems().addAll(filterPlugins);
     }

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-public class OutputPluginService {
+public class OutputPluginService implements PluginService {
     private static OutputPluginService outputPluginService;
     private final ServiceLoader<Output> loader;
 
@@ -21,11 +21,32 @@ public class OutputPluginService {
         return outputPluginService;
     }
 
-    public List<String> getOutputNames() {
+    @Override
+    public List<? extends Plugin> getAllPlugins() {
+        List<Output> outputPlugins = new ArrayList<>();
+        for (Output currentOutput : loader) {
+            outputPlugins.add(currentOutput);
+        }
+        return outputPlugins;
+    }
+
+    @Override
+    public List<String> getAllPluginNames() {
         List<String> outputNames = new ArrayList<>();
         for (Output currentOutput : loader) {
             outputNames.add(currentOutput.getName());
         }
         return outputNames;
+    }
+
+    @Override
+    public Output getPlugin(String pluginName) {
+        Output output = null;
+        for (Output currentOutput : loader) {
+            if (pluginName.equals(currentOutput.getName())) {
+                output = currentOutput;
+            }
+        }
+        return output;
     }
 }

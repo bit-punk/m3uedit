@@ -55,7 +55,7 @@ public class OutputController extends AbstractController {
     }
 
     private void initAvailableOutputComboBox() {
-        List<String> outputNames = OutputPluginService.getInstance().getOutputNames();
+        List<String> outputNames = OutputPluginService.getInstance().getAllPluginNames();
         log.debug("outputNames: {}", outputNames);
         addOutputComboBox.getItems().add("add Output");
         addOutputComboBox.getItems().addAll(outputNames);

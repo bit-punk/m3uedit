@@ -6,14 +6,10 @@ import com.thoughtworks.xstream.security.NullPermission;
 import com.thoughtworks.xstream.security.PrimitiveTypePermission;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.filter.ChannelNameFilter;
-import org.bitpunk.m3uedit.plugins.filter.SdChannelFilter;
-import org.bitpunk.m3uedit.plugins.filter.UniqueNameFilter;
-import org.bitpunk.m3uedit.plugins.input.FileInput;
-import org.bitpunk.m3uedit.plugins.input.FritzBoxInput;
-import org.bitpunk.m3uedit.plugins.output.FileOutput;
-import org.bitpunk.m3uedit.plugins.output.SftpOutput;
-import org.bitpunk.m3uedit.plugins.sorter.ChannelNameSorter;
+import org.bitpunk.m3uedit.plugins.FilterPluginService;
+import org.bitpunk.m3uedit.plugins.InputPluginService;
+import org.bitpunk.m3uedit.plugins.OutputPluginService;
+import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,26 +56,19 @@ public class ProjectPersisterUtil {
     }
 
     private static XStream getXStream() {
-        XStream xstream = new XStream();
-        xstream.addPermission(NoTypePermission.NONE); // forbid everything
-        xstream.addPermission(NullPermission.NULL);   // allow "null"
-        xstream.addPermission(PrimitiveTypePermission.PRIMITIVES); // allow primitive types
-        xstream.autodetectAnnotations(true);
-        xstream.registerConverter(new ObservableListConverter(xstream.getMapper()));
+        XStream xStream = new XStream();
+        xStream.addPermission(NoTypePermission.NONE); // forbid everything
+        xStream.addPermission(NullPermission.NULL);   // allow "null"
+        xStream.addPermission(PrimitiveTypePermission.PRIMITIVES); // allow primitive types
+        xStream.autodetectAnnotations(true);
+        xStream.registerConverter(new ObservableListConverter(xStream.getMapper()));
         // define class-aliases to not expose package-names in the xml-file
-        // ToDo can i set class-aliases dynamically?
-        xstream.alias("Project", DataModel.class);
-        xstream.alias("FileInput", FileInput.class);
-        xstream.alias("FritzBoxInput", FritzBoxInput.class);
-        xstream.alias("ChannelNameFilter", ChannelNameFilter.class);
-        xstream.alias("UniqueNameFilter", UniqueNameFilter.class);
-        xstream.alias("SdChannelFilter", SdChannelFilter.class);
-        xstream.alias("ChannelNameSorter", ChannelNameSorter.class);
-        xstream.alias("Entry", Entry.class);
-        xstream.alias("FileOutput", FileOutput.class);
-        xstream.alias("SftpOutput", SftpOutput.class);
+        xStream.alias("Project", DataModel.class);
+        addPluginAliases(xStream);
+        xStream.alias("Entry", Entry.class);
+        addOutputPluginAliases(xStream);
         // @formatter:off
-        xstream.allowTypesByWildcard(new String[]{
+        xStream.allowTypesByWildcard(new String[]{
                 "org.bitpunk.m3uedit.plugins.input.*",
                 "org.bitpunk.m3uedit.plugins.output.*",
                 "org.bitpunk.m3uedit.plugins.filter.*",
@@ -90,7 +79,7 @@ public class ProjectPersisterUtil {
                 "java.lang.String"
         });
         // @formatter:on
-        return xstream;
+        return xStream;
     }
 
     public static void saveProjectFile(String fileName, DataModel dataModel) {
@@ -108,6 +97,39 @@ public class ProjectPersisterUtil {
         Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
         if (saveFilePath != null) {
             ProjectPersisterUtil.saveProjectFile(saveFilePath.toString(), dataModel);
+        }
+    }
+
+    private static void addPluginAliases(XStream xStream) {
+        addInputPluginAliases(xStream);
+        addFilterPluginAliases(xStream);
+        addSorterPluginAliases(xStream);
+    }
+    private static void addInputPluginAliases(XStream xStream) {
+        InputPluginService inputPluginService = InputPluginService.getInstance();
+        for (var entry : inputPluginService.getAllPlugins()) {
+            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
+        }
+    }
+
+    private static void addFilterPluginAliases(XStream xStream) {
+        FilterPluginService filterPluginService = FilterPluginService.getInstance();
+        for (var entry : filterPluginService.getAllPlugins()) {
+            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
+        }
+    }
+
+    private static void addSorterPluginAliases(XStream xStream) {
+        SorterPluginService sorterPluginService = SorterPluginService.getInstance();
+        for (var entry : sorterPluginService.getAllPlugins()) {
+            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
+        }
+    }
+
+    private static void addOutputPluginAliases(XStream xStream) {
+        OutputPluginService outputPluginService = OutputPluginService.getInstance();
+        for (var entry : outputPluginService.getAllPlugins()) {
+            xStream.alias(entry.getClass().getSimpleName(), entry.getClass());
         }
     }
 
