@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.output;
 
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.EqualsAndHashCode;
@@ -20,7 +21,9 @@ import java.util.List;
 @EqualsAndHashCode
 public class FileOutput implements Output {
     private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
+    @XStreamOmitField
     private final String name = "File Output";
+    @XStreamOmitField
     private final String description = "Writes a playlist to a local file.";
     private URI output = null;
 

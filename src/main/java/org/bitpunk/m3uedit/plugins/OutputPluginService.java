@@ -2,30 +2,19 @@ package org.bitpunk.m3uedit.plugins;
 
 import org.bitpunk.m3uedit.plugins.output.Output;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ServiceLoader;
 
-public class OutputPluginService {
-    private static OutputPluginService outputPluginService;
-    private final ServiceLoader<Output> loader;
+public class OutputPluginService<T extends Plugin> extends AbstractPluginService<T> {
 
-    private OutputPluginService() {
-        this.loader = ServiceLoader.load(Output.class);
+    private OutputPluginService(ServiceLoader<T> loader) {
+        super(loader);
     }
 
-    public static synchronized OutputPluginService getInstance() {
-        if (outputPluginService == null) {
-            outputPluginService = new OutputPluginService();
-        }
-        return outputPluginService;
+    public static OutputPluginService<Output> getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
-    public List<String> getOutputNames() {
-        List<String> outputNames = new ArrayList<>();
-        for (Output currentOutput : loader) {
-            outputNames.add(currentOutput.getName());
-        }
-        return outputNames;
+    private static class SingletonHolder {
+        private static final OutputPluginService<Output> INSTANCE = new OutputPluginService<>(ServiceLoader.load(Output.class));
     }
 }

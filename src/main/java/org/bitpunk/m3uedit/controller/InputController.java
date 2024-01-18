@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class InputController extends AbstractController {
-    private static final Logger log = LoggerFactory.getLogger(InputController.class);
     public static final String FXML_INPUT = "fxml/Input.fxml";
+    public static final String ADD_INPUT = "add Input";
+    private static final Logger log = LoggerFactory.getLogger(InputController.class);
     @FXML
     public ComboBox<String> addInputComboBox;
     @FXML
@@ -46,11 +47,15 @@ public class InputController extends AbstractController {
     private void addInputAction(ActionEvent actionEvent) {
         log.debug("addInputAction: {}", actionEvent);
         String selectedInputName = addInputComboBox.getSelectionModel().getSelectedItem();
-        Input input = InputFactory.getInput(selectedInputName);
-        if (input != null) {
-            input.configure();
-            dataModel.getInputs().add(input);
-            addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
+        if (!selectedInputName.equals(ADD_INPUT)) {
+            Input input = InputFactory.getInput(selectedInputName);
+            if (input != null) {
+                input.configure();
+                if (input.getSource() != null) {
+                    dataModel.getInputs().add(input);
+                }
+                addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
+            }
         }
     }
 
@@ -66,9 +71,9 @@ public class InputController extends AbstractController {
     }
 
     private void initAvailableInputComboBox() {
-        List<String> inputNames = InputPluginService.getInstance().getInputNames();
+        List<String> inputNames = InputPluginService.getInstance().getAllPluginNames();
         log.debug("inputNames: {}", inputNames);
-        addInputComboBox.getItems().add("add Input");
+        addInputComboBox.getItems().add(ADD_INPUT);
         addInputComboBox.getItems().addAll(inputNames);
         addInputComboBox.getSelectionModel().select(0);
         addInputComboBox.setOnAction(this::addInputAction);

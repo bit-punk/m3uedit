@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.input.KeyCodeCombination?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.Scene?>
+<Scene xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+       fx:controller="org.bitpunk.m3uedit.controller.SceneController">
+    <BorderPane prefWidth="800" prefHeight="640">
+        <top>
+            <MenuBar>
+                <Menu text="File">
+                    <MenuItem onAction="#handleNewProjectAction" text="New Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="N" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <MenuItem onAction="#handleOpenProjectAction" text="Open Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <MenuItem fx:id="saveProjectMenuItem" onAction="#handleSaveProjectAction" text="Save Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <MenuItem fx:id="closeProjectMenuItem" disable="true" onAction="#handleCloseProjectAction" text="Close Project">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="W" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <SeparatorMenuItem/>
+                    <MenuItem onAction="#handleExitAction" text="Exit"/>
+                </Menu>
+                <Menu text="Help">
+                    <MenuItem onAction="#handleAboutAction" text="About"/>
+                </Menu>
+            </MenuBar>
+        </top>
+        <center>
+            <TabPane fx:id="tabPane"/>
+        </center>
+        <bottom>
+            <HBox>
+                <Label fx:id="statusLabel"/>
+            </HBox>
+        </bottom>
+    </BorderPane>
+</Scene>

@@ -1,5 +1,5 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.layout.VBox?>
 <fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml">
-    <ListView fx:id="availableFiltersListView"/>
+    <ListView fx:id="availableFiltersListView" VBox.vgrow="ALWAYS"/>
 </fx:root>

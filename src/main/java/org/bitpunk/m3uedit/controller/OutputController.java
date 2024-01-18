@@ -21,6 +21,7 @@ import java.util.ResourceBundle;
 public class OutputController extends AbstractController {
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
     public static final String FXML_OUTPUT = "fxml/Output.fxml";
+    public static final String ADD_OUTPUT = "add Output";
 
     @FXML
     public ComboBox<String> addOutputComboBox;
@@ -55,9 +56,9 @@ public class OutputController extends AbstractController {
     }
 
     private void initAvailableOutputComboBox() {
-        List<String> outputNames = OutputPluginService.getInstance().getOutputNames();
+        List<String> outputNames = OutputPluginService.getInstance().getAllPluginNames();
         log.debug("outputNames: {}", outputNames);
-        addOutputComboBox.getItems().add("add Output");
+        addOutputComboBox.getItems().add(ADD_OUTPUT);
         addOutputComboBox.getItems().addAll(outputNames);
         addOutputComboBox.getSelectionModel().select(0);
         addOutputComboBox.setOnAction(this::addOutputAction);

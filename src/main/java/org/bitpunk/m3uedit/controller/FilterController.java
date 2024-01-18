@@ -1,13 +1,11 @@
 package org.bitpunk.m3uedit.controller;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.cell.CheckBoxListCell;
-import javafx.util.StringConverter;
+import javafx.scene.control.Tooltip;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -19,8 +17,8 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class FilterController extends AbstractController {
-    private static final Logger log = LoggerFactory.getLogger(FilterController.class);
     public static final String FXML_FILTER = "fxml/Filter.fxml";
+    private static final Logger log = LoggerFactory.getLogger(FilterController.class);
     @FXML
     public ListView<Filter> availableFiltersListView;
     private DataModel dataModel;
@@ -34,8 +32,8 @@ public class FilterController extends AbstractController {
     }
 
     private void initAvailableFilterListView() {
-        setCellFactory(availableFiltersListView, dataModel.getFilters());
-        List<Filter> filterPlugins = FilterPluginService.getInstance().getFilterPlugins();
+        setCellFactory(availableFiltersListView);
+        List<Filter> filterPlugins = FilterPluginService.getInstance().getAllPlugins();
         log.debug("filterNames: {}", filterPlugins);
         availableFiltersListView.getItems().addAll(filterPlugins);
     }
@@ -48,29 +46,51 @@ public class FilterController extends AbstractController {
         dataModel.getFilters().forEach(filter -> filter.filter(dataModel.getEntries()));
     }
 
-    private void setCellFactory(ListView<Filter> availableFiltersListView, ObservableList<Filter> selectedItems) {
-        availableFiltersListView.setCellFactory(CheckBoxListCell.forListView(item -> {
-            BooleanProperty observable = new SimpleBooleanProperty();
-            observable.addListener((obs, wasSelected, isNowSelected) -> {
-                log.debug("Check box for {} changed from {} to {}", item, wasSelected, isNowSelected);
-                if (isNowSelected) {
-                    selectedItems.add(item);
-                } else {
-                    selectedItems.remove(item);
-                }
-            });
-            return observable;
-        }, new StringConverter<>() {
-            @Override
-            public String toString(Filter filter) {
-                return filter.getName();
-            }
+    private void setCellFactory(ListView<Filter> availableFiltersListView) {
+        availableFiltersListView.setCellFactory((ListView<Filter> param) -> new ListCell<>() {
+            private CheckBox checkBox;
 
             @Override
-            public Filter fromString(String string) {
-                return null;
+            public void updateItem(Filter filter, boolean empty) {
+                super.updateItem(filter, empty);
+                if (!(empty || filter == null)) {
+                    getCheckBox().setSelected(dataModel.getFilters().stream().anyMatch(f -> f.getName().equals(filter.getName())));
+                    setGraphic(getCheckBox());
+                    setText(filter.getName());
+                    setTooltip(new Tooltip(filter.getDescription()));
+                } else {
+                    setGraphic(null);
+                    setText(null);
+                }
             }
-        }));
+
+            /**
+             * Returns a CheckBox object.
+             * <p>
+             * The method checks if the "checkBox" instance variable is null. If it is, a new CheckBox object is created.
+             * The method also adds a listener to the selectedProperty of the CheckBox object. This listener updates the
+             * dataModel's filters based on the selection state of the CheckBox.
+             *
+             * @return a CheckBox object.
+             */
+            private CheckBox getCheckBox() {
+                if (checkBox == null) {
+                    checkBox = new CheckBox();
+                    checkBox.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+                        if (getItem() != null) {
+                            if (isNowSelected) {
+                                dataModel.getFilters().add(getItem());
+                            } else {
+                                dataModel.getFilters().remove(getItem());
+                            }
+                        }
+                        log.debug("Currently selected Filters: {}", dataModel.getFilters());
+                    });
+                }
+                return checkBox;
+            }
+
+        });
     }
 
     @Override

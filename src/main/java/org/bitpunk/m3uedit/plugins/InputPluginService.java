@@ -2,49 +2,19 @@ package org.bitpunk.m3uedit.plugins;
 
 import org.bitpunk.m3uedit.plugins.input.Input;
 
-import java.util.*;
+import java.util.ServiceLoader;
 
-public class InputPluginService {
-    private static InputPluginService inputPluginService;
-    private final ServiceLoader<Input> loader;
+public class InputPluginService<T extends Plugin> extends AbstractPluginService<T> {
 
-
-    private InputPluginService() {
-        this.loader = ServiceLoader.load(Input.class);
+    private InputPluginService(ServiceLoader<T> loader) {
+        super(loader);
     }
 
-    public static synchronized InputPluginService getInstance() {
-        if (inputPluginService == null) {
-            inputPluginService = new InputPluginService();
-        }
-        return inputPluginService;
+    public static InputPluginService<Input> getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
-    public Optional<String> getInputDescription(String name) {
-        String inputDescription = null;
-        Iterator<Input> inputIterator = loader.iterator();
-        while (inputDescription == null && inputIterator.hasNext()) {
-            Input currentInput = inputIterator.next();
-            inputDescription = currentInput.getDescription();
-        }
-        return Optional.ofNullable(inputDescription);
-    }
-
-    public List<String> getInputNames() {
-        List<String> inputNames = new ArrayList<>();
-        for (Input currentInput : loader) {
-            inputNames.add(currentInput.getName());
-        }
-        return inputNames;
-    }
-
-    public Input getInput(String selectedInputName) {
-        Input input = null;
-        for (Input currentInput : loader) {
-            if (selectedInputName.equals(currentInput.getName())) {
-                input = currentInput;
-            }
-        }
-        return input;
+    private static class SingletonHolder {
+        private static final InputPluginService<Input> INSTANCE = new InputPluginService<>(ServiceLoader.load(Input.class));
     }
 }
