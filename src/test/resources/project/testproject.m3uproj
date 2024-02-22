@@ -7,9 +7,21 @@
       <source></source>
     </FileInput>
     <FritzBoxInput>
-      <name>FritzBox Input</name>
-      <description>Downloads a playlist from a FritzBox.</description>
-      <source>http://fritz.box//dvb/m3u/tvsd.m3u</source>
+      <selectedStreamSources>
+        <StreamSource>
+          <name>tvsd.m3u</name>
+          <description>SD streams</description>
+        </StreamSource>
+        <StreamSource reference="../StreamSource"/>
+        <StreamSource>
+          <name>tvhd.m3u</name>
+          <description>HD streams</description>
+        </StreamSource>
+      </selectedStreamSources>
+      <fritzBoxConnection>
+        <baseUrl>http://fritz.box/dvb/m3u/</baseUrl>
+        <selectedStreamSources reference="../../selectedStreamSources"/>
+      </fritzBoxConnection>
     </FritzBoxInput>
   </inputs>
   <filters class="com.sun.javafx.collections.ObservableListWrapper">

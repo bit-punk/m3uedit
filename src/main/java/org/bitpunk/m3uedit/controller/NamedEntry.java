@@ -22,6 +22,6 @@ public class NamedEntry implements NamedItem {
 
     @Override
     public String getName() {
-        return String.format("%s=%s", key, value);
+        return "%s=%s".formatted(key, value);
     }
 }

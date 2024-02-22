@@ -1,0 +1,20 @@
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefHeight="150" prefWidth="500">
+
+    <content>
+        <GridPane hgap="5" vgap="5">
+            <Label text="Fritzbox-Base-URL:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <TextField fx:id="baseUrlTextField" GridPane.columnIndex="1" GridPane.rowIndex="0" text="http://fritz.box/dvb/m3u/"/>
+            <Label text="Streams to import:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <ListView fx:id="availableStreamSources" VBox.vgrow="ALWAYS" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            <columnConstraints>
+                <ColumnConstraints/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+        </GridPane>
+    </content>
+
+    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
+    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+</DialogPane>
