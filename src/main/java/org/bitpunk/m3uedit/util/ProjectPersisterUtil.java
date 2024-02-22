@@ -7,6 +7,7 @@ import com.thoughtworks.xstream.security.PrimitiveTypePermission;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.*;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ public class ProjectPersisterUtil {
         // define class-aliases to not expose package-names in the xml-file
         xStream.alias("Project", DataModel.class);
         xStream.alias("Entry", Entry.class);
+        xStream.alias("StreamSource", StreamSource.class);
 
         addAllPluginAliases(xStream);
 
@@ -73,6 +75,7 @@ public class ProjectPersisterUtil {
                 "org.bitpunk.m3uedit.plugins.sorter.*",
                 "org.bitpunk.m3uedit.model.DataModel",
                 "org.bitpunk.m3uedit.model.Entry",
+                "org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource",
                 "com.sun.javafx.collections.ObservableListWrapper",
                 "java.lang.String"
         });

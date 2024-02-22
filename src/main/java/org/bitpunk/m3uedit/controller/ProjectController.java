@@ -76,7 +76,7 @@ public class ProjectController extends AbstractController {
     }
 
     public void updateStatusLabel() {
-        String statusMessage = String.format("%s entries loaded", dataModel.getEntries().size());
+        String statusMessage = "%s entries loaded".formatted(dataModel.getEntries().size());
         statusLabel.setText(statusMessage);
     }
 

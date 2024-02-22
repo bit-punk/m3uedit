@@ -64,14 +64,12 @@ public class SftpOutput implements Output {
     @Override
     public void configure() {
         log.debug("configure()");
-        SftpTargetDialogController dialogController;
-        DialogPane dialogPane;
-        dialogController = new SftpTargetDialogController();
-        dialogPane = dialogController.getDialogPane();
-        dialogPane.lookupButton(dialogController.okButtonType)
+        SftpTargetDialogController sftpTargetDialogController = new SftpTargetDialogController();
+        DialogPane dialogPane = sftpTargetDialogController.getDialogPane();
+        dialogPane.lookupButton(sftpTargetDialogController.okButtonType)
                 .disableProperty()
-                .bind(dialogController.getInputsFull().not());
-        dialogController.showAndWait().ifPresent(uri -> sftpConnection = uri);
+                .bind(sftpTargetDialogController.getInputsFull().not());
+        sftpTargetDialogController.showAndWait().ifPresent(uri -> sftpConnection = uri);
     }
 
     @Override

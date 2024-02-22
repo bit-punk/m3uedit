@@ -24,23 +24,29 @@ import java.util.Set;
 public class SftpTargetDialogController extends AbstractDialogController<SftpConnection> implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SftpTargetDialogController.class);
     public static final String FXML_PLUGIN_OUTPUT_SFTP = "plugin/output/sftp/SftpTargetDialog.fxml";
+    public static final String SFTP_DIALOG_TITLE = "Enter SFTP-Connection";
     @FXML
     public ButtonType okButtonType;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField hostnameTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField hostPortTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField hostPathTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField usernameTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private PasswordField passwordField;
     @Getter
     private BooleanBinding inputsFull;
 
     public SftpTargetDialogController() {
-        super(FXML_PLUGIN_OUTPUT_SFTP,"Enter SFTP-Connection");
+        super(FXML_PLUGIN_OUTPUT_SFTP, SFTP_DIALOG_TITLE);
         setResizable(true);
         setResultConverter(getURIResultConverter());
     }
@@ -76,11 +82,13 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     private void initializeBinding() {
         inputsFull = new BooleanBinding() {
             {
-                bind(hostnameTextField.textProperty(),
-                        hostPortTextField.textProperty(),
-                        hostPathTextField.textProperty(),
-                        usernameTextField.textProperty(),
-                        passwordField.textProperty());
+                bind(
+                    hostnameTextField.textProperty(),
+                    hostPortTextField.textProperty(),
+                    hostPathTextField.textProperty(),
+                    usernameTextField.textProperty(),
+                    passwordField.textProperty()
+                );
             }
 
             @Override

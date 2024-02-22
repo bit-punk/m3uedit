@@ -1,11 +1,14 @@
 package org.bitpunk.m3uedit.plugins.input;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.DialogPane;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzboxInputDialogController;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,8 +17,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -25,10 +28,44 @@ public class FritzBoxInput extends AbstractInput implements Input {
     private final String name = "FritzBox Input";
     @XStreamOmitField
     private final String description = "Downloads a playlist from a FritzBox.";
-    String source = "http://fritz.box//dvb/m3u/tvsd.m3u";
+    List<StreamSource> selectedStreamSources;
+    private FritzBoxConnection fritzBoxConnection = null;
+    private static  final String baseUrl = "http://fritz.box//dvb/m3u/";
 
     @Override
     public List<Entry> read() {
+        List<Entry> entriesRead = new ArrayList<>();
+        for (StreamSource selectedStreamSource : selectedStreamSources) {
+            HttpResponse<String> response = readHttpResponse(baseUrl + selectedStreamSource.getName());
+            log.debug("Status-code: [{}]", response.statusCode());
+            String responseBody = response.body();
+            log.debug("response: [{}]", responseBody);
+            entriesRead.addAll(readData(new ByteArrayInputStream(responseBody.getBytes())));
+        }
+        return entriesRead;
+    }
+
+    @Override
+    public String getSource() {
+        return fritzBoxConnection.toString();
+    }
+
+    @Override
+    public void configure() {
+        log.debug("configure()");
+        FritzboxInputDialogController fritzboxInputDialogController = new FritzboxInputDialogController();
+        DialogPane dialogPane = fritzboxInputDialogController.getDialogPane();
+        // @formatter:off
+        dialogPane.lookupButton(fritzboxInputDialogController.okButtonType)
+                .disableProperty()
+                .bind(fritzboxInputDialogController.getInputsFull().not());
+        // @formatter:on
+        fritzboxInputDialogController.showAndWait().ifPresent(con -> fritzBoxConnection = con);
+        selectedStreamSources = fritzboxInputDialogController.getFritzBoxConnection().getSelectedStreamSources();
+    }
+
+    private HttpResponse<String> readHttpResponse(String url) {
+        log.debug("reading HttpResponse for url: {}", url);
         // @formatter:off
         HttpClient client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -37,7 +74,7 @@ public class FritzBoxInput extends AbstractInput implements Input {
                 .build();
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(source))
+                .uri(URI.create(url))
                 .build();
         // @formatter:on
         HttpResponse<String> response;
@@ -46,24 +83,7 @@ public class FritzBoxInput extends AbstractInput implements Input {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-        log.debug("Status-code: [{}]", response.statusCode());
-        String responseBody = response.body();
-        log.debug("response: [{}]", responseBody);
-        return readData(new ByteArrayInputStream(responseBody.getBytes()));
+        return response;
     }
 
-    @Override
-    public void configure() {
-        log.debug("configure()");
-        TextInputDialog dialog = new TextInputDialog(source);
-        dialog.setTitle("Enter Fritzbox-URL");
-        dialog.setHeaderText("Please enter the FritzBox's URL from which we will download the playlist-data.");
-        dialog.setContentText("FritzBox-URL:");
-
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(url -> {
-            log.debug("FritzBox-URL entered: " + url);
-            this.source = url;
-        });
-    }
 }
