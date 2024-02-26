@@ -26,26 +26,37 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
 
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField durationTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField groupTitleTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField tvgIdTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField tvgNameTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField tvgLogoTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField tvgShiftTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField radioTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField channelUriTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField nameTextField;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private MapEditorController mapEditorController;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private ButtonType okButtonType;
     private BooleanBinding isInputValid;
 
@@ -68,6 +79,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     private void disableOkButtonOnInvalidInput() {
         getDialogPane().lookupButton(okButtonType).disableProperty().bind(isInputValid.not());
     }
+
     private void requestFocus(DialogEvent dialogEvent) {
         Platform.runLater(() -> durationTextField.requestFocus());
     }

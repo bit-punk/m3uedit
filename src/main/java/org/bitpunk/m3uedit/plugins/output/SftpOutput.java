@@ -6,6 +6,7 @@ import javafx.scene.control.DialogPane;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
+import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.sftp.SftpTargetDialogController;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 @Getter
-public class SftpOutput implements Output {
+public class SftpOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
     @XStreamOmitField
     private final String name = "SFTP Output";

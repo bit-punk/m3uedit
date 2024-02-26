@@ -4,6 +4,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class SdChannelFilter implements Filter {
+public class SdChannelFilter extends AbstractPlugin implements Filter {
     private static final Logger log = LoggerFactory.getLogger(SdChannelFilter.class);
     @XStreamOmitField
     private final String name = "SD Channel Filter";

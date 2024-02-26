@@ -16,19 +16,23 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 public class EntryListController extends AbstractController {
-    private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
-
-    private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
     public static final String FXML_ENTRY_LIST = "fxml/EntryList.fxml";
+    private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
+    private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Entry, String> indexColumn;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Entry, String> channelNameColumn;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Entry, String> channelUriColumn;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TableView<Entry> entryTableView;
     @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private Button addNewEntryButton;
     private DataModel dataModel;
 

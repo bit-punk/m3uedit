@@ -29,7 +29,6 @@ public class DataModel {
     private ObservableList<Entry> entries = FXCollections.observableArrayList();
     private ObservableList<Output> outputs = FXCollections.observableArrayList();
 
-
     /**
      * Using XStream for de-serialization will not invoke the constructor, however it will invoke this method.
      * This method is used during the deserialization process to resolve the read object.
