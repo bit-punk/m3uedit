@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
+import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +19,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 @Getter
-@EqualsAndHashCode
-public class FileOutput implements Output {
+@EqualsAndHashCode(callSuper = false)
+public class FileOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
     @XStreamOmitField
     private final String name = "File Output";

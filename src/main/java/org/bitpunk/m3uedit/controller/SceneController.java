@@ -12,6 +12,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public class SceneController implements Initializable {
     @FXML
     private void handleNewProjectAction() {
         String newProjectName = DialogUtil.getNewProjectName();
-        addNewProjectTab(new DataModel(newProjectName));
+        addNewProjectTab(DataModelFactory.createDataModel(newProjectName));
     }
 
     private void addNewProjectTab(DataModel dataModel) {

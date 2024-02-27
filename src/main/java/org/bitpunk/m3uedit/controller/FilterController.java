@@ -1,41 +1,80 @@
 package org.bitpunk.m3uedit.controller;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
 public class FilterController extends AbstractController {
     public static final String FXML_FILTER = "fxml/Filter.fxml";
-    private static final Logger log = LoggerFactory.getLogger(FilterController.class);
     @FXML
-    public ListView<Filter> availableFiltersListView;
+    public TableView<Filter> availableFiltersTableView;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private CheckBox selectAllEntriesCheckBox;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Filter, Boolean> selectedColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Filter, String> indexColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Filter, String> filterNameColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Filter, String> filterDescriptionColumn;
     private DataModel dataModel;
 
     public FilterController() {
         super(FXML_FILTER);
     }
 
+    private static TableCell<Filter, Boolean> getFilterTableCell(TableColumn<Filter, Boolean> param) {
+        return new CheckBoxTableCell<>() {
+            @Override
+            public void updateItem(Boolean item, boolean empty) {
+                updateCheckBox(item, empty);
+            }
+
+            private void updateCheckBox(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                int index = getIndex();
+                if (empty || index < 0 || index >= getTableView().getItems().size()) {
+                    setGraphic(null);
+                } else {
+                    final CheckBox checkBox = new CheckBox();
+                    Filter filter = getTableView().getItems().get(index);
+                    checkBox.selectedProperty().bindBidirectional(filter.getEnabled());
+                    setGraphic(checkBox);
+                }
+            }
+        };
+    }
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
     }
 
-    private void initAvailableFilterListView() {
-        setCellFactory(availableFiltersListView);
-        List<Filter> filterPlugins = FilterPluginService.getInstance().getAllPlugins();
-        log.debug("filterNames: {}", filterPlugins);
-        availableFiltersListView.getItems().addAll(filterPlugins);
+    private void initAvailableFilterTableView() {
+        availableFiltersTableView.getItems().addAll(dataModel.getFilters());
+        selectedColumn.setCellFactory(FilterController::getFilterTableCell);
+        selectedColumn.setCellValueFactory(cellData -> cellData.getValue().getEnabled());
+        selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
+        addIndexColumn();
+        filterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        filterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
     }
 
     private void initListener() {
@@ -46,60 +85,28 @@ public class FilterController extends AbstractController {
         dataModel.getFilters().forEach(filter -> filter.filter(dataModel.getEntries()));
     }
 
-    private void setCellFactory(ListView<Filter> availableFiltersListView) {
-        availableFiltersListView.setCellFactory((ListView<Filter> param) -> new ListCell<>() {
-            private CheckBox checkBox;
-
-            @Override
-            public void updateItem(Filter filter, boolean empty) {
-                super.updateItem(filter, empty);
-                if (!(empty || filter == null)) {
-                    getCheckBox().setSelected(dataModel.getFilters().stream().anyMatch(f -> f.getName().equals(filter.getName())));
-                    setGraphic(getCheckBox());
-                    setText(filter.getName());
-                    setTooltip(new Tooltip(filter.getDescription()));
-                } else {
-                    setGraphic(null);
-                    setText(null);
-                }
-            }
-
-            /**
-             * Returns a CheckBox object.
-             * <p>
-             * The method checks if the "checkBox" instance variable is null. If it is, a new CheckBox object is created.
-             * The method also adds a listener to the selectedProperty of the CheckBox object. This listener updates the
-             * dataModel's filters based on the selection state of the CheckBox.
-             *
-             * @return a CheckBox object.
-             */
-            private CheckBox getCheckBox() {
-                if (checkBox == null) {
-                    checkBox = new CheckBox();
-                    checkBox.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
-                        if (getItem() != null) {
-                            if (isNowSelected) {
-                                dataModel.getFilters().add(getItem());
-                            } else {
-                                dataModel.getFilters().remove(getItem());
-                            }
-                        }
-                        log.debug("Currently selected Filters: {}", dataModel.getFilters());
-                    });
-                }
-                return checkBox;
-            }
-
+    private void addIndexColumn() {
+        indexColumn.setCellFactory(col -> {
+            TableCell<Filter, String> cell = new TableCell<>();
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
+            return cell;
         });
     }
 
     @Override
     public void initModel(DataModel dataModel) {
         if (this.dataModel != null) {
-            throw new IllegalStateException("Model can only be initialized once");
+            throw new IllegalStateException("Data model already initialized");
         }
         this.dataModel = dataModel;
-        initAvailableFilterListView();
+        initAvailableFilterTableView();
         initListener();
     }
+
+    private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+        for (Filter filter : availableFiltersTableView.getItems()) {
+            filter.getEnabled().set(newValue);
+        }
+    }
+
 }

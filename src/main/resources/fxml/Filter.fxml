@@ -1,5 +1,16 @@
-<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
 <fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml">
-    <ListView fx:id="availableFiltersListView" VBox.vgrow="ALWAYS"/>
+    <TableView fx:id="availableFiltersTableView" VBox.vgrow="ALWAYS" editable="true">
+        <columns>
+            <TableColumn fx:id="selectedColumn" prefWidth="50.0" style="-fx-alignment: CENTER;">
+                <graphic>
+                    <CheckBox fx:id="selectAllEntriesCheckBox" mnemonicParsing="false" />
+                </graphic>
+            </TableColumn>
+            <TableColumn fx:id="indexColumn" maxWidth="70" text="Index"/>
+            <TableColumn fx:id="filterNameColumn" maxWidth="700" minWidth="50" prefWidth="150" text="Filter Name"/>
+            <TableColumn fx:id="filterDescriptionColumn" maxWidth="700" minWidth="50" prefWidth="300" text="Filter description"/>
+        </columns>
+    </TableView>
 </fx:root>
