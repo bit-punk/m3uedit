@@ -37,7 +37,7 @@ public class InputController extends AbstractController {
     @Override
     public void initModel(DataModel dataModel) {
         if (this.dataModel != null) {
-            throw new IllegalStateException("Model can only be initialized once");
+            throw new IllegalStateException("Data model already initialized");
         }
         this.dataModel = dataModel;
         inputTableView.setItems(this.dataModel.getInputs());

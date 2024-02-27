@@ -1,29 +1,65 @@
 package org.bitpunk.m3uedit.controller;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.plugins.SorterPluginService;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
 public class SorterController extends AbstractController {
     public static final String FXML_SORTER = "fxml/Sorter.fxml";
-    private static final Logger log = LoggerFactory.getLogger(SorterController.class);
     @FXML
-    public ListView<Sorter> availableSortersListView;
+    public TableView<Sorter> availableSortersTableView;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private CheckBox selectAllEntriesCheckBox;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Sorter, Boolean> selectedColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Sorter, String> indexColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Sorter, String> sorterNameColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Sorter, String> sorterDescriptionColumn;
     private DataModel dataModel;
 
     public SorterController() {
         super(FXML_SORTER);
+    }
+
+    private static TableCell<Sorter, Boolean> createCheckBoxTableCell(TableColumn<Sorter, Boolean> param) {
+        return new CheckBoxTableCell<>() {
+            @Override
+            public void updateItem(Boolean item, boolean empty) {
+                updateCheckBox(item, empty);
+            }
+
+            private void updateCheckBox(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                int index = getIndex();
+                if (empty || index < 0 || index >= getTableView().getItems().size()) {
+                    setGraphic(null);
+                } else {
+                    final CheckBox checkBox = new CheckBox();
+                    Sorter sorter = getTableView().getItems().get(index);
+                    checkBox.selectedProperty().bindBidirectional(sorter.getEnabled());
+                    setGraphic(checkBox);
+                }
+            }
+        };
     }
 
     @Override
@@ -31,56 +67,35 @@ public class SorterController extends AbstractController {
     }
 
     private void initAvailableSorterListView() {
-        setCellFactory(availableSortersListView);
-        List<Sorter> sorterPlugins = SorterPluginService.getInstance().getAllPlugins();
-        log.debug("sorter-plugins: {}", sorterPlugins);
-        availableSortersListView.getItems().addAll(sorterPlugins);
-    }
-
-    private void setCellFactory(ListView<Sorter> availableSortersListView) {
-        availableSortersListView.setCellFactory((ListView<Sorter> param) -> new ListCell<>() {
-            private CheckBox checkBox;
-
-            @Override
-            public void updateItem(Sorter sorter, boolean empty) {
-                super.updateItem(sorter, empty);
-                if (!(empty || sorter == null)) {
-                    getCheckBox().setSelected(dataModel.getSorters().stream().anyMatch(s -> s.getName().equals(sorter.getName())));
-                    setGraphic(getCheckBox());
-                    setText(sorter.getName());
-                    setTooltip(new Tooltip(sorter.getDescription()));
-                } else {
-                    setGraphic(null);
-                    setText(null);
-                }
-            }
-
-            private CheckBox getCheckBox() {
-                if (checkBox == null) {
-                    checkBox = new CheckBox();
-                    checkBox.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
-                        if (getItem() != null) {
-                            if (isNowSelected) {
-                                dataModel.getSorters().add(getItem());
-                            } else {
-                                dataModel.getSorters().remove(getItem());
-                            }
-                        }
-                        log.debug("Currently selected Sorters: {}", dataModel.getSorters());
-                    });
-                }
-                return checkBox;
-            }
-
-        });
+        availableSortersTableView.getItems().addAll(dataModel.getSorters());
+        selectedColumn.setCellFactory(SorterController::createCheckBoxTableCell);
+        selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
+        addIndexColumn();
+        sorterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        sorterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
     }
 
     @Override
     public void initModel(DataModel dataModel) {
         if (this.dataModel != null) {
-            throw new IllegalStateException("Model can only be initialized once");
+            throw new IllegalStateException("Data model already initialized");
         }
         this.dataModel = dataModel;
         initAvailableSorterListView();
     }
+
+    private void addIndexColumn() {
+        indexColumn.setCellFactory(col -> {
+            TableCell<Sorter, String> cell = new TableCell<>();
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
+            return cell;
+        });
+    }
+
+    private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+        for (Sorter sorter : availableSortersTableView.getItems()) {
+            sorter.getEnabled().set(newValue);
+        }
+    }
+
 }

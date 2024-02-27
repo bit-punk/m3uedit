@@ -12,15 +12,12 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class FilterController extends AbstractController {
     public static final String FXML_FILTER = "fxml/Filter.fxml";
-    private static final Logger log = LoggerFactory.getLogger(FilterController.class);
     @FXML
     public TableView<Filter> availableFiltersTableView;
     @FXML
@@ -99,7 +96,7 @@ public class FilterController extends AbstractController {
     @Override
     public void initModel(DataModel dataModel) {
         if (this.dataModel != null) {
-            throw new IllegalStateException("Model can only be initialized once");
+            throw new IllegalStateException("Data model already initialized");
         }
         this.dataModel = dataModel;
         initAvailableFilterTableView();
