@@ -24,8 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ProjectPersisterUtilTest {
 
@@ -34,15 +33,15 @@ class ProjectPersisterUtilTest {
         DataModel dataModel = getDataModel();
         String projectFileName = "target/testproject.m3uproj";
         ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
-        assertThat(Files.exists(Path.of(projectFileName)), is(true));
+        assertThat(Files.exists(Path.of(projectFileName))).isEqualTo(true);
     }
 
     @Test
     void testReadProjectFile() {
         String projectFileName = "src/test/resources/project/testproject.m3uproj";
         DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
-        assertThat(dataModel, is(notNullValue()));
-        assertThat(dataModel.getSorters(), hasSize(1));
+        assertThat(dataModel).isNotNull();
+        assertThat(dataModel.getSorters()).hasSize(1);
     }
 
     private static DataModel getDataModel() {

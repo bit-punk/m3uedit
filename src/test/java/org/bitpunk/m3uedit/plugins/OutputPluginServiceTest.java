@@ -4,24 +4,23 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class OutputPluginServiceTest {
 
     @Test
     void getAllPlugins() {
         List<? extends Plugin> allPlugins = OutputPluginService.getInstance().getAllPlugins();
-        assertThat(allPlugins, hasSize(2));
-        assertThat(allPlugins, hasItem(hasProperty("name", is("File Output"))));
-        assertThat(allPlugins, hasItem(hasProperty("name", is("SFTP Output"))));
+        assertThat(allPlugins).hasSize(2);
+        assertThat(allPlugins).extracting("name").contains("File Output");
+        assertThat(allPlugins).extracting("name").contains("SFTP Output");
     }
 
     @Test
     void getAllPluginNames() {
         List<String> allPluginNames = OutputPluginService.getInstance().getAllPluginNames();
-        assertThat(allPluginNames, hasSize(2));
-        assertThat(allPluginNames, hasItem("File Output"));
-        assertThat(allPluginNames, hasItem("SFTP Output"));
+        assertThat(allPluginNames).hasSize(2);
+        assertThat(allPluginNames).contains("File Output");
+        assertThat(allPluginNames).contains("SFTP Output");
     }
 }

@@ -11,8 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class WriterTest {
 
@@ -24,7 +23,7 @@ class WriterTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         new Writer().write(entries, baos);
-        assertThat(baos.toString(), is(getOrigFile(referenceFilename)));
+        assertThat(baos.toString()).isEqualTo(getOrigFile(referenceFilename));
     }
 
     @Test
@@ -39,9 +38,9 @@ class WriterTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         new Writer().write(Collections.singletonList(entry), baos);
-        assertThat(baos.toString(), is("#EXTM3U" + System.lineSeparator() +
+        assertThat(baos.toString()).isEqualTo("#EXTM3U" + System.lineSeparator() +
                 "#EXTINF:-1 tvg-name=\"testing\" group-title=\"TV'Group\",test-channel'name" + System.lineSeparator() +
-                "http://test.com"));
+                "http://test.com");
     }
 
     private String getOrigFile(String fileName) {

@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.io.FileNotFoundException;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ChannelNameFilterTest extends AbstractFilterTest {
 
@@ -15,11 +14,11 @@ class ChannelNameFilterTest extends AbstractFilterTest {
     void testFilter() throws FileNotFoundException {
         Filter filter = new ChannelNameFilter();
         List<Entry> entryList = readList("iptv.m3u");
-        assertThat(entryList, hasSize(30));
+        assertThat(entryList).hasSize(30);
         List<Entry> filteredList = filter.filter(entryList);
-        assertThat(filteredList, hasSize(24));
-        assertThat(filteredList, not(hasItem(hasProperty("channelName", matchesPattern(".*QVC.*")))));
-        assertThat(filteredList, not(hasItem(hasProperty("channelName", matchesPattern(".*HSE.*")))));
+        assertThat(filteredList).hasSize(24);
+        assertThat(filteredList).filteredOn(channel -> channel.getName().matches(".*QVC.*")).isEmpty();
+        assertThat(filteredList).filteredOn(channel -> channel.getName().matches(".*HSE.*")).isEmpty();
 
     }
 
