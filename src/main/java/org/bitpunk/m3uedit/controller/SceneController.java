@@ -131,11 +131,13 @@ public class SceneController implements Initializable {
         log.debug("Loading new Project ...");
         try {
             dataModel = ProjectPersisterUtil.openFileDialogAndLoadProject();
-            dataModel.setChanged(false);    // clear dirty-flag
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        addNewProjectTab(dataModel);
+        if (dataModel != null) {
+            dataModel.setChanged(false);    // clear dirty-flag
+            addNewProjectTab(dataModel);
+        }
     }
 
     @FXML
