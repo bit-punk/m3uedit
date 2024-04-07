@@ -31,9 +31,8 @@ public class ProjectPersisterUtil {
      * Open a file dialog and load a project from the selected file.
      *
      * @return The loaded DataModel object, or null if the project could not be loaded.
-     * @throws IOException if there is an error opening or reading the project file.
      */
-    public static DataModel openFileDialogAndLoadProject() throws IOException {
+    public static DataModel openFileDialogAndLoadProject() {
         Path projectFilePath = DialogUtil.getOpenFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
         return loadProject(projectFilePath);
     }
