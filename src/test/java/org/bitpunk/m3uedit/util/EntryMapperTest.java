@@ -5,9 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class EntryMapperTest {
     @Test
@@ -30,14 +28,14 @@ class EntryMapperTest {
 
         Entry targetEntry = getTargetEntry();
         Entry sourceEntry = getEntry(duration, groupTitle, tvgId, tvgName, tvgLogo, tvgShift, radio, channelUri, name, vlcOpts);
-        assertThat(sourceEntry.getName(), is(name));
-        assertThat(targetEntry.getName(), is("target-entry"));
-        assertThat(targetEntry.getVlcOpts(), is(not(sourceEntry.getVlcOpts())));
+        assertThat(sourceEntry.getName()).isEqualTo(name);
+        assertThat(targetEntry.getName()).isEqualTo("target-entry");
+        assertThat(targetEntry.getVlcOpts()).isNotEqualTo(sourceEntry.getVlcOpts());
 
         EntryMapper.mapEntry(sourceEntry, targetEntry);
-        assertThat(targetEntry.getName(), is(sourceEntry.getName()));
-        assertThat(targetEntry.getVlcOpts(), is(sourceEntry.getVlcOpts()));
-        assertThat(targetEntry, is(sourceEntry));
+        assertThat(targetEntry.getName()).isEqualTo(sourceEntry.getName());
+        assertThat(targetEntry.getVlcOpts()).isEqualTo(sourceEntry.getVlcOpts());
+        assertThat(targetEntry).isEqualTo(sourceEntry);
     }
 
     private Entry getEntry(String duration, String groupTitle, String tvgId, String tvgName, String tvgLogo, String tvgShift, String radio, String channelUri, String name, Map<String, String> vlcOPts) {

@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.io.FileNotFoundException;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class UniqueUriFilterTest extends AbstractFilterTest {
 
@@ -15,9 +14,9 @@ class UniqueUriFilterTest extends AbstractFilterTest {
     void testFilter() throws FileNotFoundException {
         Filter filter = new UniqueUriFilter();
         List<Entry> entryList = readList("duplicate_entries.m3u");
-        assertThat(entryList, hasSize(5));
+        assertThat(entryList).hasSize(5);
         List<Entry> filteredList = filter.filter(entryList);
-        assertThat(filteredList, hasSize(4));
+        assertThat(filteredList).hasSize(4);
     }
 
 }
