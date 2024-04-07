@@ -18,7 +18,6 @@ import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.ResourceBundle;
@@ -129,11 +128,7 @@ public class SceneController implements Initializable {
     private void handleOpenProjectAction() {
         DataModel dataModel;
         log.debug("Loading new Project ...");
-        try {
-            dataModel = ProjectPersisterUtil.openFileDialogAndLoadProject();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        dataModel = ProjectPersisterUtil.openFileDialogAndLoadProject();
         if (dataModel != null) {
             dataModel.setChanged(false);    // clear dirty-flag
             addNewProjectTab(dataModel);
