@@ -17,7 +17,7 @@
         <slf4j.version>2.0.12</slf4j.version>
         <logback.version>1.5.3</logback.version>
         <javafx.version>22</javafx.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.32</lombok.version>
         <junit-jupiter.version>5.10.2</junit-jupiter.version>
         <hamcrest.version>2.2</hamcrest.version>
         <commons-lang3.version>3.13.0</commons-lang3.version>
