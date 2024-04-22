@@ -12,9 +12,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
 public class FilterController extends AbstractController implements ModelAware {
     public static final String FXML_FILTER = "fxml/Filter.fxml";
     @FXML
@@ -57,11 +54,6 @@ public class FilterController extends AbstractController implements ModelAware {
                 }
             }
         };
-    }
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        // ToDo why implement Intializable?
     }
 
     private void initAvailableFilterTableView() {

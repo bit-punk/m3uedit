@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.controller;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
@@ -18,7 +19,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class OutputController extends AbstractController implements ModelAware {
+public class OutputController extends AbstractController implements Initializable, ModelAware {
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
     public static final String FXML_OUTPUT = "fxml/Output.fxml";
     public static final String ADD_OUTPUT = "add Output";

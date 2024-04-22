@@ -12,9 +12,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
 public class SorterController extends AbstractController implements ModelAware {
     public static final String FXML_SORTER = "fxml/Sorter.fxml";
 
@@ -58,11 +55,6 @@ public class SorterController extends AbstractController implements ModelAware {
                 }
             }
         };
-    }
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        // ToDo why implement Intializable?
     }
 
     private void initAvailableSorterListView() {

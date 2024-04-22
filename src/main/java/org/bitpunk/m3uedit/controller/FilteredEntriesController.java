@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class FilteredEntriesController extends AbstractController  implements ModelAware {
+public class FilteredEntriesController extends AbstractController  implements Initializable, ModelAware {
     public static final String FXML_ENTRY_LIST = "fxml/FilteredEntriesList.fxml";
     private static final Logger log = LoggerFactory.getLogger(FilteredEntriesController.class);
     @FXML

@@ -4,6 +4,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyEvent;
@@ -20,7 +21,7 @@ import java.util.ResourceBundle;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-public class MapEditorController extends AbstractController {
+public class MapEditorController extends AbstractController implements Initializable {
     public static final String FXML_MAP_EDITOR = "fxml/MapEditor.fxml";
     private static final Logger log = LoggerFactory.getLogger(MapEditorController.class);
     @FXML
