@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class EntryListController extends AbstractController {
+public class EntryListController extends AbstractController  implements ModelAware {
     public static final String FXML_ENTRY_LIST = "fxml/EntryList.fxml";
     private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
@@ -135,7 +135,7 @@ public class EntryListController extends AbstractController {
         EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
         entryDialogController.showAndWait().ifPresent(entry -> {
             log.debug("adding new Entry: {}", entry);
-            dataModel.getEntries().add(entry);
+            dataModel.getSortedEntryList().add(entry);
             entryTableView.refresh();
         });
     }
@@ -148,7 +148,7 @@ public class EntryListController extends AbstractController {
     @Override
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
-        entryTableView.setItems(this.dataModel.getEntries());
+        entryTableView.setItems(this.dataModel.getSortedEntryList());
     }
 
 }

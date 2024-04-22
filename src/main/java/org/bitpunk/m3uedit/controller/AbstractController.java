@@ -6,10 +6,10 @@ import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 
-abstract public class AbstractController extends VBox implements Initializable, ModelAware {
+public abstract class AbstractController extends VBox implements Initializable {
     public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
 
-    public AbstractController(String fxmlFileName) {
+    protected AbstractController(String fxmlFileName) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource(fxmlFileName));
 
         fxmlLoader.setRoot(this);

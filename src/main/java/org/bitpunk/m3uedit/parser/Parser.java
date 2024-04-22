@@ -1,8 +1,7 @@
 package org.bitpunk.m3uedit.parser;
 
 import org.bitpunk.m3uedit.builder.Builder;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.model.PlayList;
+import org.bitpunk.m3uedit.model.EntryList;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +16,7 @@ public class Parser {
     private static final String M3U_START_MARKER = "#EXTM3U";
     private static final String M3U_INFO_MARKER = "#EXTINF:";
     private static final String M3U_VLC_OPT_MARKER_REGEX = "^#EXTVLCOPT:? ?";
-    private static final Pattern DURATION_REGEX = Pattern.compile(".*#EXTINF:([-+]?([0-9]*[.])?[0-9]+).*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DURATION_REGEX = Pattern.compile(".*#EXTINF:([-+]?(\\d*[.])?\\d+).*", Pattern.CASE_INSENSITIVE);
     private static final Pattern TVG_ID_REGEX = Pattern.compile(".*tvg-id=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern TVG_NAME_REGEX = Pattern.compile(".*tvg-name=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern TVG_LOGO_REGEX = Pattern.compile(".*tvg-logo=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
@@ -39,11 +38,11 @@ public class Parser {
      * @param stream pointing to your m3u file
      * @return a List of parsed Entry objects
      */
-    public PlayList<Entry> parse(InputStream stream) {
+    public EntryList parse(InputStream stream) {
         if (stream == null) {
             throw new ParsingException(0, "Cannot read stream");
         }
-        PlayList<Entry> entries = new PlayList<>();
+        EntryList entries = new EntryList();
         int lineNumber = 0;
         String line;
         try {
