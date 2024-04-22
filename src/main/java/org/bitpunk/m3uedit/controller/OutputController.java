@@ -18,7 +18,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class OutputController extends AbstractController {
+public class OutputController extends AbstractController implements ModelAware {
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
     public static final String FXML_OUTPUT = "fxml/Output.fxml";
     public static final String ADD_OUTPUT = "add Output";

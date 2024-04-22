@@ -8,7 +8,9 @@
         <TabPane rotateGraphic="true" side="LEFT" tabClosingPolicy="UNAVAILABLE"
                  xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1">
             <Tab fx:id="inputTab" text="Inputs"/>
+            <Tab fx:id="rawEntriesTab" text="Raw Entries"/>
             <Tab fx:id="filterTab" text="Filters"/>
+            <Tab fx:id="filteredEntriesTab" text="Filtered Entries"/>
             <Tab fx:id="sorterTab" text="Sorters"/>
             <Tab fx:id="entryTab" text="Playlist"/>
             <Tab fx:id="outputTab" text="Outputs"/>

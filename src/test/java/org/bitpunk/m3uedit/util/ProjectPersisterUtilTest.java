@@ -33,7 +33,7 @@ class ProjectPersisterUtilTest {
         DataModel dataModel = getDataModel();
         String projectFileName = "target/testproject.m3uproj";
         ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
-        assertThat(Files.exists(Path.of(projectFileName))).isEqualTo(true);
+        assertThat(Files.exists(Path.of(projectFileName))).isTrue();
     }
 
     @Test
@@ -50,7 +50,7 @@ class ProjectPersisterUtilTest {
         dataModel.setSorters(getSorters());
         dataModel.setInputs(getInputs());
         dataModel.setOutputs(getOutputs());
-        dataModel.setEntries(getEntries());
+        dataModel.setSortedEntryList(getEntries());
         return dataModel;
     }
 

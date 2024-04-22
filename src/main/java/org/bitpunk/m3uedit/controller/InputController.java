@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
@@ -8,7 +9,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
-import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputFactory;
@@ -28,19 +28,25 @@ public class InputController extends AbstractController {
     public ComboBox<String> addInputComboBox;
     @FXML
     public TableView<Input> inputTableView;
-    private DataModel dataModel;
+    private ObservableList<Input> inputList;
 
     public InputController() {
         super(FXML_INPUT);
     }
 
-    @Override
-    public void initModel(DataModel dataModel) {
-        if (this.dataModel != null) {
-            throw new IllegalStateException("Data model already initialized");
+
+    /**
+     * Initializes the input list and sets it to the inputTableView.
+     *
+     * @param inputList the ObservableList of Inputs to be initialized
+     * @throws IllegalStateException if the inputList is already initialized
+     */
+    public void initInputs(ObservableList<Input> inputList) {
+        if (this.inputList != null) {
+            throw new IllegalStateException("InputList already initialized");
         }
-        this.dataModel = dataModel;
-        inputTableView.setItems(this.dataModel.getInputs());
+        this.inputList = inputList;
+        inputTableView.setItems(inputList);
     }
 
     @FXML
@@ -52,7 +58,7 @@ public class InputController extends AbstractController {
             if (input != null) {
                 input.configure();
                 if (input.getSource() != null) {
-                    dataModel.getInputs().add(input);
+                    inputList.add(input);
                 }
                 addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
             }

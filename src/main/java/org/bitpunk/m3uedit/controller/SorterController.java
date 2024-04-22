@@ -15,8 +15,9 @@ import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class SorterController extends AbstractController {
+public class SorterController extends AbstractController implements ModelAware {
     public static final String FXML_SORTER = "fxml/Sorter.fxml";
+
     @FXML
     public TableView<Sorter> availableSortersTableView;
     @FXML
@@ -34,7 +35,7 @@ public class SorterController extends AbstractController {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Sorter, String> sorterDescriptionColumn;
-    private DataModel dataModel;
+    private static DataModel dataModel;
 
     public SorterController() {
         super(FXML_SORTER);
@@ -44,10 +45,6 @@ public class SorterController extends AbstractController {
         return new CheckBoxTableCell<>() {
             @Override
             public void updateItem(Boolean item, boolean empty) {
-                updateCheckBox(item, empty);
-            }
-
-            private void updateCheckBox(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
                 int index = getIndex();
                 if (empty || index < 0 || index >= getTableView().getItems().size()) {
@@ -56,6 +53,7 @@ public class SorterController extends AbstractController {
                     final CheckBox checkBox = new CheckBox();
                     Sorter sorter = getTableView().getItems().get(index);
                     checkBox.selectedProperty().bindBidirectional(sorter.getEnabled());
+                    sorter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.sortFilteredEntries());
                     setGraphic(checkBox);
                 }
             }
@@ -64,6 +62,7 @@ public class SorterController extends AbstractController {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // ToDo why implement Intializable?
     }
 
     private void initAvailableSorterListView() {

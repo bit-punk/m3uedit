@@ -2,7 +2,6 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
@@ -16,7 +15,7 @@ import org.bitpunk.m3uedit.plugins.filter.Filter;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class FilterController extends AbstractController {
+public class FilterController extends AbstractController implements ModelAware {
     public static final String FXML_FILTER = "fxml/Filter.fxml";
     @FXML
     public TableView<Filter> availableFiltersTableView;
@@ -35,7 +34,7 @@ public class FilterController extends AbstractController {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Filter, String> filterDescriptionColumn;
-    private DataModel dataModel;
+    private static DataModel dataModel;
 
     public FilterController() {
         super(FXML_FILTER);
@@ -45,10 +44,6 @@ public class FilterController extends AbstractController {
         return new CheckBoxTableCell<>() {
             @Override
             public void updateItem(Boolean item, boolean empty) {
-                updateCheckBox(item, empty);
-            }
-
-            private void updateCheckBox(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
                 int index = getIndex();
                 if (empty || index < 0 || index >= getTableView().getItems().size()) {
@@ -56,7 +51,8 @@ public class FilterController extends AbstractController {
                 } else {
                     final CheckBox checkBox = new CheckBox();
                     Filter filter = getTableView().getItems().get(index);
-                    checkBox.selectedProperty().bindBidirectional(filter.getEnabled());
+                    checkBox.selectedProperty().bindBidirectional(filter.getEnabled());     // bind CheckBox with enabled-Property of Filter
+                    filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
                     setGraphic(checkBox);
                 }
             }
@@ -65,6 +61,7 @@ public class FilterController extends AbstractController {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // ToDo why implement Intializable?
     }
 
     private void initAvailableFilterTableView() {
@@ -75,14 +72,6 @@ public class FilterController extends AbstractController {
         addIndexColumn();
         filterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         filterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
-    }
-
-    private void initListener() {
-        dataModel.getFilters().addListener((ListChangeListener<? super Filter>) listChangeListener -> filterEntries());
-    }
-
-    private void filterEntries() {
-        dataModel.getFilters().forEach(filter -> filter.filter(dataModel.getEntries()));
     }
 
     private void addIndexColumn() {
@@ -100,7 +89,6 @@ public class FilterController extends AbstractController {
         }
         this.dataModel = dataModel;
         initAvailableFilterTableView();
-        initListener();
     }
 
     private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {

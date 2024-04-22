@@ -12,17 +12,23 @@ import org.bitpunk.m3uedit.model.Entry;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class ProjectController extends AbstractController {
+public class ProjectController extends AbstractController implements ModelAware {
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     public Tab inputTab;
+    public Tab rawEntriesTab;
     public Tab filterTab;
+    public Tab filteredEntriesTab;
     public Tab sorterTab;
     public Tab entryTab;
     public Tab outputTab;
     @FXML
     public InputController inputController;
     @FXML
+    public RawEntriesController rawEntriesController;
+    @FXML
     public FilterController filterController;
+    @FXML
+    public FilteredEntriesController filteredEntriesController;
     @FXML
     SorterController sorterController;
     @FXML
@@ -39,12 +45,25 @@ public class ProjectController extends AbstractController {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // ToDo why implement Intializable?
     }
 
-    private void initInputs() {
+    private void initInputs(DataModel dataModel) {
         inputController = new InputController();
-        inputController.initModel(dataModel);
+        inputController.initInputs(dataModel.getInputs());
         inputTab.setContent(inputController);
+    }
+
+    private void initRawEntries(DataModel dataModel) {
+        rawEntriesController = new RawEntriesController();
+        rawEntriesController.initModel(dataModel);
+        rawEntriesTab.setContent(rawEntriesController);
+    }
+
+    private void initFilteredEntries(DataModel dataModel) {
+        filteredEntriesController = new FilteredEntriesController();
+        filteredEntriesController.initModel(dataModel);
+        filteredEntriesTab.setContent(filteredEntriesController);
     }
 
     private void initSorters() {
@@ -72,11 +91,11 @@ public class ProjectController extends AbstractController {
     }
 
     private void initStatusLabel() {
-        dataModel.getEntries().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
+        dataModel.getSortedEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
     }
 
     public void updateStatusLabel() {
-        String statusMessage = "%s entries loaded".formatted(dataModel.getEntries().size());
+        String statusMessage = "%s entries loaded".formatted(dataModel.getSortedEntryList().size());
         statusLabel.setText(statusMessage);
     }
 
@@ -84,8 +103,10 @@ public class ProjectController extends AbstractController {
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
         // ToDo having to initialize components in the initModel method is weird ...
-        initInputs();
+        initInputs(dataModel);
+        initRawEntries(dataModel);
         initFilters();
+        initFilteredEntries(dataModel);
         initSorters();
         initOutputs();
         initEntries();

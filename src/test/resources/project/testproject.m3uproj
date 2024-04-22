@@ -49,7 +49,9 @@
       <description>sorts list alphabetically</description>
     </ChannelNameSorter>
   </sorters>
-  <entries class="com.sun.javafx.collections.ObservableListWrapper">
+  <rawEntryList/>
+  <filteredEntryList/>
+  <sortedEntryList class="com.sun.javafx.collections.ObservableListWrapper">
     <Entry>
       <duration>-1</duration>
       <groupTitle>TV</groupTitle>
@@ -86,7 +88,7 @@
       <name>RTL TVI HD</name>
       <vlcOpts/>
     </Entry>
-  </entries>
+  </sortedEntryList>
   <outputs class="com.sun.javafx.collections.ObservableListWrapper">
     <FileOutput>
       <name>File Output</name>

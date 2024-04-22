@@ -8,7 +8,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.control.ValidatingEditingCell;
-import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,11 +83,6 @@ public class MapEditorController extends AbstractController {
 
     private boolean isUniqueKey(String newKey) {
         return vlcOptionsTableView.getItems().stream().noneMatch(e -> e.getKey().equals(newKey));
-    }
-
-    @Override
-    public void initModel(DataModel dataModel) {
-        // Todo evaluate if AbstractController really should implement ModelAware-interface
     }
 
     public void deleteKeyListenerTableView(KeyEvent keyEvent) {
