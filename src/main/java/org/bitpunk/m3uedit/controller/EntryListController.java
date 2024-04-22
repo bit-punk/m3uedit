@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class EntryListController extends AbstractController  implements ModelAware {
+public class EntryListController extends AbstractController  implements Initializable, ModelAware {
     public static final String FXML_ENTRY_LIST = "fxml/EntryList.fxml";
     private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");

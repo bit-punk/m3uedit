@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.controller;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
@@ -20,7 +21,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class InputController extends AbstractController {
+public class InputController extends AbstractController implements Initializable {
     public static final String FXML_INPUT = "fxml/Input.fxml";
     public static final String ADD_INPUT = "add Input";
     private static final Logger log = LoggerFactory.getLogger(InputController.class);

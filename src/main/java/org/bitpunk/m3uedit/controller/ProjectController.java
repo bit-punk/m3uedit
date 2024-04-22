@@ -9,9 +9,6 @@ import lombok.Setter;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
 public class ProjectController extends AbstractController implements ModelAware {
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     public Tab inputTab;
@@ -41,11 +38,6 @@ public class ProjectController extends AbstractController implements ModelAware 
     public ProjectController(DataModel dataModel) {
         super(FXML_PROJECT);
         this.dataModel = dataModel;
-    }
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        // ToDo why implement Intializable?
     }
 
     private void initInputs(DataModel dataModel) {

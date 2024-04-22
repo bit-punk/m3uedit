@@ -174,6 +174,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
                 case "radio" -> markFieldInvalid(radioTextField, errorMessage);
                 case "channelUri" -> markFieldInvalid(channelUriTextField, errorMessage);
                 case "name" -> markFieldInvalid(nameTextField, errorMessage);
+                default -> throw new IllegalStateException("Unexpected value: " + fieldName);
             }
         }
     }
