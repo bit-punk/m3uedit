@@ -31,7 +31,9 @@ public class UrlInput extends AbstractInput implements Input{
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
-        selectedInputUrls.forEach(url -> entriesRead.addAll(readEntriesFromUrl(url)));
+        if (selectedInputUrls != null) {
+            selectedInputUrls.forEach(url -> entriesRead.addAll(readEntriesFromUrl(url)));
+        }
         return entriesRead;
     }
 
@@ -47,7 +49,7 @@ public class UrlInput extends AbstractInput implements Input{
 
     @Override
     public String getSource() {
-        return "";
+        return urlList == null ? null : urlList.toString();
     }
 
     @Override
