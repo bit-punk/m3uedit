@@ -39,7 +39,7 @@ public class ListControllerUtil {
         dialog.setResizable(true);
         dialog.getDialogPane().setPrefSize(377, 270);
         dialog.setHeaderText("Delete Item");
-        String deleteConfirmMessage = "Sure you want to delete %d items:\n\n%s".formatted(deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
+        String deleteConfirmMessage = "Sure you want to delete %d items:%n%n%s".formatted(deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
         dialog.setContentText(deleteConfirmMessage);
 
         ButtonType buttonYes = new ButtonType("Yes");

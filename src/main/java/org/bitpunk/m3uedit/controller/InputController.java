@@ -50,7 +50,6 @@ public class InputController extends AbstractController implements Initializable
         inputTableView.setItems(inputList);
     }
 
-    @FXML
     private void addInputAction(ActionEvent actionEvent) {
         log.debug("addInputAction: {}", actionEvent);
         String selectedInputName = addInputComboBox.getSelectionModel().getSelectedItem();
@@ -90,7 +89,6 @@ public class InputController extends AbstractController implements Initializable
         initAvailableInputComboBox();
     }
 
-    @FXML
     public void deleteKeyListenerTableView(KeyEvent keyEvent) {
         ListControllerUtil.deleteKeyListenerTableView(keyEvent);
     }

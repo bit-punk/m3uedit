@@ -4,7 +4,7 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Input-URL:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <Label text="Playlist-URL:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
             <TextField fx:id="urlTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
             <Button fx:id="addUrlButton" text="Add Url" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
             <Label text="URLs to import:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
