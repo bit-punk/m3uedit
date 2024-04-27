@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum InputType {
     FILE_INPUT("File Input"),
-    FRITZBOX_INPUT("FritzBox Input");
+    FRITZBOX_INPUT("FritzBox Input"),
+    URL_INPUT("Url Input");
 
     private final String type;
 

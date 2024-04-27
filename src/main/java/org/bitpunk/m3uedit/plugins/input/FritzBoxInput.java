@@ -28,15 +28,15 @@ public class FritzBoxInput extends AbstractInput implements Input {
     private final String name = "FritzBox Input";
     @XStreamOmitField
     private final String description = "Downloads a playlist from a FritzBox.";
-    List<StreamSource> selectedStreamSources;
+    private List<StreamSource> selectedStreamSources;
     private FritzBoxConnection fritzBoxConnection = null;
-    private static  final String baseUrl = "http://fritz.box//dvb/m3u/";
+    private static final String BASE_URL = "http://fritz.box//dvb/m3u/";
 
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
         for (StreamSource selectedStreamSource : selectedStreamSources) {
-            HttpResponse<String> response = readHttpResponse(baseUrl + selectedStreamSource.getName());
+            HttpResponse<String> response = readHttpResponse(BASE_URL + selectedStreamSource.getName());
             log.debug("Status-code: [{}]", response.statusCode());
             String responseBody = response.body();
             log.debug("response: [{}]", responseBody);

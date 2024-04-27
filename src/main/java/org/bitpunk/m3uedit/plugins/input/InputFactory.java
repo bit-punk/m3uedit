@@ -20,6 +20,10 @@ public class InputFactory {
                 log.debug("creating new Fritzbox Input");
                 yield new FritzBoxInput();
             }
+            case URL_INPUT -> {
+                log.debug("creating new Url Input");
+                yield new UrlInput();
+            }
         };
     }
 }
