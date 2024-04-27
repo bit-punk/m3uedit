@@ -47,7 +47,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
             FritzBoxConnection fritzBoxConnection = null;
             if (Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
                 log.debug("OK pressed");
-                fritzBoxConnection = createSFritzboxConnectionFromInput();
+                fritzBoxConnection = createFritzboxConnectionFromInput();
             }
             log.debug("returning result: {}", fritzBoxConnection);
             return fritzBoxConnection;
@@ -83,14 +83,14 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
 
     private boolean isValidBean() {
         PojoValidator<FritzBoxConnection> validator = new PojoValidator<>();
-        FritzBoxConnection fritzBoxConnection = createSFritzboxConnectionFromInput();
+        FritzBoxConnection fritzBoxConnection = createFritzboxConnectionFromInput();
         Set<ConstraintViolation<FritzBoxConnection>> errors = validator.validate(fritzBoxConnection);
         displayValidationErrors(errors);
         log.debug("Validation-errors found: {}", errors);
         return errors.isEmpty();
     }
 
-    private FritzBoxConnection createSFritzboxConnectionFromInput() {
+    private FritzBoxConnection createFritzboxConnectionFromInput() {
         fritzBoxConnection.setBaseUrl(baseUrlTextField.getText());
         return fritzBoxConnection;
     }
@@ -144,7 +144,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
                     checkBox.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
                         List<StreamSource> selectedStreamSources = fritzBoxConnection.getSelectedStreamSources();
                         if (getItem() != null) {
-                            if (isNowSelected) {
+                            if (Boolean.TRUE.equals(isNowSelected)) {
                                 selectedStreamSources.add(getItem());
                             } else {
                                 selectedStreamSources.remove(getItem());

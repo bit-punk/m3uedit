@@ -13,6 +13,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/**
+ * Utility class for displaying dialog boxes and file choosers.
+ */
 public class DialogUtil {
     private static final Logger log = LoggerFactory.getLogger(DialogUtil.class);
 

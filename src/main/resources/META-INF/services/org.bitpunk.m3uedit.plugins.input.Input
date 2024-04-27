@@ -1,2 +1,3 @@
 org.bitpunk.m3uedit.plugins.input.FileInput
 org.bitpunk.m3uedit.plugins.input.FritzBoxInput
+org.bitpunk.m3uedit.plugins.input.UrlInput

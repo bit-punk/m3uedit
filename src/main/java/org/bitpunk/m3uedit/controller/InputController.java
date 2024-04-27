@@ -56,13 +56,11 @@ public class InputController extends AbstractController implements Initializable
         String selectedInputName = addInputComboBox.getSelectionModel().getSelectedItem();
         if (!selectedInputName.equals(ADD_INPUT)) {
             Input input = InputFactory.getInput(selectedInputName);
-            if (input != null) {
-                input.configure();
-                if (input.getSource() != null) {
-                    inputList.add(input);
-                }
-                addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
+            input.configure();
+            if (input.getSource() != null) {
+                inputList.add(input);
             }
+            addInputComboBox.getSelectionModel().select(0); // reset ComboBox to "add Input"
         }
     }
 
