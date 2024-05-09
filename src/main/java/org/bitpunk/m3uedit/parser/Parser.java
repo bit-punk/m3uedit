@@ -63,7 +63,7 @@ public class Parser {
                 } else if (isExtVlcOpt(line)) {
                     checkForValidBuilder(builder, lineNumber);
                     Map<String, String> vlcOptions = extractExtVlcOpt(line);
-                    builder.addVlcOptions(vlcOptions);
+                    builder.vlcOptions(vlcOptions);
                 } else {
                     checkForValidBuilder(builder, lineNumber);
                     entries.add(builder.channelUri(line).build());
