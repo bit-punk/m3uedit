@@ -22,7 +22,9 @@ sources and invoke the [maven-wrapper](https://maven.apache.org/wrapper/):
 ```bash
 ./mvnw clean install
 ```
+
 To run the application using the _javafx-maven-plugin_ you should use:
+
 ```bash
 ./mvnw javafx:run
 ```
@@ -60,23 +62,35 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 * [Baeldung: Java Service Provider Interface](https://www.baeldung.com/java-spi)
 * [Class ServiceLoader](https://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html)
 * [Fritz DVB to VLC](https://github.com/passing/fritz-dvb-to-vlc)
+
 #### Creating JavaFX Custom-Dialogs
+
 * [JavaFX Dialogs (official)](https://code.makery.ch/blog/javafx-dialogs-official/)
 * [JavaFX Dialog Example](https://examples.javacodegeeks.com/java-development/desktop-java/javafx/dialog-javafx/javafx-dialog-example/)
 * [Accessing the OK button from inside the dialog controller - javaFX](https://stackoverflow.com/questions/49072726/accessing-the-ok-button-from-inside-the-dialog-controller-javafx)
 * [Java FX create Custom Dialog with fxml file. How to set or get result from it?](https://stackoverflow.com/questions/64964471/java-fx-create-custom-dialog-with-fxml-file-how-to-set-or-get-result-from-it)
 * [Creating a Custom Control with FXML](https://docs.oracle.com/javafx/2/fxml_get_started/custom_control.htm#BABDAAHE)
+
 #### MVC in JavaFx
+
 * [Applying MVC With JavaFx](https://stackoverflow.com/questions/32342864/applying-mvc-with-javafx)
 * [How to apply MVC in JavaFX](https://edencoding.com/mvc-in-javafx/)
+
 #### Packaging JavaFX applications
+
 * [JavaFX, JLink and JPackage](https://dev.to/cherrychain/javafx-jlink-and-jpackage-h9)
 * [Creating Fat JARs for JavaFX Applications](http://fxapps.blogspot.com/2020/11/creating-fat-jars-for-javafx.html)
 * [JavaFX 11 : Create a jar file with Gradle](https://stackoverflow.com/questions/52569724/javafx-11-create-a-jar-file-with-gradle)
+
 #### SFTP-Output
+
 * [com.jcraft.jsch.JSchException: UnknownHostKey](https://stackoverflow.com/questions/2003419/com-jcraft-jsch-jschexception-unknownhostkey)
+
 #### JSR303
+
 * [JSR 303 Annotations List](https://howtodoinjava.com/spring-mvc/spring-bean-validation-example-with-jsr-303-annotations/#6-jsr-303-annotations-list)
+
 #### TableView validation
+
 * [ListView validate edit and prevent commit](https://stackoverflow.com/questions/35281105/listview-validate-edit-and-prevent-commit)
 * [JavaFX 8 TableView Cell Renderer](https://code.makery.ch/blog/javafx-8-tableview-cell-renderer/)
