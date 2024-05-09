@@ -1,6 +1,8 @@
 package org.bitpunk.m3uedit.plugins;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
@@ -8,15 +10,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FilterPluginServiceTest {
 
-    @Test
-    void getAllPlugins() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "ChannelName Filter",
+            "Reachable URL Filter",
+            "SD Channel Filter",
+            "Unique Name Filter",
+            "Unique URI Filter"
+    })
+    void getAllPlugins(String pluginName) {
         List<? extends Plugin> allPlugins = FilterPluginService.getInstance().getAllPlugins();
         assertThat(allPlugins).hasSize(5);
-        assertThat(allPlugins).filteredOn(plugin -> "ChannelName Filter".equals(plugin.getName())).isNotEmpty();
-        assertThat(allPlugins).filteredOn(plugin -> "Reachable URL Filter".equals(plugin.getName())).isNotEmpty();
-        assertThat(allPlugins).filteredOn(plugin -> "SD Channel Filter".equals(plugin.getName())).isNotEmpty();
-        assertThat(allPlugins).filteredOn(plugin -> "Unique Name Filter".equals(plugin.getName())).isNotEmpty();
-        assertThat(allPlugins).filteredOn(plugin -> "Unique URI Filter".equals(plugin.getName())).isNotEmpty();
+        assertThat(allPlugins).filteredOn(plugin -> pluginName.equals(plugin.getName())).isNotEmpty();
     }
 
     @Test

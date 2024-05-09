@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,14 +22,14 @@ class WriterTest {
         String referenceFilename = "/tvhd_reference.m3u";
         List<Entry> entries = new Parser().parse(WriterTest.class.getResourceAsStream(testFilename));
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        new Writer().write(entries, baos);
-        assertThat(baos.toString()).isEqualTo(getOrigFile(referenceFilename));
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        new Writer().write(entries, byteArrayOutputStream);
+        assertThat(byteArrayOutputStream.toString()).hasToString(getOrigFile(referenceFilename));
     }
 
     @Test
     void testWriteSingleQuote() {
-        Entry entry = new Builder()
+        Entry testEntry = new Builder()
                 .channelUri("http://test.com")
                 .tvgName("testing")
                 .channelName("test-channel'name")
@@ -37,14 +38,14 @@ class WriterTest {
                 .build();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        new Writer().write(Collections.singletonList(entry), baos);
-        assertThat(baos.toString()).isEqualTo("#EXTM3U" + System.lineSeparator() +
+        new Writer().write(Collections.singletonList(testEntry), baos);
+        assertThat(baos.toString()).hasToString("#EXTM3U" + System.lineSeparator() +
                 "#EXTINF:-1 tvg-name=\"testing\" group-title=\"TV'Group\",test-channel'name" + System.lineSeparator() +
                 "http://test.com");
     }
 
     private String getOrigFile(String fileName) {
-        return new BufferedReader(new InputStreamReader(WriterTest.class.getResourceAsStream(fileName)))
+        return new BufferedReader(new InputStreamReader(Objects.requireNonNull(WriterTest.class.getResourceAsStream(fileName))))
                 .lines()
                 .collect(Collectors.joining(System.lineSeparator()));
     }
