@@ -34,6 +34,9 @@
                     <SeparatorMenuItem/>
                     <MenuItem onAction="#handleExitAction" text="Exit"/>
                 </Menu>
+                <Menu text="Edit"/>
+                <Menu text="View">
+                </Menu>
                 <Menu text="Help">
                     <MenuItem onAction="#handleAboutAction" text="About"/>
                 </Menu>

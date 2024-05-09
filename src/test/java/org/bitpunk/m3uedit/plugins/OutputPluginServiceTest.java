@@ -11,16 +11,17 @@ class OutputPluginServiceTest {
     @Test
     void getAllPlugins() {
         List<? extends Plugin> allPlugins = OutputPluginService.getInstance().getAllPlugins();
-        assertThat(allPlugins).hasSize(2);
-        assertThat(allPlugins).extracting("name").contains("File Output");
-        assertThat(allPlugins).extracting("name").contains("SFTP Output");
+        assertThat(allPlugins)
+                .hasSize(2)
+                .extracting("name")
+                .contains("File Output", "SFTP Output");
     }
 
     @Test
     void getAllPluginNames() {
         List<String> allPluginNames = OutputPluginService.getInstance().getAllPluginNames();
-        assertThat(allPluginNames).hasSize(2);
-        assertThat(allPluginNames).contains("File Output");
-        assertThat(allPluginNames).contains("SFTP Output");
+        assertThat(allPluginNames)
+                .hasSize(2)
+                .contains("File Output", "SFTP Output");
     }
 }

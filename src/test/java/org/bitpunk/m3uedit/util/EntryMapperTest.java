@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.util;
 
+import org.bitpunk.m3uedit.builder.Builder;
 import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.Test;
 
@@ -25,32 +26,37 @@ class EntryMapperTest {
                 "key3", "value2"
         );
 
-
         Entry targetEntry = getTargetEntry();
         Entry sourceEntry = getEntry(duration, groupTitle, tvgId, tvgName, tvgLogo, tvgShift, radio, channelUri, name, vlcOpts);
-        assertThat(sourceEntry.getName()).isEqualTo(name);
-        assertThat(targetEntry.getName()).isEqualTo("target-entry");
-        assertThat(targetEntry.getVlcOpts()).isNotEqualTo(sourceEntry.getVlcOpts());
+        assertThat(sourceEntry.getName())
+                .as("source entry name")
+                .isEqualTo(name);
+
+        assertThat(targetEntry)
+                .as("target entry before mapping")
+                .extracting(Entry::getName, Entry::getVlcOpts)
+                .containsExactly("target-entry", null)
+                .doesNotContain(sourceEntry.getName(), sourceEntry.getVlcOpts());
 
         EntryMapper.mapEntry(sourceEntry, targetEntry);
-        assertThat(targetEntry.getName()).isEqualTo(sourceEntry.getName());
-        assertThat(targetEntry.getVlcOpts()).isEqualTo(sourceEntry.getVlcOpts());
-        assertThat(targetEntry).isEqualTo(sourceEntry);
+        assertThat(targetEntry)
+                .as("target entry after mapping")
+                .isEqualToComparingFieldByField(sourceEntry);
     }
 
-    private Entry getEntry(String duration, String groupTitle, String tvgId, String tvgName, String tvgLogo, String tvgShift, String radio, String channelUri, String name, Map<String, String> vlcOPts) {
-        Entry sourceEntry = new Entry();
-        sourceEntry.setDuration(duration);
-        sourceEntry.setGroupTitle(groupTitle);
-        sourceEntry.setTvgId(tvgId);
-        sourceEntry.setTvgName(tvgName);
-        sourceEntry.setTvgLogo(tvgLogo);
-        sourceEntry.setTvgShift(tvgShift);
-        sourceEntry.setRadio(radio);
-        sourceEntry.setChannelUri(channelUri);
-        sourceEntry.setName(name);
-        sourceEntry.setVlcOpts(vlcOPts);
-        return sourceEntry;
+    private Entry getEntry(String duration, String groupTitle, String tvgId, String tvgName, String tvgLogo, String tvgShift, String radio, String channelUri, String name, Map<String, String> vlcOpts) {
+        return new Builder()
+                .duration(duration)
+                .groupTitle(groupTitle)
+                .tvgId(tvgId)
+                .tvgName(tvgName)
+                .tvgLogo(tvgLogo)
+                .tvgShift(tvgShift)
+                .radio(radio)
+                .channelUri(channelUri)
+                .channelName(name)
+                .vlcOptions(vlcOpts)
+                .build();
     }
 
     private Entry getTargetEntry() {

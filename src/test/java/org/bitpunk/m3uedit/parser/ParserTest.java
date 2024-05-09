@@ -1,8 +1,9 @@
 package org.bitpunk.m3uedit.parser;
 
-
 import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,44 +15,29 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 class ParserTest {
 
-    @Test
-    void testParse() {
+    private static void assertEntryProperties(int index, String name, String tvgName, String tvgId, String channelUri, String duration, String groupTitle, String radio, String tvgLogo, String tvgShift, List<Entry> entries) {
+        assertThat(entries.get(index))
+                .hasFieldOrPropertyWithValue("name", name)
+                .hasFieldOrPropertyWithValue("tvgName", tvgName)
+                .hasFieldOrPropertyWithValue("tvgId", tvgId)
+                .hasFieldOrPropertyWithValue("channelUri", channelUri)
+                .hasFieldOrPropertyWithValue("duration", duration)
+                .hasFieldOrPropertyWithValue("groupTitle", groupTitle)
+                .hasFieldOrPropertyWithValue("radio", radio)
+                .hasFieldOrPropertyWithValue("tvgLogo", tvgLogo)
+                .hasFieldOrPropertyWithValue("tvgShift", tvgShift);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "0, La Une HD, La Une HD, La_Une, http://panel.globepremium.com:8000/live/xxx/yyy/84.ts, -1, TV, false, ../logo/La_Une.png, 1",
+            "1, La Deux HD, La Deux HD, La_Deux, http://panel.globepremium.com:8000/live/xxx/yyy/85.ts, -1, TV, false, ../logo/La_Deux.png, 2",
+            "2, RTL TVI HD, RTL TVI HD, RTL_TVI, http://panel.globepremium.com:8000/live/xxx/yyy/719.ts, -1, TV, false, ../logo/RTL_TVI.png, 3",
+    })
+    void testParse(int index, String name, String tvgName, String tvgId, String channelUri, String duration, String groupTitle, String radio, String tvgLogo, String tvgShift) {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/test.m3u"));
 
-        assertThat(entries).hasSize(3);
-
-        assertThat(entries.get(0).getName()).isEqualTo("La Une HD");
-        assertThat(entries.get(0).getTvgName()).isEqualTo("La Une HD");
-        assertThat(entries.get(0).getTvgId()).isEqualTo("La_Une");
-        assertThat(entries.get(0).getChannelUri()).isEqualTo("http://panel.globepremium.com:8000/live/xxx/yyy/84.ts");
-        assertThat(entries.get(0).getDuration()).isEqualTo("-1");
-        assertThat(entries.get(0).getGroupTitle()).isEqualTo("TV");
-        assertThat(entries.get(0).getName()).isEqualTo("La Une HD");
-        assertThat(entries.get(0).getRadio()).isEqualTo("false");
-        assertThat(entries.get(0).getTvgLogo()).isEqualTo("../logo/La_Une.png");
-        assertThat(entries.get(0).getTvgShift()).isEqualTo("1");
-
-        assertThat(entries.get(1).getName()).isEqualTo("La Deux HD");
-        assertThat(entries.get(1).getTvgName()).isEqualTo("La Deux HD");
-        assertThat(entries.get(1).getTvgId()).isEqualTo("La_Deux");
-        assertThat(entries.get(1).getChannelUri()).isEqualTo("http://panel.globepremium.com:8000/live/xxx/yyy/85.ts");
-        assertThat(entries.get(1).getDuration()).isEqualTo("-1");
-        assertThat(entries.get(1).getGroupTitle()).isEqualTo("TV");
-        assertThat(entries.get(1).getName()).isEqualTo("La Deux HD");
-        assertThat(entries.get(1).getRadio()).isEqualTo("false");
-        assertThat(entries.get(1).getTvgLogo()).isEqualTo("../logo/La_Deux.png");
-        assertThat(entries.get(1).getTvgShift()).isEqualTo("2");
-
-        assertThat(entries.get(2).getName()).isEqualTo("RTL TVI HD");
-        assertThat(entries.get(2).getTvgName()).isEqualTo("RTL TVI HD");
-        assertThat(entries.get(2).getTvgId()).isEqualTo("RTL_TVI");
-        assertThat(entries.get(2).getChannelUri()).isEqualTo("http://panel.globepremium.com:8000/live/xxx/yyy/719.ts");
-        assertThat(entries.get(2).getDuration()).isEqualTo("-1");
-        assertThat(entries.get(2).getGroupTitle()).isEqualTo("TV");
-        assertThat(entries.get(2).getName()).isEqualTo("RTL TVI HD");
-        assertThat(entries.get(2).getRadio()).isEqualTo("false");
-        assertThat(entries.get(2).getTvgLogo()).isEqualTo("../logo/RTL_TVI.png");
-        assertThat(entries.get(2).getTvgShift()).isEqualTo("3");
+        assertEntryProperties(index, name, tvgName, tvgId, channelUri, duration, groupTitle, radio, tvgLogo, tvgShift, entries);
     }
 
     @Test
@@ -70,44 +56,16 @@ class ParserTest {
         assertThat(entry.getVlcOpts()).hasSize(3);
     }
 
-    @Test
-    void testParseGlobalTvgShift() {
+    @ParameterizedTest
+    @CsvSource(value = {
+            "0, La Une HD, La Une HD, La_Une, http://panel.globepremium.com:8000/live/xxx/yyy/84.ts, -1, TV, false, ../logo/La_Une.png, 4",
+            "1, La Deux HD, La Deux HD, La_Deux, http://panel.globepremium.com:8000/live/xxx/yyy/85.ts, -1, TV, false, ../logo/La_Deux.png, 4",
+            "2, RTL TVI HD, RTL TVI HD, RTL_TVI, http://panel.globepremium.com:8000/live/xxx/yyy/719.ts, -1, TV, false, ../logo/RTL_TVI.png, 4"
+    })
+    void testParseGlobalTvgShift(int index, String name, String tvgName, String tvgId, String channelUri, String duration, String groupTitle, String radio, String tvgLogo, String tvgShift) {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/test_global_tvg_shift.m3u"));
 
-        assertThat(entries).hasSize(3);
-
-        assertThat(entries.get(0).getName()).isEqualTo("La Une HD");
-        assertThat(entries.get(0).getTvgName()).isEqualTo("La Une HD");
-        assertThat(entries.get(0).getTvgId()).isEqualTo("La_Une");
-        assertThat(entries.get(0).getChannelUri()).isEqualTo("http://panel.globepremium.com:8000/live/xxx/yyy/84.ts");
-        assertThat(entries.get(0).getDuration()).isEqualTo("-1");
-        assertThat(entries.get(0).getGroupTitle()).isEqualTo("TV");
-        assertThat(entries.get(0).getName()).isEqualTo("La Une HD");
-        assertThat(entries.get(0).getRadio()).isEqualTo("false");
-        assertThat(entries.get(0).getTvgLogo()).isEqualTo("../logo/La_Une.png");
-        assertThat(entries.get(0).getTvgShift()).isEqualTo("4");
-
-        assertThat(entries.get(1).getName()).isEqualTo("La Deux HD");
-        assertThat(entries.get(1).getTvgName()).isEqualTo("La Deux HD");
-        assertThat(entries.get(1).getTvgId()).isEqualTo("La_Deux");
-        assertThat(entries.get(1).getChannelUri()).isEqualTo("http://panel.globepremium.com:8000/live/xxx/yyy/85.ts");
-        assertThat(entries.get(1).getDuration()).isEqualTo("-1");
-        assertThat(entries.get(1).getGroupTitle()).isEqualTo("TV");
-        assertThat(entries.get(1).getName()).isEqualTo("La Deux HD");
-        assertThat(entries.get(1).getRadio()).isEqualTo("false");
-        assertThat(entries.get(1).getTvgLogo()).isEqualTo("../logo/La_Deux.png");
-        assertThat(entries.get(1).getTvgShift()).isEqualTo("4");
-
-        assertThat(entries.get(2).getName()).isEqualTo("RTL TVI HD");
-        assertThat(entries.get(2).getTvgName()).isEqualTo("RTL TVI HD");
-        assertThat(entries.get(2).getTvgId()).isEqualTo("RTL_TVI");
-        assertThat(entries.get(2).getChannelUri()).isEqualTo("http://panel.globepremium.com:8000/live/xxx/yyy/719.ts");
-        assertThat(entries.get(2).getDuration()).isEqualTo("-1");
-        assertThat(entries.get(2).getGroupTitle()).isEqualTo("TV");
-        assertThat(entries.get(2).getName()).isEqualTo("RTL TVI HD");
-        assertThat(entries.get(2).getRadio()).isEqualTo("false");
-        assertThat(entries.get(2).getTvgLogo()).isEqualTo("../logo/RTL_TVI.png");
-        assertThat(entries.get(2).getTvgShift()).isEqualTo("4");
+        assertEntryProperties(index, name, tvgName, tvgId, channelUri, duration, groupTitle, radio, tvgLogo, tvgShift, entries);
     }
 
     @Test
@@ -136,4 +94,3 @@ class ParserTest {
         assertThatExceptionOfType(ParsingException.class).isThrownBy(() -> new Parser().parse(stream));
     }
 }
-

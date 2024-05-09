@@ -14,13 +14,10 @@ class SdChannelFilterTest extends AbstractFilterTest {
     void testFilter() throws FileNotFoundException {
         Filter filter = new SdChannelFilter();
         List<Entry> entryList = readList("sd_channels.m3u");
-        assertThat(entryList).hasSize(9);
         List<Entry> filteredList = filter.filter(entryList);
-        assertThat(filteredList).hasSize(5);
-        assertThat(filteredList).extracting("name").contains("Das Erste HD");
-        assertThat(filteredList).extracting("name").contains("ZDF HD");
-        assertThat(filteredList).extracting("name").contains("3sat HD");
-        assertThat(filteredList).extracting("name").contains("arte HD");
-        assertThat(filteredList).extracting("name").contains("Bingo-TV ᴴᴰ");
+        assertThat(filteredList)
+                .hasSize(5)
+                .extracting("name")
+                .contains("Das Erste HD", "ZDF HD", "3sat HD", "arte HD", "Bingo-TV ᴴᴰ");
     }
 }

@@ -67,7 +67,7 @@ public class Builder {
         return this;
     }
 
-    public void addVlcOptions(Map<String, String> options) {
+    public Builder vlcOptions(Map<String, String> options) {
         for (Map.Entry<String, String> option : options.entrySet()) {
             String key = option.getKey();
             String value = option.getValue();
@@ -76,8 +76,9 @@ public class Builder {
                 log.warn("Previous value for key {} got re-assigned ({} -> {})", key, previousValue, value);
             }
         }
-
+        return this;
     }
+
     public Entry build() {
         Entry entry = new Entry();
         entry.setDuration(duration);

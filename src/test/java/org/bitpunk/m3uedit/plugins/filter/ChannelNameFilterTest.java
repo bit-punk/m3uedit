@@ -19,7 +19,6 @@ class ChannelNameFilterTest extends AbstractFilterTest {
         assertThat(filteredList).hasSize(24);
         assertThat(filteredList).filteredOn(channel -> channel.getName().matches(".*QVC.*")).isEmpty();
         assertThat(filteredList).filteredOn(channel -> channel.getName().matches(".*HSE.*")).isEmpty();
-
     }
 
 }
