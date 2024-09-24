@@ -54,7 +54,7 @@ public class EntryListController extends AbstractController  implements Initiali
 
             row.setOnDragDetected(event -> {
                 if (!row.isEmpty()) {
-                    Integer index = row.getIndex();
+                    Integer index = (Integer) row.getIndex();
                     Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
                     db.setDragView(row.snapshot(null, null));
                     ClipboardContent cc = new ClipboardContent();
@@ -78,12 +78,12 @@ public class EntryListController extends AbstractController  implements Initiali
                     int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
                     Entry draggedEntry = entryTableView.getItems().remove(draggedIndex);
 
-                    int dropIndex;
+                    Integer dropIndex;
 
                     if (row.isEmpty()) {
-                        dropIndex = entryTableView.getItems().size();
+                        dropIndex = Integer.valueOf(entryTableView.getItems().size());
                     } else {
-                        dropIndex = row.getIndex();
+                        dropIndex = Integer.valueOf(row.getIndex());
                         log.debug("Entry dragged to index: {}", dropIndex);
                     }
 

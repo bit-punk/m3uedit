@@ -11,7 +11,7 @@ M3UEditor is a small editor written in Java based on JavaFX for managing m3u-pla
 
 ## Prerequisites
 
-* JDK17
+* JDK 21
 * Linux, Windows, MacOS
 
 ## Building
