@@ -25,7 +25,7 @@
         <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
         <expressly.version>5.0.0</expressly.version>
         <xstream.version>1.4.21</xstream.version>
-        <jsch.version>0.2.22</jsch.version>
+        <jsch.version>0.2.23</jsch.version>
     </properties>
 
     <dependencies>
