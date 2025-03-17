@@ -16,7 +16,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.17</logback.version>
-        <javafx.version>24-ea+5</javafx.version>
+        <javafx.version>25-ea+8</javafx.version>
         <lombok.version>1.18.36</lombok.version>
         <junit-jupiter.version>5.12.0</junit-jupiter.version>
         <hamcrest.version>2.2</hamcrest.version>
