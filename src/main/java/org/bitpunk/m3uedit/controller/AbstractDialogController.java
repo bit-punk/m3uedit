@@ -10,10 +10,10 @@ import javafx.stage.Modality;
 
 import java.io.IOException;
 
-abstract public class AbstractDialogController<T> extends Dialog<T> implements Initializable {
+public abstract class AbstractDialogController<T> extends Dialog<T> implements Initializable {
     public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
 
-    public AbstractDialogController(String fxmlFileName, String dialogTitle) {
+    protected AbstractDialogController(String fxmlFileName, String dialogTitle) {
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getClassLoader().getResource(fxmlFileName));

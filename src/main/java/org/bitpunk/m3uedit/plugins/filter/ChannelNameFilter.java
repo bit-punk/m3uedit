@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Data
 public class ChannelNameFilter extends AbstractPlugin implements Filter {
-    private static final String filterResourceName = "plugin/filter/ChannelNameFilter.properties";
+    private static final String FILTER_RESOURCE_NAME = "plugin/filter/ChannelNameFilter.properties";
 
     private final List<String> excludeRegexes = getFilterExpressionsFromResourceFile();
     @XStreamOmitField
@@ -24,7 +24,7 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
     private static List<String> getFilterExpressionsFromResourceFile() {
         Properties prop = new Properties();
         try {
-            prop.load(ChannelNameFilter.class.getClassLoader().getResourceAsStream(filterResourceName));
+            prop.load(ChannelNameFilter.class.getClassLoader().getResourceAsStream(FILTER_RESOURCE_NAME));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

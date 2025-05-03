@@ -11,6 +11,10 @@ public class EntryListNameFormatter {
 
     public static final int MAX_NAMES = 5;
 
+    private EntryListNameFormatter() {
+        // hide constructor of this util-class
+    }
+
     public static String getNamesSummary(ObservableList<NamedItem> deleteItems) {
         List<String> namesList = convertToStrings(deleteItems);
         StringBuilder entryNames = new StringBuilder();
@@ -20,9 +24,7 @@ public class EntryListNameFormatter {
             summary.addAll(namesList.subList(deleteItems.size() - 2, namesList.size()));
             namesList = summary;
         }
-        namesList.forEach(name -> {
-            entryNames.append("• ").append(name).append("\n");
-        });
+        namesList.forEach(name -> entryNames.append("• ").append(name).append("\n"));
         return entryNames.toString();
     }
 

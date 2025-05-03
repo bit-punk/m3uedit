@@ -119,6 +119,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
                 case "path" -> markFieldInvalid(hostPathTextField, errorMessage);
                 case "userName" -> markFieldInvalid(usernameTextField, errorMessage);
                 case "password" -> markFieldInvalid(passwordField, errorMessage);
+                default -> throw new IllegalStateException("Unexpected value: " + fieldName);
             }
         }
     }

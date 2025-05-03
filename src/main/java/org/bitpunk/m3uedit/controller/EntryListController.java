@@ -51,58 +51,10 @@ public class EntryListController extends AbstractController  implements Initiali
         // set RowFactory for Entry-TableView to make rows draggable
         entryTableView.setRowFactory(tv -> {
             TableRow<Entry> row = new TableRow<>();
-
-            row.setOnDragDetected(event -> {
-                if (!row.isEmpty()) {
-                    Integer index = (Integer) row.getIndex();
-                    Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
-                    db.setDragView(row.snapshot(null, null));
-                    ClipboardContent cc = new ClipboardContent();
-                    cc.put(SERIALIZED_MIME_TYPE, index);
-                    db.setContent(cc);
-                    event.consume();
-                }
-            });
-
-            row.setOnDragOver(event -> {
-                Dragboard db = event.getDragboard();
-                if (db.hasContent(SERIALIZED_MIME_TYPE) && (row.getIndex() != (Integer) db.getContent(SERIALIZED_MIME_TYPE))) {
-                    event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-                    event.consume();
-                }
-            });
-
-            row.setOnDragDropped(event -> {
-                Dragboard db = event.getDragboard();
-                if (db.hasContent(SERIALIZED_MIME_TYPE)) {
-                    int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
-                    Entry draggedEntry = entryTableView.getItems().remove(draggedIndex);
-
-                    Integer dropIndex;
-
-                    if (row.isEmpty()) {
-                        dropIndex = Integer.valueOf(entryTableView.getItems().size());
-                    } else {
-                        dropIndex = Integer.valueOf(row.getIndex());
-                        log.debug("Entry dragged to index: {}", dropIndex);
-                    }
-
-                    entryTableView.getItems().add(dropIndex, draggedEntry);
-
-                    event.setDropCompleted(true);
-                    entryTableView.getSelectionModel().select(dropIndex);
-                    event.consume();
-                }
-            });
-
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                    Entry entry = row.getItem();
-                    log.debug("double-clicked on: {}", entry);
-                    editEntry(entry);
-                    entryTableView.refresh();
-                }
-            });
+            setOnDragDetectedEventHandler(row);
+            setOnDragOverEventHandler(row);
+            setOnDragDroppedEventHandler(row);
+            setOnMouseClickedEventHandler(row);
             return row;
         });
         entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -112,6 +64,66 @@ public class EntryListController extends AbstractController  implements Initiali
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
         entryTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
+    }
+
+    private void setOnMouseClickedEventHandler(TableRow<Entry> row) {
+        row.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                Entry entry = row.getItem();
+                log.debug("double-clicked on: {}", entry);
+                editEntry(entry);
+                entryTableView.refresh();
+            }
+        });
+    }
+
+    private void setOnDragDroppedEventHandler(TableRow<Entry> row) {
+        row.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            if (db.hasContent(SERIALIZED_MIME_TYPE)) {
+                int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
+                Entry draggedEntry = entryTableView.getItems().remove(draggedIndex);
+
+                Integer dropIndex;
+
+                if (row.isEmpty()) {
+                    dropIndex = Integer.valueOf(entryTableView.getItems().size());
+                } else {
+                    dropIndex = Integer.valueOf(row.getIndex());
+                    log.debug("Entry dragged to index: {}", dropIndex);
+                }
+
+                entryTableView.getItems().add(dropIndex, draggedEntry);
+
+                event.setDropCompleted(true);
+                entryTableView.getSelectionModel().select(dropIndex);
+                event.consume();
+            }
+        });
+    }
+
+    private static void setOnDragOverEventHandler(TableRow<Entry> row) {
+        row.setOnDragOver(event -> {
+            Dragboard db = event.getDragboard();
+            if (db.hasContent(SERIALIZED_MIME_TYPE) && (row.getIndex() != (Integer) db.getContent(SERIALIZED_MIME_TYPE))) {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                event.consume();
+            }
+        });
+    }
+
+    private static void setOnDragDetectedEventHandler(TableRow<Entry> row) {
+        row.setOnDragDetected(event -> {
+            if (!row.isEmpty()) {
+                Integer index = row.getIndex();
+                Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
+                db.setDragView(row.snapshot(null, null));
+                ClipboardContent cc = new ClipboardContent();
+                cc.put(SERIALIZED_MIME_TYPE, index);
+                db.setContent(cc);
+                event.consume();
+            }
+        });
     }
 
     private void addIndexColumn() {

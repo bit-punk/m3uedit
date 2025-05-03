@@ -1,9 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.TextInputDialog;
+import javafx.beans.binding.Bindings;
+import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -40,12 +38,26 @@ public class DialogUtil {
     }
 
     public static String getNewProjectName() {
-        Dialog<String> dialog = new TextInputDialog();
+        TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Create a new project");
         dialog.setHeaderText("New project name");
         dialog.setContentText("Please enter the name of your new project:");
+        // Access the dialog's OK button
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+
+        // Access the text input field
+        TextField input = dialog.getEditor();
+
+        // Disable the OK button if the text is empty or contains only whitespace
+        okButton.disableProperty().bind(
+                Bindings.createBooleanBinding(
+                        () -> input.getText().trim().isEmpty(),
+                        input.textProperty()
+                )
+        );
+
         Optional<String> result = dialog.showAndWait();
-        return result.orElse("");
+        return result.map(String::trim).orElse("");
     }
 
     public static boolean canProjectBeClosed(String projectName) {

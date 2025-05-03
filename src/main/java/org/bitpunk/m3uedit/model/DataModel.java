@@ -44,7 +44,7 @@ public class DataModel {
     }
 
     /**
-     * Using XStream for de-serialization will not invoke the constructor, however it will invoke this method.
+     * Using XStream for deserialization will not invoke the constructor, however, it will invoke this method.
      * This method is used during the deserialization process to resolve the read object.
      * It initializes the changed data bindings and returns the deserialized object.
      *
@@ -114,7 +114,7 @@ public class DataModel {
     }
 
     private void initChangedRawEntries() {
-        // apply enabled Filters and save resulting Entry-List in filteredEntryList
+        // apply enabled Filters and save the resulting Entry-List in filteredEntryList
         rawEntryList.addListener((ListChangeListener<? super Entry>) listChangeListener -> filterRawEntries());
     }
 
@@ -134,7 +134,7 @@ public class DataModel {
     }
 
     private void initChangedFilteredEntries() {
-        // apply enabled Sorters and save resulting Entry-List in sortedEntryList
+        // apply enabled Sorters and save the resulting Entry-List in sortedEntryList
         filteredEntryList.addListener((ListChangeListener<? super Entry>) listChangeListener -> sortFilteredEntries());
     }
 
