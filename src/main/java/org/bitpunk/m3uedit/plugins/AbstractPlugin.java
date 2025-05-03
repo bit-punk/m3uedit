@@ -5,7 +5,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import lombok.Data;
 
 @Data
-abstract public class AbstractPlugin {
+public abstract class AbstractPlugin {
     private String name;
     private String description;
     private BooleanProperty enabled = new SimpleBooleanProperty();

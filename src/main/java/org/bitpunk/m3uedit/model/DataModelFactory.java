@@ -5,6 +5,11 @@ import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 
 public class DataModelFactory {
+
+    private DataModelFactory() {
+        // hide constructor of this util-class
+    }
+
     public static DataModel createDataModel(String name) {
         DataModel dataModel = new DataModel(name);
         dataModel.setFilters(FXCollections.observableArrayList(FilterPluginService.getInstance().getAllPlugins()));

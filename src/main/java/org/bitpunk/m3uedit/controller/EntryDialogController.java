@@ -120,6 +120,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
 
     private void initializeBinding() {
         isInputValid = new BooleanBinding() {
+
             {
                 // @formatter:off
                 bind(durationTextField.textProperty(),

@@ -17,7 +17,7 @@ public abstract class AbstractPluginService<T extends Plugin> implements PluginS
      *
      * @param loader The service loader used to load plugins.
      */
-    public AbstractPluginService(ServiceLoader<T> loader) {
+    protected AbstractPluginService(ServiceLoader<T> loader) {
         this.loader = loader;
     }
 

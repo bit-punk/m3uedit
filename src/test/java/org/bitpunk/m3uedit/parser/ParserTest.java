@@ -51,7 +51,7 @@ class ParserTest {
     void testParseMultipleVlcOpts() {
         List<Entry> entries = new Parser().parse(ParserTest.class.getResourceAsStream("/tvhd_orig.m3u"));
         assertThat(entries).hasSize(30);
-        Entry entry = entries.get(0);
+        Entry entry = entries.getFirst();
         assertThat(entry.getName()).isEqualTo("Das Erste HD");
         assertThat(entry.getVlcOpts()).hasSize(3);
     }

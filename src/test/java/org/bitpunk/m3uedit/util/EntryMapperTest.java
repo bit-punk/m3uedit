@@ -41,7 +41,8 @@ class EntryMapperTest {
         EntryMapper.mapEntry(sourceEntry, targetEntry);
         assertThat(targetEntry)
                 .as("target entry after mapping")
-                .isEqualToComparingFieldByField(sourceEntry);
+                .usingRecursiveComparison()
+                .isEqualTo(sourceEntry);
     }
 
     private Entry getEntry(String duration, String groupTitle, String tvgId, String tvgName, String tvgLogo, String tvgShift, String radio, String channelUri, String name, Map<String, String> vlcOpts) {

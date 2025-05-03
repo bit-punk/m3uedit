@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 
@@ -89,9 +90,9 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
         String newUrlText = urlTextField.getText();
         log.debug("Adding new url: {}", newUrlText);
         String validationMessage = validateUrl(newUrlText);
-        if (validationMessage.equals("")) {
+        if (validationMessage.isEmpty()) {
             try {
-                URL newUrl = new URL(newUrlText);
+                URL newUrl =  URI.create(newUrlText).toURL();
                 unmarkTextField(urlTextField);
                 selectedUrlListView.getItems().add(newUrl);
                 urlTextField.clear();
@@ -111,9 +112,9 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
         if (selectedUrlListView.getItems().stream().anyMatch(urlItem -> urlItem.toString().equals(url))) {
             return "Url already added";
         }
-        URL playListUrl = null;
+        URL playListUrl;
         try {
-            playListUrl = new URL(url);
+            playListUrl = URI.create(url).toURL();
         } catch (MalformedURLException e) {
            return e.getMessage();
         }

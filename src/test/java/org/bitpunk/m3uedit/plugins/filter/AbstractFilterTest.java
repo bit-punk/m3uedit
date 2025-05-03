@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Objects;
 
-abstract public class AbstractFilterTest {
+public abstract class AbstractFilterTest {
     List<Entry> readList(String resourceName) throws FileNotFoundException {
         List<Entry> entryList;
         ClassLoader classLoader = getClass().getClassLoader();

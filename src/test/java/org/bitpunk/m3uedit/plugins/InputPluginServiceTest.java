@@ -8,13 +8,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class InputPluginServiceTest {
 
+    public static final String[] INPUT_NAMES = {"File Input", "FritzBox Input", "Url Input"};
+
     @Test
     void getAllPlugins() {
         List<? extends Plugin> allPlugins = InputPluginService.getInstance().getAllPlugins();
         assertThat(allPlugins).hasSize(3);
         assertThat(allPlugins)
                 .extracting("name")
-                .contains("File Input", "FritzBox Input", "Url Input");
+                .contains(INPUT_NAMES);
 
     }
 
@@ -23,6 +25,6 @@ class InputPluginServiceTest {
         List<String> allPluginNames = InputPluginService.getInstance().getAllPluginNames();
         assertThat(allPluginNames)
                 .hasSize(3)
-                .contains("File Input", "FritzBox Input", "Url Input");
+                .contains(INPUT_NAMES);
     }
 }
