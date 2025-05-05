@@ -24,7 +24,7 @@
         <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
         <expressly.version>5.0.0</expressly.version>
         <xstream.version>1.4.21</xstream.version>
-        <jsch.version>0.2.25</jsch.version>
+        <jsch.version>0.2.26</jsch.version>
         <assertj-core.version>3.27.3</assertj-core.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
