@@ -28,7 +28,7 @@
         <assertj-core.version>3.27.4</assertj-core.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
-        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
         <gitflow-maven-plugin.version>1.21.0</gitflow-maven-plugin.version>
         <oga-maven-plugin.version>1.9.4</oga-maven-plugin.version>
         <maven-enforcer-plugin.version>3.6.1</maven-enforcer-plugin.version>
