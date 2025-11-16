@@ -69,7 +69,7 @@ public class FilterController extends AbstractController implements ModelAware {
     private void addIndexColumn() {
         indexColumn.setCellFactory(col -> {
             TableCell<Filter, String> cell = new TableCell<>();
-            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().add(1).asString()));
             return cell;
         });
     }

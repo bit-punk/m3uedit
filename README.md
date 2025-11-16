@@ -12,6 +12,7 @@ M3UEditor is a small editor written in Java based on JavaFX for managing m3u-pla
 ## Prerequisites
 
 * JDK 22+
+* [JavaFX 25+](/home/jochen/javafx-sdk-25.0.1/)
 * Linux, Windows, MacOS
 
 ## Building
@@ -33,19 +34,11 @@ After a successful build you will find the resulting _m3uedit_ binary under `./t
 
 ## Developing
 
-### GitFlow
-
-[gitflow-maven-plugin](https://github.com/aleksandr-m/gitflow-maven-plugin)
-
-```bash
-./mvnw gitflow:feature-start
-```
-
 ### IntelliJ
 
 * To be able to run the JavaFX application from IntelliJ, add the following VM options of your run-configuration:
     ```
-      --module-path /home/jochen/javafx-sdk-20.0.2/lib --add-modules javafx.controls,javafx.fxml
+      --module-path /home/jochen/javafx-sdk-25.0.1/lib --add-modules javafx.controls,javafx.fxml
     ```
 
 ### Links

@@ -56,7 +56,7 @@ public class RawEntriesController extends AbstractController  implements Initial
     private void addIndexColumn() {
         indexColumn.setCellFactory(col -> {
             TableCell<Entry, String> cell = new TableCell<>();
-            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().add(1).asString()));
             return cell;
         });
     }
