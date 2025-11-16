@@ -84,12 +84,12 @@ public class EntryListController extends AbstractController  implements Initiali
                 int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
                 Entry draggedEntry = entryTableView.getItems().remove(draggedIndex);
 
-                Integer dropIndex;
+                int dropIndex;
 
                 if (row.isEmpty()) {
-                    dropIndex = Integer.valueOf(entryTableView.getItems().size());
+                    dropIndex = entryTableView.getItems().size();
                 } else {
-                    dropIndex = Integer.valueOf(row.getIndex());
+                    dropIndex = row.getIndex();
                     log.debug("Entry dragged to index: {}", dropIndex);
                 }
 
@@ -129,7 +129,7 @@ public class EntryListController extends AbstractController  implements Initiali
     private void addIndexColumn() {
         indexColumn.setCellFactory(col -> {
             TableCell<Entry, String> cell = new TableCell<>();
-            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().asString()));
+            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().add(1).asString()));
             return cell;
         });
     }
