@@ -12,7 +12,7 @@ class SorterPluginServiceTest {
     void getAllPlugins() {
         List<? extends Plugin> allPlugins = SorterPluginService.getInstance().getAllPlugins();
         assertThat(allPlugins)
-                .hasSize(1)
+                .hasSize(2)
                 .extracting("name")
                 .contains("ChannelName Sorter");
     }
@@ -21,7 +21,7 @@ class SorterPluginServiceTest {
     void getAllPluginNames() {
         List<String> allPluginNames = SorterPluginService.getInstance().getAllPluginNames();
         assertThat(allPluginNames)
-                .hasSize(1)
+                .hasSize(2)
                 .contains("ChannelName Sorter");
     }
 }

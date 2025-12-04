@@ -12,7 +12,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -25,7 +24,7 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
 
     @Override
     public List<Entry> filter(List<Entry> list) {
-        return list.stream().filter(entry -> isUrlReachable(entry.getChannelUri(), 10)).collect(Collectors.toList());
+        return list.stream().filter(entry -> isUrlReachable(entry.getChannelUri(), 10)).toList();
     }
 
     boolean isUrlReachable(String urlString, int timeout) {

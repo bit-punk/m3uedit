@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -28,7 +27,7 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
                     String currentEntryName = e.getName();
                     return !entryName.equals(currentEntryName) && currentEntryName.startsWith(entryName);
                 }))
-                .collect(Collectors.toList());
+                .toList();
     }
 
 }
