@@ -2,7 +2,6 @@ package org.bitpunk.m3uedit.plugins;
 
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.stream.Collectors;
 
 /**
  * This abstract class represents a service that handles all plugin-related tasks.
@@ -31,7 +30,7 @@ public abstract class AbstractPluginService<T extends Plugin> implements PluginS
         return loader
                 .stream()
                 .map(ServiceLoader.Provider::get)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -44,6 +43,6 @@ public abstract class AbstractPluginService<T extends Plugin> implements PluginS
         return loader
                 .stream()
                 .map(serviceProvider -> serviceProvider.get().getName())
-                .collect(Collectors.toList());
+                .toList();
     }
 }

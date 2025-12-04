@@ -5,7 +5,6 @@ import org.bitpunk.m3uedit.NamedItem;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class EntryListNameFormatter {
 
@@ -29,6 +28,6 @@ public class EntryListNameFormatter {
     }
 
     private static List<String> convertToStrings(ObservableList<NamedItem> namedItems) {
-        return namedItems.stream().map(NamedItem::getName).collect(Collectors.toList());
+        return namedItems.stream().map(NamedItem::getName).toList();
     }
 }

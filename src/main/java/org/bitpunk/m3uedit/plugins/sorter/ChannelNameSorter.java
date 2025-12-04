@@ -7,7 +7,6 @@ import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 public class ChannelNameSorter extends AbstractPlugin implements Sorter {
@@ -20,7 +19,7 @@ public class ChannelNameSorter extends AbstractPlugin implements Sorter {
     public List<Entry> sort(List<Entry> entries) {
         return entries.stream()
                 .sorted(Comparator.comparing(Entry::getName))
-                .collect(Collectors.toList());
+                .toList();
     }
 
 }

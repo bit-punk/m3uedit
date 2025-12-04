@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -20,7 +19,7 @@ public class UniqueUriFilter extends AbstractUniqueFilter implements Filter {
     public List<Entry> filter(List<Entry> list) {
         return list.stream()
                 .filter(distinctByKey(Entry::getChannelUri))
-                .collect(Collectors.toList());
+                .toList();
     }
 
 }
