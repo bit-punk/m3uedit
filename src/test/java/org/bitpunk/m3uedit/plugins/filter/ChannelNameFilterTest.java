@@ -14,7 +14,7 @@ class ChannelNameFilterTest extends AbstractFilterTest {
     void testFilter() throws FileNotFoundException {
         Filter filter = new ChannelNameFilter();
         List<Entry> entryList = readList("iptv.m3u");
-        assertThat(entryList).hasSize(30);
+        assertThat(entryList).hasSize(33);
         List<Entry> filteredList = filter.filter(entryList);
         assertThat(filteredList).hasSize(24);
         assertThat(filteredList).filteredOn(channel -> channel.getName().matches(".*QVC.*")).isEmpty();
