@@ -82,6 +82,7 @@ public class EntryListController extends AbstractController  implements Initiali
         row.setOnDragDropped(event -> {
             Dragboard db = event.getDragboard();
             if (db.hasContent(SERIALIZED_MIME_TYPE)) {
+                row.setStyle("");
                 int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
                 Entry draggedEntry = entryTableView.getItems().remove(draggedIndex);
 
