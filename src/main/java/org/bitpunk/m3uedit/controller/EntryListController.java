@@ -48,18 +48,19 @@ public class EntryListController extends AbstractController  implements Initiali
     }
 
     private void initEntryTableView() {
-        // set RowFactory for Entry-TableView to make rows draggable
-        entryTableView.setRowFactory(tv -> {
-            TableRow<Entry> row = new TableRow<>();
-            setOnDragDetectedEventHandler(row);
-            setOnDragOverEventHandler(row);
-            setOnDragDroppedEventHandler(row);
-            setOnMouseClickedEventHandler(row);
-            return row;
-        });
-        entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            entryTableView.setRowFactory(tv -> {
+                TableRow<Entry> row = new TableRow<>();
+                setOnDragDetectedEventHandler(row);
+                setOnDragOverEventHandler(row);
+                setOnDragEnteredEventHandler(row);
+                setOnDragExitedEventHandler(row);
+                setOnDragDroppedEventHandler(row);
+                setOnMouseClickedEventHandler(row);
+                return row;
+            });
+            entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        addIndexColumn();
+            addIndexColumn();
 
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
