@@ -96,6 +96,7 @@ public class EntryListController extends AbstractController  implements Initiali
                 entryTableView.getItems().add(dropIndex, draggedEntry);
 
                 event.setDropCompleted(true);
+                entryTableView.getSelectionModel().clearSelection();
                 entryTableView.getSelectionModel().select(dropIndex);
                 event.consume();
             }
@@ -109,6 +110,23 @@ public class EntryListController extends AbstractController  implements Initiali
                 event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
                 event.consume();
             }
+        });
+    }
+
+    private static void setOnDragEnteredEventHandler(TableRow<Entry> row) {
+        row.setOnDragEntered(event -> {
+            Dragboard db = event.getDragboard();
+            if (db.hasContent(SERIALIZED_MIME_TYPE) && (row.getIndex() != (Integer) db.getContent(SERIALIZED_MIME_TYPE))) {
+                row.setStyle("-fx-border-color: -fx-accent; -fx-border-width: 2 0 0 0;");
+                event.consume();
+            }
+        });
+    }
+
+    private static void setOnDragExitedEventHandler(TableRow<Entry> row) {
+        row.setOnDragExited(event -> {
+            row.setStyle("");
+            event.consume();
         });
     }
 
