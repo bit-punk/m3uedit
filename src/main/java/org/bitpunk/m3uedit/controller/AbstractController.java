@@ -17,7 +17,7 @@ public abstract class AbstractController extends VBox {
         try {
             fxmlLoader.load();
         } catch (IOException exception) {
-            throw new RuntimeException(exception);
+            throw new FXMLLoadException(fxmlFileName, exception);
         }
 
     }
