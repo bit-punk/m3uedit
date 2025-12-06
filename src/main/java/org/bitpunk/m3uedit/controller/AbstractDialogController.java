@@ -30,7 +30,7 @@ public abstract class AbstractDialogController<T> extends Dialog<T> implements I
             loader.setController(this);
             return loader.load();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load FXML file: " + fxmlFileName, e);
+            throw new FXMLLoadException(fxmlFileName, e);
         }
     }
 
