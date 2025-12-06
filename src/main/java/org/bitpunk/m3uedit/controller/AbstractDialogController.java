@@ -14,20 +14,23 @@ public abstract class AbstractDialogController<T> extends Dialog<T> implements I
     public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
 
     protected AbstractDialogController(String fxmlFileName, String dialogTitle) {
+        DialogPane dialogPane = loadDialogPane(fxmlFileName);
+
+        initModality(Modality.APPLICATION_MODAL);
+
+        setResizable(true);
+        setTitle(dialogTitle);
+        setDialogPane(dialogPane);
+    }
+
+    private DialogPane loadDialogPane(String fxmlFileName) {
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getClassLoader().getResource(fxmlFileName));
             loader.setController(this);
-
-            DialogPane dialogPane = loader.load();
-
-            initModality(Modality.APPLICATION_MODAL);
-
-            setResizable(true);
-            setTitle(dialogTitle);
-            setDialogPane(dialogPane);
+            return loader.load();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to load FXML file: " + fxmlFileName, e);
         }
     }
 
