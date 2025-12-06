@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -87,31 +88,10 @@ public class EntryListController extends AbstractController  implements Initiali
                 row.setStyle("");
                 Object content = db.getContent(SERIALIZED_MIME_TYPE);
 
-                if (content instanceof ArrayList<?>) {
-                    ArrayList<Integer> draggedIndices = (ArrayList<Integer>) content;
-                    List<Entry> itemsToMove = new ArrayList<>();
-                    for (Integer index : draggedIndices) {
-                        itemsToMove.add(entryTableView.getItems().get(index));
-                    }
-
+                if (content instanceof IndicesList draggedIndices) {
                     int dropIndex = row.isEmpty() ? entryTableView.getItems().size() : row.getIndex();
+                    moveItems(draggedIndices, dropIndex);
 
-                    entryTableView.getItems().removeAll(itemsToMove);
-
-                    // Adjust drop index for removed items
-                    long itemsBeforeDrop = draggedIndices.stream().filter(i -> i < dropIndex).count();
-                    int finalDropIndex = Math.max(0, dropIndex - (int) itemsBeforeDrop);
-                    if (finalDropIndex > entryTableView.getItems().size()) {
-                        finalDropIndex = entryTableView.getItems().size();
-                    }
-
-                    entryTableView.getItems().addAll(finalDropIndex, itemsToMove);
-
-                    entryTableView.getSelectionModel().clearSelection();
-                    for (Entry item : itemsToMove) {
-                        entryTableView.getSelectionModel().select(item);
-                    }
-                    
                     event.setDropCompleted(true);
                     event.consume();
                 }
@@ -119,18 +99,39 @@ public class EntryListController extends AbstractController  implements Initiali
         });
     }
 
+    private void moveItems(List<Integer> draggedIndices, int dropIndex) {
+        ObservableList<Entry> items = entryTableView.getItems();
+        List<Entry> itemsToMove = draggedIndices.stream()
+                .map(items::get)
+                .toList();
+
+        items.removeAll(itemsToMove);
+
+        // Adjust drop index for removed items
+        long itemsBeforeDrop = draggedIndices.stream()
+                .filter(i -> i < dropIndex)
+                .count();
+
+        int finalDropIndex = Math.max(0, dropIndex - (int) itemsBeforeDrop);
+        // Ensure the index is within bounds of the list after removal
+        finalDropIndex = Math.min(finalDropIndex, items.size());
+
+        items.addAll(finalDropIndex, itemsToMove);
+
+        entryTableView.getSelectionModel().clearSelection();
+        itemsToMove.forEach(entryTableView.getSelectionModel()::select);
+    }
+
     private static void setOnDragOverEventHandler(TableRow<Entry> row) {
         row.setOnDragOver(event -> {
             Dragboard db = event.getDragboard();
             if (db.hasContent(SERIALIZED_MIME_TYPE)) {
                 Object content = db.getContent(SERIALIZED_MIME_TYPE);
-                if (content instanceof ArrayList<?>) {
-                    ArrayList<Integer> indices = (ArrayList<Integer>) content;
-                    if (!indices.contains(row.getIndex())) {
+                if (content instanceof IndicesList indices && !indices.contains(row.getIndex())) {
                         event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
                         event.consume();
                     }
-                }
+
             }
         });
     }
@@ -140,13 +141,11 @@ public class EntryListController extends AbstractController  implements Initiali
             Dragboard db = event.getDragboard();
             if (db.hasContent(SERIALIZED_MIME_TYPE)) {
                 Object content = db.getContent(SERIALIZED_MIME_TYPE);
-                if (content instanceof ArrayList<?>) {
-                    ArrayList<Integer> indices = (ArrayList<Integer>) content;
-                    if (!indices.contains(row.getIndex())) {
+                if (content instanceof IndicesList indices && !indices.contains(row.getIndex())) {
                         row.setStyle("-fx-border-color: -fx-accent; -fx-border-width: 2 0 0 0;");
                         event.consume();
                     }
-                }
+
             }
         });
     }
@@ -161,8 +160,8 @@ public class EntryListController extends AbstractController  implements Initiali
     private static void setOnDragDetectedEventHandler(TableRow<Entry> row) {
         row.setOnDragDetected(event -> {
             if (!row.isEmpty()) {
-                // Serialize list of indices instead of single index
-                ArrayList<Integer> selectedIndices = new ArrayList<>(row.getTableView().getSelectionModel().getSelectedIndices());
+                // Serialize the list of indices instead of a single index
+                IndicesList selectedIndices = new IndicesList(row.getTableView().getSelectionModel().getSelectedIndices());
                 Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
                 db.setDragView(row.snapshot(null, null));
                 ClipboardContent cc = new ClipboardContent();
@@ -211,4 +210,10 @@ public class EntryListController extends AbstractController  implements Initiali
         entryTableView.setItems(this.dataModel.getSortedEntryList());
     }
 
-}
+    private static class IndicesList extends ArrayList<Integer> {
+        IndicesList(java.util.Collection<Integer> c) {
+            super(c);
+        }
+    }
+
+    }
