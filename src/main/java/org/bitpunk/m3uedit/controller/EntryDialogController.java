@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
@@ -119,27 +120,17 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     private void initializeBinding() {
-        isInputValid = new BooleanBinding() {
-
-            {
-                // @formatter:off
-                bind(durationTextField.textProperty(),
-                        groupTitleTextField.textProperty(),
-                        tvgIdTextField.textProperty(),
-                        tvgNameTextField.textProperty(),
-                        tvgLogoTextField.textProperty(),
-                        tvgShiftTextField.textProperty(),
-                        radioTextField.textProperty(),
-                        channelUriTextField.textProperty(),
-                        nameTextField.textProperty());
-                // @formatter:on
-            }
-
-            @Override
-            protected boolean computeValue() {
-                return isValidBean(getEntry());
-            }
-        };
+        isInputValid = Bindings.createBooleanBinding(
+                () -> isValidBean(getEntry()), 
+                durationTextField.textProperty(), 
+                groupTitleTextField.textProperty(), 
+                tvgIdTextField.textProperty(), 
+                tvgNameTextField.textProperty(), 
+                tvgLogoTextField.textProperty(), 
+                tvgShiftTextField.textProperty(), 
+                radioTextField.textProperty(), 
+                channelUriTextField.textProperty(), 
+                nameTextField.textProperty());
     }
 
     private void initKeyEventHandler() {
