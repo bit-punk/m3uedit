@@ -201,7 +201,11 @@ public class EntryListController extends AbstractController  implements Initiali
 
     @FXML
     public void deleteKeyListenerTableView(KeyEvent keyEvent) {
+        int oldSize = entryTableView.getItems().size();
         ListControllerUtil.deleteKeyListenerTableView(keyEvent);
+        if (entryTableView.getItems().size() != oldSize) {
+            entryTableView.getSelectionModel().clearSelection();
+        }
     }
 
     @Override
