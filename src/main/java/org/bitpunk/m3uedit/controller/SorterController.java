@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
@@ -60,7 +59,8 @@ public class SorterController extends AbstractController implements ModelAware {
     private void initAvailableSorterListView() {
         availableSortersTableView.getItems().addAll(dataModel.getSorters());
         selectedColumn.setCellFactory(this::createCheckBoxTableCell);
-        selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
+        selectAllEntriesCheckBox.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> changeAllEntries(newValue));
         addIndexColumn();
         sorterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         sorterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
@@ -85,7 +85,7 @@ public class SorterController extends AbstractController implements ModelAware {
         });
     }
 
-    private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+    private void changeAllEntries(Boolean newValue) {
         for (Sorter sorter : availableSortersTableView.getItems()) {
             sorter.getEnabled().set(newValue);
         }

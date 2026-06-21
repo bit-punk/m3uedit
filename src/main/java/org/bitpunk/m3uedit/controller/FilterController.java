@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
@@ -60,7 +59,7 @@ public class FilterController extends AbstractController implements ModelAware {
         availableFiltersTableView.getItems().addAll(dataModel.getFilters());
         selectedColumn.setCellFactory(this::getFilterTableCell);
         selectedColumn.setCellValueFactory(cellData -> cellData.getValue().getEnabled());
-        selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
+        selectAllEntriesCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> changeAllEntries(newValue));
         addIndexColumn();
         filterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         filterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
@@ -83,7 +82,7 @@ public class FilterController extends AbstractController implements ModelAware {
         initAvailableFilterTableView();
     }
 
-    private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+    private void changeAllEntries(Boolean newValue) {
         for (Filter filter : availableFiltersTableView.getItems()) {
             filter.getEnabled().set(newValue);
         }
