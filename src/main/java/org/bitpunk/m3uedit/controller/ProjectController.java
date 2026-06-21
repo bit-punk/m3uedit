@@ -4,6 +4,7 @@ import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -24,6 +25,8 @@ public class ProjectController extends AbstractController implements ModelAware 
     public RawEntriesController rawEntriesController;
     @FXML
     public FilterController filterController;
+    @FXML
+    private TabPane projectTabPane;
     @FXML
     public FilteredEntriesController filteredEntriesController;
     @FXML
@@ -83,12 +86,36 @@ public class ProjectController extends AbstractController implements ModelAware 
     }
 
     private void initStatusLabel() {
+        dataModel.getRawEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
+        dataModel.getFilteredEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
         dataModel.getSortedEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
+
+        projectTabPane.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, oldTab, newTab) -> updateStatusLabel());
     }
 
     public void updateStatusLabel() {
-        String statusMessage = "%s entries loaded".formatted(dataModel.getSortedEntryList().size());
+        if (statusLabel == null) {
+            return;
+        }
+
+        int entryCount = getSelectedEntryCount();
+        String statusMessage = "%s entries loaded".formatted(entryCount);
         statusLabel.setText(statusMessage);
+    }
+
+    private int getSelectedEntryCount() {
+        Tab selectedTab = projectTabPane.getSelectionModel().getSelectedItem();
+
+        if (selectedTab == rawEntriesTab) {
+            return dataModel.getRawEntryList().size();
+        }
+        if (selectedTab == filteredEntriesTab) {
+            return dataModel.getFilteredEntryList().size();
+        }
+
+        return dataModel.getSortedEntryList().size();
     }
 
     @Override
