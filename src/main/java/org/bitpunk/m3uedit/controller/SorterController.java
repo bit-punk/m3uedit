@@ -32,13 +32,13 @@ public class SorterController extends AbstractController implements ModelAware {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Sorter, String> sorterDescriptionColumn;
-    private static DataModel dataModel;
+    private DataModel dataModel;
 
     public SorterController() {
         super(FXML_SORTER);
     }
 
-    private static TableCell<Sorter, Boolean> createCheckBoxTableCell(TableColumn<Sorter, Boolean> param) {
+    private TableCell<Sorter, Boolean> createCheckBoxTableCell(TableColumn<Sorter, Boolean> param) {
         return new CheckBoxTableCell<>() {
             @Override
             public void updateItem(Boolean item, boolean empty) {
@@ -59,7 +59,7 @@ public class SorterController extends AbstractController implements ModelAware {
 
     private void initAvailableSorterListView() {
         availableSortersTableView.getItems().addAll(dataModel.getSorters());
-        selectedColumn.setCellFactory(SorterController::createCheckBoxTableCell);
+        selectedColumn.setCellFactory(this::createCheckBoxTableCell);
         selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
         addIndexColumn();
         sorterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));

@@ -31,13 +31,13 @@ public class FilterController extends AbstractController implements ModelAware {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Filter, String> filterDescriptionColumn;
-    private static DataModel dataModel;
+    private DataModel dataModel;
 
     public FilterController() {
         super(FXML_FILTER);
     }
 
-    private static TableCell<Filter, Boolean> getFilterTableCell(TableColumn<Filter, Boolean> param) {
+    private TableCell<Filter, Boolean> getFilterTableCell(TableColumn<Filter, Boolean> param) {
         return new CheckBoxTableCell<>() {
             @Override
             public void updateItem(Boolean item, boolean empty) {
@@ -58,7 +58,7 @@ public class FilterController extends AbstractController implements ModelAware {
 
     private void initAvailableFilterTableView() {
         availableFiltersTableView.getItems().addAll(dataModel.getFilters());
-        selectedColumn.setCellFactory(FilterController::getFilterTableCell);
+        selectedColumn.setCellFactory(this::getFilterTableCell);
         selectedColumn.setCellValueFactory(cellData -> cellData.getValue().getEnabled());
         selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
         addIndexColumn();
