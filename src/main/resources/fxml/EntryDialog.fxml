@@ -4,26 +4,31 @@
 <DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="500">
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Duration:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <TextField fx:id="durationTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-            <Label text="GroupTitle:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-            <TextField fx:id="groupTitleTextField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-            <Label text="TvgId:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-            <TextField fx:id="tvgIdTextField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-            <Label text="TvgName:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-            <TextField fx:id="tvgNameTextField" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-            <Label text="TvgLogo:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-            <TextField fx:id="tvgLogoTextField" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-            <Label text="TvgShift:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-            <TextField fx:id="tvgShiftTextField" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-            <Label text="Radio:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
-            <TextField fx:id="radioTextField" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
-            <Label text="URI:" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
-            <TextField fx:id="channelUriTextField" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
-            <Label text="Name:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
-            <TextField fx:id="nameTextField" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
-            <Label text="VLC-Options:" GridPane.columnIndex="0" GridPane.rowIndex="9"/>
-            <MapEditorController fx:id="mapEditorController" GridPane.columnIndex="1" GridPane.rowIndex="9"/>
+            <Label fx:id="indexLabel" text="Index:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <HBox fx:id="indexHBox" GridPane.columnIndex="1" GridPane.rowIndex="0" >
+                <TextField fx:id="indexTextField" />
+                <Label fx:id="maxIndexLabel" text=" / MAX" />
+            </HBox>
+            <Label text="Duration:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <TextField fx:id="durationTextField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            <Label text="GroupTitle:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextField fx:id="groupTitleTextField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            <Label text="TvgId:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+            <TextField fx:id="tvgIdTextField" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+            <Label text="TvgName:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            <TextField fx:id="tvgNameTextField" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+            <Label text="TvgLogo:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+            <TextField fx:id="tvgLogoTextField" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+            <Label text="TvgShift:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+            <TextField fx:id="tvgShiftTextField" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+            <Label text="Radio:" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
+            <TextField fx:id="radioTextField" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+            <Label text="URI:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
+            <TextField fx:id="channelUriTextField" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
+            <Label text="Name:" GridPane.columnIndex="0" GridPane.rowIndex="9"/>
+            <TextField fx:id="nameTextField" GridPane.columnIndex="1" GridPane.rowIndex="9"/>
+            <Label text="VLC-Options:" GridPane.columnIndex="0" GridPane.rowIndex="10"/>
+            <MapEditorController fx:id="mapEditorController" GridPane.columnIndex="1" GridPane.rowIndex="10"/>
             <columnConstraints>
                 <ColumnConstraints hgrow="ALWAYS"/>
             </columnConstraints>

@@ -10,6 +10,7 @@ public class EntryMapper {
     }
 
     public static void mapEntry(Entry sourceEntry, Entry targetEntry) {
+        targetEntry.setIndex(sourceEntry.getIndex());
         targetEntry.setDuration(sourceEntry.getDuration());
         targetEntry.setGroupTitle(sourceEntry.getGroupTitle());
         targetEntry.setTvgId(sourceEntry.getTvgId());
