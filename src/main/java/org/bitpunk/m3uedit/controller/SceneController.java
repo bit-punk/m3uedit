@@ -83,7 +83,6 @@ public class SceneController implements Initializable {
     private ProjectController getProjectController(DataModel dataModel) {
         dataModelMap.put(dataModel.getName(), dataModel);
         ProjectController projectController = new ProjectController(dataModel);
-        projectController.initModel(dataModel);
         projectController.setStatusLabel(statusLabel);
         return projectController;
     }

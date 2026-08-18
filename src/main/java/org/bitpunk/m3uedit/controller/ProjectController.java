@@ -12,12 +12,19 @@ import org.bitpunk.m3uedit.model.Entry;
 
 public class ProjectController extends AbstractController implements ModelAware {
     public static final String FXML_PROJECT = "fxml/Project.fxml";
+    @FXML
     public Tab inputTab;
+    @FXML
     public Tab rawEntriesTab;
+    @FXML
     public Tab filterTab;
+    @FXML
     public Tab filteredEntriesTab;
+    @FXML
     public Tab sorterTab;
+    @FXML
     public Tab entryTab;
+    @FXML
     public Tab outputTab;
     @FXML
     public InputController inputController;
@@ -30,9 +37,11 @@ public class ProjectController extends AbstractController implements ModelAware 
     @FXML
     public FilteredEntriesController filteredEntriesController;
     @FXML
-    SorterController sorterController;
+    public SorterController sorterController;
     @FXML
     public EntryListController entryListController;
+    @FXML
+    public OutputController outputController;
     @Setter
     public Label statusLabel;
     @Getter
@@ -40,49 +49,7 @@ public class ProjectController extends AbstractController implements ModelAware 
 
     public ProjectController(DataModel dataModel) {
         super(FXML_PROJECT);
-        this.dataModel = dataModel;
-    }
-
-    private void initInputs(DataModel dataModel) {
-        inputController = new InputController();
-        inputController.initInputs(dataModel.getInputs());
-        inputTab.setContent(inputController);
-    }
-
-    private void initRawEntries(DataModel dataModel) {
-        rawEntriesController = new RawEntriesController();
-        rawEntriesController.initModel(dataModel);
-        rawEntriesTab.setContent(rawEntriesController);
-    }
-
-    private void initFilteredEntries(DataModel dataModel) {
-        filteredEntriesController = new FilteredEntriesController();
-        filteredEntriesController.initModel(dataModel);
-        filteredEntriesTab.setContent(filteredEntriesController);
-    }
-
-    private void initSorters() {
-        sorterController = new SorterController();
-        sorterController.initModel(dataModel);
-        sorterTab.setContent(sorterController);
-    }
-
-    private void initFilters() {
-        filterController = new FilterController();
-        filterController.initModel(dataModel);
-        filterTab.setContent(filterController);
-    }
-
-    private void initOutputs() {
-        OutputController outputController = new OutputController();
-        outputController.initModel(dataModel);
-        outputTab.setContent(outputController);
-    }
-
-    private void initEntries() {
-        entryListController = new EntryListController();
-        entryListController.initModel(dataModel);
-        entryTab.setContent(entryListController);
+        initModel(dataModel);
     }
 
     private void initStatusLabel() {
@@ -121,14 +88,13 @@ public class ProjectController extends AbstractController implements ModelAware 
     @Override
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
-        // ToDo having to initialize components in the initModel method is weird ...
-        initInputs(dataModel);
-        initRawEntries(dataModel);
-        initFilters();
-        initFilteredEntries(dataModel);
-        initSorters();
-        initOutputs();
-        initEntries();
+        inputController.initModel(dataModel);
+        rawEntriesController.initModel(dataModel);
+        filterController.initModel(dataModel);
+        filteredEntriesController.initModel(dataModel);
+        sorterController.initModel(dataModel);
+        outputController.initModel(dataModel);
+        entryListController.initModel(dataModel);
         initStatusLabel();
     }
 }

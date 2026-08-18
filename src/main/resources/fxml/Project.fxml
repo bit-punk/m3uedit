@@ -2,18 +2,46 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
+<?import org.bitpunk.m3uedit.controller.*?>
 <fx:root stylesheets="@css/project.css" type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml/1"
          xmlns="http://javafx.com/javafx/17.0.2-ea">
     <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="ALWAYS">
-        <TabPane fx:id="projectTabPane" rotateGraphic="true" side="LEFT" tabClosingPolicy="UNAVAILABLE"
-                 xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1">
-            <Tab fx:id="inputTab" text="Inputs"/>
-            <Tab fx:id="rawEntriesTab" text="Raw Entries"/>
-            <Tab fx:id="filterTab" text="Filters"/>
-            <Tab fx:id="filteredEntriesTab" text="Filtered Entries"/>
-            <Tab fx:id="sorterTab" text="Sorters"/>
-            <Tab fx:id="entryTab" text="Playlist"/>
-            <Tab fx:id="outputTab" text="Outputs"/>
+        <TabPane fx:id="projectTabPane" rotateGraphic="true" side="LEFT" tabClosingPolicy="UNAVAILABLE">
+            <Tab fx:id="inputTab" text="Inputs">
+                <content>
+                    <InputController fx:id="inputController"/>
+                </content>
+            </Tab>
+            <Tab fx:id="rawEntriesTab" text="Raw Entries">
+                <content>
+                    <RawEntriesController fx:id="rawEntriesController"/>
+                </content>
+            </Tab>
+            <Tab fx:id="filterTab" text="Filters">
+                <content>
+                    <FilterController fx:id="filterController"/>
+                </content>
+            </Tab>
+            <Tab fx:id="filteredEntriesTab" text="Filtered Entries">
+                <content>
+                    <FilteredEntriesController fx:id="filteredEntriesController"/>
+                </content>
+            </Tab>
+            <Tab fx:id="sorterTab" text="Sorters">
+                <content>
+                    <SorterController fx:id="sorterController"/>
+                </content>
+            </Tab>
+            <Tab fx:id="entryTab" text="Playlist">
+                <content>
+                    <EntryListController fx:id="entryListController"/>
+                </content>
+            </Tab>
+            <Tab fx:id="outputTab" text="Outputs">
+                <content>
+                    <OutputController fx:id="outputController"/>
+                </content>
+            </Tab>
         </TabPane>
     </ScrollPane>
 </fx:root>
