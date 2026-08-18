@@ -2,15 +2,18 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import lombok.Getter;
-import lombok.Setter;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 
-public class ProjectController extends AbstractController implements ModelAware {
+import java.net.URL;
+import java.util.ResourceBundle;
+
+public class ProjectController extends AbstractController implements Initializable, ModelAware {
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     @FXML
     public Tab inputTab;
@@ -42,8 +45,8 @@ public class ProjectController extends AbstractController implements ModelAware 
     public EntryListController entryListController;
     @FXML
     public OutputController outputController;
-    @Setter
-    public Label statusLabel;
+    @Getter
+    private Label statusLabel;
     @Getter
     private DataModel dataModel;
 
@@ -52,14 +55,22 @@ public class ProjectController extends AbstractController implements ModelAware 
         initModel(dataModel);
     }
 
-    private void initStatusLabel() {
-        dataModel.getRawEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
-        dataModel.getFilteredEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
-        dataModel.getSortedEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
-
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
         projectTabPane.getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observable, oldTab, newTab) -> updateStatusLabel());
+    }
+
+    public void setStatusLabel(Label statusLabel) {
+        this.statusLabel = statusLabel;
+        updateStatusLabel();
+    }
+
+    private void initModelListeners() {
+        dataModel.getRawEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
+        dataModel.getFilteredEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
+        dataModel.getSortedEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
     }
 
     public void updateStatusLabel() {
@@ -95,6 +106,6 @@ public class ProjectController extends AbstractController implements ModelAware 
         sorterController.initModel(dataModel);
         outputController.initModel(dataModel);
         entryListController.initModel(dataModel);
-        initStatusLabel();
+        initModelListeners();
     }
 }
