@@ -10,6 +10,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 public class FilterController extends AbstractController implements ModelAware {
     public static final String FXML_FILTER = "fxml/Filter.fxml";
@@ -63,6 +64,11 @@ public class FilterController extends AbstractController implements ModelAware {
         addIndexColumn();
         filterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         filterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        ListControllerUtil.configureOnRowDoubleClick(availableFiltersTableView, () -> {
+            if (dataModel != null) {
+                dataModel.filterRawEntries();
+            }
+        });
     }
 
     private void addIndexColumn() {

@@ -2,19 +2,47 @@ package org.bitpunk.m3uedit.util;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.plugins.Plugin;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class ListControllerUtil {
 
     private ListControllerUtil() {}
+
+    public static <T> void setOnRowDoubleClick(TableView<T> tableView, Consumer<T> action) {
+        tableView.setRowFactory(tv -> {
+            TableRow<T> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    T item = row.getItem();
+                    if (item != null && action != null) {
+                        action.accept(item);
+                    }
+                }
+            });
+            return row;
+        });
+    }
+
+    public static <T extends Plugin> void configureOnRowDoubleClick(TableView<T> tableView) {
+        configureOnRowDoubleClick(tableView, null);
+    }
+
+    public static <T extends Plugin> void configureOnRowDoubleClick(TableView<T> tableView, Runnable onAfterConfigured) {
+        setOnRowDoubleClick(tableView, item -> {
+            item.configure();
+            tableView.refresh();
+            if (onAfterConfigured != null) {
+                onAfterConfigured.run();
+            }
+        });
+    }
 
     @FXML
     @SuppressWarnings("unchecked")

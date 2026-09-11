@@ -10,6 +10,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 public class SorterController extends AbstractController implements ModelAware {
     public static final String FXML_SORTER = "fxml/Sorter.fxml";
@@ -64,6 +65,11 @@ public class SorterController extends AbstractController implements ModelAware {
         addIndexColumn();
         sorterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         sorterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        ListControllerUtil.configureOnRowDoubleClick(availableSortersTableView, () -> {
+            if (dataModel != null) {
+                dataModel.sortFilteredEntries();
+            }
+        });
     }
 
     @Override

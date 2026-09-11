@@ -31,6 +31,7 @@ public class InputController extends AbstractController implements Initializable
     @FXML
     public TableView<Input> inputTableView;
     private ObservableList<Input> inputList;
+    private DataModel dataModel;
 
     public InputController() {
         super(FXML_INPUT);
@@ -38,6 +39,7 @@ public class InputController extends AbstractController implements Initializable
 
     @Override
     public void initModel(DataModel dataModel) {
+        this.dataModel = dataModel;
         initInputs(dataModel.getInputs());
     }
 
@@ -76,6 +78,12 @@ public class InputController extends AbstractController implements Initializable
         TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
+        ListControllerUtil.configureOnRowDoubleClick(inputTableView, () -> {
+            if (dataModel != null) {
+                dataModel.getRawEntryList().clear();
+                dataModel.getRawEntryList().addAll(dataModel.loadEntries(dataModel.getInputs()));
+            }
+        });
         inputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         inputTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
     }
