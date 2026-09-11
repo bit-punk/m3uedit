@@ -74,11 +74,23 @@ public class EntryListController extends AbstractController  implements Initiali
         row.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2 && (!row.isEmpty())) {
                 Entry entry = row.getItem();
+                int index = row.getIndex() + 1;
+                entry.setIndex(index);
                 log.debug("double-clicked on: {}", entry);
                 editEntry(entry);
+                if(index != entry.getIndex()) {
+                    log.debug("index changed from {} to {}", index, entry.getIndex());
+                    moveEntryToNewPosition(entry);
+                }
                 entryTableView.refresh();
             }
         });
+    }
+
+    private void moveEntryToNewPosition(Entry entry) {
+        ObservableList<Entry> items = entryTableView.getItems();
+        items.remove(entry);
+        items.add(entry.getIndex() - 1, entry);
     }
 
     private void setOnDragDroppedEventHandler(TableRow<Entry> row) {
@@ -181,8 +193,8 @@ public class EntryListController extends AbstractController  implements Initiali
     }
 
     private void editEntry(Entry entry) {
-        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
-        entryDialogController.setEntry(entry);
+        int entryListSize = dataModel.getSortedEntryList().size();
+        EntryDialogController<Entry> entryDialogController = new EntryDialogController<>(entry, entryListSize);
         entryDialogController.showAndWait().ifPresent(entryEdited -> {
             log.debug("edited Entry: {}", entryEdited);
             EntryMapper.mapEntry(entryEdited, entry);

@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.model;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -11,6 +12,9 @@ import java.util.Map;
 public class Entry implements NamedItem {
     public static final String REGEX_URL = "^(https?|ftp|file|rtsp)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
     public static final String REGEX_NUMERIC = "[+-]?\\d*";
+
+    @Min(value = 1, message = "Index must be greater than 0")
+    private int index;
     @Pattern(regexp = REGEX_NUMERIC, message = "Duration must be a numeric value")
     private String duration;
     private String groupTitle;

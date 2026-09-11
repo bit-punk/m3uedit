@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
@@ -11,6 +10,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 public class SorterController extends AbstractController implements ModelAware {
     public static final String FXML_SORTER = "fxml/Sorter.fxml";
@@ -32,13 +32,13 @@ public class SorterController extends AbstractController implements ModelAware {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Sorter, String> sorterDescriptionColumn;
-    private static DataModel dataModel;
+    private DataModel dataModel;
 
     public SorterController() {
         super(FXML_SORTER);
     }
 
-    private static TableCell<Sorter, Boolean> createCheckBoxTableCell(TableColumn<Sorter, Boolean> param) {
+    private TableCell<Sorter, Boolean> createCheckBoxTableCell(TableColumn<Sorter, Boolean> param) {
         return new CheckBoxTableCell<>() {
             @Override
             public void updateItem(Boolean item, boolean empty) {
@@ -59,11 +59,17 @@ public class SorterController extends AbstractController implements ModelAware {
 
     private void initAvailableSorterListView() {
         availableSortersTableView.getItems().addAll(dataModel.getSorters());
-        selectedColumn.setCellFactory(SorterController::createCheckBoxTableCell);
-        selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
+        selectedColumn.setCellFactory(this::createCheckBoxTableCell);
+        selectAllEntriesCheckBox.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> changeAllEntries(newValue));
         addIndexColumn();
         sorterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         sorterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        ListControllerUtil.configureOnRowDoubleClick(availableSortersTableView, () -> {
+            if (dataModel != null) {
+                dataModel.sortFilteredEntries();
+            }
+        });
     }
 
     @Override
@@ -85,7 +91,7 @@ public class SorterController extends AbstractController implements ModelAware {
         });
     }
 
-    private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+    private void changeAllEntries(Boolean newValue) {
         for (Sorter sorter : availableSortersTableView.getItems()) {
             sorter.getEnabled().set(newValue);
         }

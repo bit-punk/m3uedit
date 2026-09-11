@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
@@ -11,6 +10,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 public class FilterController extends AbstractController implements ModelAware {
     public static final String FXML_FILTER = "fxml/Filter.fxml";
@@ -31,13 +31,13 @@ public class FilterController extends AbstractController implements ModelAware {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Filter, String> filterDescriptionColumn;
-    private static DataModel dataModel;
+    private DataModel dataModel;
 
     public FilterController() {
         super(FXML_FILTER);
     }
 
-    private static TableCell<Filter, Boolean> getFilterTableCell(TableColumn<Filter, Boolean> param) {
+    private TableCell<Filter, Boolean> getFilterTableCell(TableColumn<Filter, Boolean> param) {
         return new CheckBoxTableCell<>() {
             @Override
             public void updateItem(Boolean item, boolean empty) {
@@ -58,12 +58,17 @@ public class FilterController extends AbstractController implements ModelAware {
 
     private void initAvailableFilterTableView() {
         availableFiltersTableView.getItems().addAll(dataModel.getFilters());
-        selectedColumn.setCellFactory(FilterController::getFilterTableCell);
+        selectedColumn.setCellFactory(this::getFilterTableCell);
         selectedColumn.setCellValueFactory(cellData -> cellData.getValue().getEnabled());
-        selectAllEntriesCheckBox.selectedProperty().addListener(this::changeAllEntries);
+        selectAllEntriesCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> changeAllEntries(newValue));
         addIndexColumn();
         filterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         filterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        ListControllerUtil.configureOnRowDoubleClick(availableFiltersTableView, () -> {
+            if (dataModel != null) {
+                dataModel.filterRawEntries();
+            }
+        });
     }
 
     private void addIndexColumn() {
@@ -83,7 +88,7 @@ public class FilterController extends AbstractController implements ModelAware {
         initAvailableFilterTableView();
     }
 
-    private void changeAllEntries(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+    private void changeAllEntries(Boolean newValue) {
         for (Filter filter : availableFiltersTableView.getItems()) {
             filter.getEnabled().set(newValue);
         }

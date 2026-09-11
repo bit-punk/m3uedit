@@ -54,7 +54,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     private Callback<ButtonType, SftpConnection> getURIResultConverter() {
         return buttonType -> {
             SftpConnection sftpConnection = null;
-            if (!Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
+            if (Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
                 log.debug("OK pressed");
                 sftpConnection = createSftpConnectionFromInput();
             }

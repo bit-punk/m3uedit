@@ -10,6 +10,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
+import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputFactory;
@@ -21,7 +22,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class InputController extends AbstractController implements Initializable {
+public class InputController extends AbstractController implements Initializable, ModelAware {
     public static final String FXML_INPUT = "fxml/Input.fxml";
     public static final String ADD_INPUT = "add Input";
     private static final Logger log = LoggerFactory.getLogger(InputController.class);
@@ -30,9 +31,16 @@ public class InputController extends AbstractController implements Initializable
     @FXML
     public TableView<Input> inputTableView;
     private ObservableList<Input> inputList;
+    private DataModel dataModel;
 
     public InputController() {
         super(FXML_INPUT);
+    }
+
+    @Override
+    public void initModel(DataModel dataModel) {
+        this.dataModel = dataModel;
+        initInputs(dataModel.getInputs());
     }
 
 
@@ -70,6 +78,12 @@ public class InputController extends AbstractController implements Initializable
         TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
+        ListControllerUtil.configureOnRowDoubleClick(inputTableView, () -> {
+            if (dataModel != null) {
+                dataModel.getRawEntryList().clear();
+                dataModel.getRawEntryList().addAll(dataModel.loadEntries(dataModel.getInputs()));
+            }
+        });
         inputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         inputTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
     }

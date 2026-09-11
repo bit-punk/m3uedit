@@ -6,12 +6,11 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.DialogEvent;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
+import javafx.util.converter.IntegerStringConverter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
@@ -26,6 +25,15 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     public static final String FXML_ENTRY_DIALOG = "fxml/EntryDialog.fxml";
     private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
 
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TextField indexTextField;
+    @FXML
+    private Label indexLabel;
+    @FXML
+    private HBox indexHBox;
+    @FXML
+    private Label maxIndexLabel;
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TextField durationTextField;
@@ -62,10 +70,21 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     private BooleanBinding isInputValid;
 
     public EntryDialogController() {
+        super(FXML_ENTRY_DIALOG, "Add new Entry");
+        setResultConverter();
+        disableOkButtonOnInvalidInput();
+        setOnShowing(this::requestFocus);
+        setIndexVisible(false);
+    }
+
+    public EntryDialogController(Entry entry, int size) {
         super(FXML_ENTRY_DIALOG, "Edit Entry");
         setResultConverter();
         disableOkButtonOnInvalidInput();
         setOnShowing(this::requestFocus);
+        setEntry(entry);
+        setMaxIndexLabel(size);
+        setIndexVisible(true);
     }
 
     private void setResultConverter() {
@@ -87,6 +106,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
 
     private Entry getEntry() {
         Entry entry = new Entry();
+        entry.setIndex(getIntegerFieldValue(indexTextField));
         entry.setDuration(durationTextField.getText());
         entry.setGroupTitle(groupTitleTextField.getText());
         entry.setTvgId(tvgIdTextField.getText());
@@ -101,6 +121,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     public void setEntry(Entry entry) {
+        setIntegerFieldValue(indexTextField, entry.getIndex());
         durationTextField.setText(entry.getDuration());
         groupTitleTextField.setText(entry.getGroupTitle());
         tvgIdTextField.setText(entry.getTvgId());
@@ -117,12 +138,28 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     public void initialize(URL location, ResourceBundle resources) {
         initializeBinding();
         initKeyEventHandler();
+        initIntegerField(indexTextField,0);
+    }
+
+    private void initIntegerField(TextField textField, int defaultValue) {
+        TextFormatter<Integer> formatter = new TextFormatter<>(
+                new IntegerStringConverter(),
+                defaultValue,
+                c -> {
+                    if (c.getControlNewText().matches("-?\\d*")) {
+                        return c;
+                    }
+                    return null;
+                }
+        );
+        textField.setTextFormatter(formatter);
     }
 
     private void initializeBinding() {
         isInputValid = Bindings.createBooleanBinding(
                 () -> isValidBean(getEntry()), 
-                durationTextField.textProperty(), 
+                indexTextField.textProperty(),
+                durationTextField.textProperty(),
                 groupTitleTextField.textProperty(), 
                 tvgIdTextField.textProperty(), 
                 tvgNameTextField.textProperty(), 
@@ -169,6 +206,40 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
                 default -> throw new IllegalStateException("Unexpected value: " + fieldName);
             }
         }
+    }
+
+    protected int getIntegerFieldValue(TextField textField) {
+        String text = textField.getText();
+        if (text == null || text.isBlank() || "-".equals(text)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    protected void setIntegerFieldValue(TextField textField, int value) {
+        if (textField.getTextFormatter() != null) {
+            // Update via formatter to ensure consistency
+            @SuppressWarnings("unchecked")
+            TextFormatter<Object> formatter = (TextFormatter<Object>) textField.getTextFormatter();
+            formatter.setValue(value);
+        } else {
+            textField.setText(String.valueOf(value));
+        }
+    }
+
+    private void setMaxIndexLabel(int maxIndex) {
+        maxIndexLabel.setText(" / " + maxIndex);
+    }
+
+    private void setIndexVisible(boolean visible) {
+        indexLabel.setVisible(visible);
+        indexLabel.setManaged(visible);
+        indexHBox.setVisible(visible);
+        indexHBox.setManaged(visible);
     }
 
     private void resetTextFields() {
