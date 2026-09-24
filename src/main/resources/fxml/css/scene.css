@@ -1,0 +1,46 @@
+.start-screen {
+    -fx-background-color: -fx-background;
+    -fx-alignment: center;
+    -fx-spacing: 30px;
+    -fx-padding: 40px;
+}
+
+.start-screen-title {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-base-color;
+    -fx-opacity: 0.85;
+}
+
+.start-screen-button {
+    -fx-pref-width: 170px;
+    -fx-pref-height: 140px;
+    -fx-background-color: -fx-control-inner-background;
+    -fx-background-radius: 10px;
+    -fx-border-color: derive(-fx-color, -20%);
+    -fx-border-radius: 10px;
+    -fx-border-width: 2px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-padding: 15px;
+    -fx-alignment: center;
+}
+
+.start-screen-button:hover {
+    -fx-background-color: derive(-fx-accent, 85%);
+    -fx-border-color: -fx-accent;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.15), 10, 0, 0, 4);
+}
+
+.start-screen-button:pressed {
+    -fx-background-color: derive(-fx-accent, 70%);
+}
+
+.start-screen-icon {
+    -fx-fill: -fx-text-base-color;
+}
+
+.start-screen-button:hover .start-screen-icon {
+    -fx-fill: -fx-accent;
+}

@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.VBox;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
@@ -35,6 +36,8 @@ public class SceneController implements Initializable {
     private MenuItem closeProjectMenuItem;
     @FXML
     private TabPane tabPane;
+    @FXML
+    private VBox startScreen;
 
     @FXML
     private void handleExitAction() {
@@ -92,6 +95,16 @@ public class SceneController implements Initializable {
         initMenuItemDisableListeners();
         initDataModelMapListener();
         initTabPane();
+        initStartScreen();
+    }
+
+    private void initStartScreen() {
+        if (startScreen != null) {
+            startScreen.visibleProperty().bind(Bindings.isEmpty(tabPane.getTabs()));
+            startScreen.managedProperty().bind(startScreen.visibleProperty());
+            tabPane.visibleProperty().bind(Bindings.isNotEmpty(tabPane.getTabs()));
+            tabPane.managedProperty().bind(tabPane.visibleProperty());
+        }
     }
 
     /**
@@ -116,8 +129,7 @@ public class SceneController implements Initializable {
     }
 
     private void updateStatusLabel(Tab selectedTab) {
-        if (selectedTab != null) {
-            ProjectController projectController = (ProjectController) selectedTab.getContent();
+        if (selectedTab != null && selectedTab.getContent() instanceof ProjectController projectController) {
             log.debug("changed Tab to: {}", projectController.getDataModel());
             projectController.updateStatusLabel();
         }
