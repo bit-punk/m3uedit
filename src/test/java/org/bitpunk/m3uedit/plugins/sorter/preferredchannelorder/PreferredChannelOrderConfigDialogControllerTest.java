@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import javafx.application.Platform;
+import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
@@ -49,7 +50,7 @@ class PreferredChannelOrderConfigDialogControllerTest {
 
     private PreferredChannelOrderSorter createSampleSorter(Path tempDir) {
         Path configFile = tempDir.resolve("config.yaml");
-        PreferredChannelOrderConfigManager manager = new PreferredChannelOrderConfigManager(configFile);
+        YamlConfigManager<PreferredChannelOrderConfig> manager = new YamlConfigManager<>(configFile, PreferredChannelOrderConfig.class);
 
         ChannelProfile profile1 = ChannelProfile.builder()
                 .id("profile1")

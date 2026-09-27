@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import com.thoughtworks.xstream.XStream;
+import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
@@ -21,8 +22,9 @@ class PreferredChannelOrderSorterTest {
     }
 
     @Test
-    void testSortWithDefaultProfile() {
-        PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter();
+    void testSortWithDefaultProfile(@TempDir Path tempDir) {
+        Path configFile = tempDir.resolve("preferred_channel_order.yaml");
+        PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter(configFile);
 
         Entry e1 = createEntry("RTL");
         Entry e2 = createEntry("Das Erste HD");
@@ -46,7 +48,7 @@ class PreferredChannelOrderSorterTest {
     @Test
     void testSortWithCustomProfile(@TempDir Path tempDir) {
         Path configFile = tempDir.resolve("config.yaml");
-        PreferredChannelOrderConfigManager manager = new PreferredChannelOrderConfigManager(configFile);
+        YamlConfigManager<PreferredChannelOrderConfig> manager = new YamlConfigManager<>(configFile, PreferredChannelOrderConfig.class);
 
         ChannelProfile sportProfile = ChannelProfile.builder()
                 .id("sport_favoriten")
