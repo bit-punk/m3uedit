@@ -36,19 +36,21 @@ public class FritzBoxInput extends AbstractInput implements Input {
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
-        for (StreamSource selectedStreamSource : selectedStreamSources) {
-            HttpResponse<String> response = readHttpResponse(BASE_URL + selectedStreamSource.getName());
-            log.debug("Status-code: [{}]", response.statusCode());
-            String responseBody = response.body();
-            log.debug("response: [{}]", responseBody);
-            entriesRead.addAll(readData(new ByteArrayInputStream(responseBody.getBytes())));
+        if (selectedStreamSources != null) {
+            for (StreamSource selectedStreamSource : selectedStreamSources) {
+                HttpResponse<String> response = readHttpResponse(BASE_URL + selectedStreamSource.getName());
+                log.debug("Status-code: [{}]", response.statusCode());
+                String responseBody = response.body();
+                log.debug("response: [{}]", responseBody);
+                entriesRead.addAll(readData(new ByteArrayInputStream(responseBody.getBytes())));
+            }
         }
         return entriesRead;
     }
 
     @Override
     public String getSource() {
-        return fritzBoxConnection.toString();
+        return fritzBoxConnection != null ? fritzBoxConnection.toString() : null;
     }
 
     @Override
