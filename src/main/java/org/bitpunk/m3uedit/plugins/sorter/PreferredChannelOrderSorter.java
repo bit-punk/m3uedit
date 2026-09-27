@@ -52,6 +52,13 @@ public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorte
         return this;
     }
 
+    public PreferredChannelOrderConfigManager getConfigManager() {
+        if (configManager == null) {
+            configManager = new PreferredChannelOrderConfigManager();
+        }
+        return configManager;
+    }
+
     public PreferredChannelOrderConfig getConfig() {
         if (config == null) {
             if (configManager == null) {
@@ -106,5 +113,7 @@ public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorte
     @Override
     public void configure() {
         log.debug("Opening configuration dialog for PreferredChannelOrderSorter");
+        PreferredChannelOrderConfigDialogController dialog = new PreferredChannelOrderConfigDialogController(this);
+        dialog.showAndWait();
     }
 }
