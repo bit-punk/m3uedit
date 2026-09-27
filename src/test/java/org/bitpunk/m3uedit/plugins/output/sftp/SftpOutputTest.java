@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output;
+package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.junit.jupiter.api.Test;

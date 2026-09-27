@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.plugins.output;
 
+import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
+import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

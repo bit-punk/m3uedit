@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output;
+package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import com.jcraft.jsch.*;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.output.sftp.SftpTargetDialogController;
+import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
