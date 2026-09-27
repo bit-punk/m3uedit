@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output;
+package org.bitpunk.m3uedit.plugins.output.file;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.stage.FileChooser;
@@ -8,6 +8,7 @@ import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
+import org.bitpunk.m3uedit.plugins.output.Output;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

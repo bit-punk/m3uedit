@@ -1,0 +1,18 @@
+defaultProfile: "deutschland_standard"
+profiles:
+  - id: "deutschland_standard"
+    name: "Standard Deutschland"
+    channels:
+      - "Das Erste HD"
+      - "ZDF HD"
+      - "3sat HD"
+      - "arte HD"
+      - "RTL"
+      - "SAT.1"
+      - "ProSieben"
+  - id: "sport_favoriten"
+    name: "Sport Favoriten"
+    channels:
+      - "SPORT1"
+      - "Eurosport 1"
+      - "WELT"

@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.input;
+package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
@@ -6,7 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzboxInputDialogController;
+import org.bitpunk.m3uedit.plugins.input.AbstractInput;
+import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 
@@ -35,19 +36,21 @@ public class FritzBoxInput extends AbstractInput implements Input {
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
-        for (StreamSource selectedStreamSource : selectedStreamSources) {
-            HttpResponse<String> response = readHttpResponse(BASE_URL + selectedStreamSource.getName());
-            log.debug("Status-code: [{}]", response.statusCode());
-            String responseBody = response.body();
-            log.debug("response: [{}]", responseBody);
-            entriesRead.addAll(readData(new ByteArrayInputStream(responseBody.getBytes())));
+        if (selectedStreamSources != null) {
+            for (StreamSource selectedStreamSource : selectedStreamSources) {
+                HttpResponse<String> response = readHttpResponse(BASE_URL + selectedStreamSource.getName());
+                log.debug("Status-code: [{}]", response.statusCode());
+                String responseBody = response.body();
+                log.debug("response: [{}]", responseBody);
+                entriesRead.addAll(readData(new ByteArrayInputStream(responseBody.getBytes())));
+            }
         }
         return entriesRead;
     }
 
     @Override
     public String getSource() {
-        return fritzBoxConnection.toString();
+        return fritzBoxConnection != null ? fritzBoxConnection.toString() : null;
     }
 
     @Override

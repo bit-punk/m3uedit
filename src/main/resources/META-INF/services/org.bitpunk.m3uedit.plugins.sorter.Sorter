@@ -1,2 +1,2 @@
-org.bitpunk.m3uedit.plugins.sorter.ChannelNameSorter
-org.bitpunk.m3uedit.plugins.sorter.PreferredChannelOrderSorter
+org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter
+org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.PreferredChannelOrderSorter

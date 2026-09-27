@@ -9,14 +9,14 @@ import org.bitpunk.m3uedit.plugins.filter.ChannelNameFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.filter.SdChannelFilter;
 import org.bitpunk.m3uedit.plugins.filter.UniqueNameFilter;
-import org.bitpunk.m3uedit.plugins.input.FileInput;
-import org.bitpunk.m3uedit.plugins.input.FritzBoxInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.output.FileOutput;
+import org.bitpunk.m3uedit.plugins.input.file.FileInput;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
 import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.output.SftpOutput;
-import org.bitpunk.m3uedit.plugins.sorter.ChannelNameSorter;
+import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
+import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -42,6 +42,21 @@ class ProjectPersisterUtilTest {
         DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
         assertThat(dataModel).isNotNull();
         assertThat(dataModel.getSorters()).hasSize(1);
+    }
+
+    @Test
+    void testWriteAndReadBackProjectFile() {
+        DataModel original = getDataModel();
+        String projectFileName = "target/testproject.m3uproj";
+        ProjectPersisterUtil.saveProjectFile(projectFileName, original);
+        DataModel loaded = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.getName()).isEqualTo("test");
+        assertThat(loaded.getInputs()).hasSize(2);
+        assertThat(loaded.getFilters()).hasSize(3);
+        assertThat(loaded.getSorters()).hasSize(1);
+        assertThat(loaded.getOutputs()).hasSize(2);
+        assertThat(loaded.getSortedEntryList()).hasSize(3);
     }
 
     private static DataModel getDataModel() {

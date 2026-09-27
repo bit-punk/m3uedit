@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.sorter;
+package org.bitpunk.m3uedit.plugins.sorter.channelname;
 
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Parser;

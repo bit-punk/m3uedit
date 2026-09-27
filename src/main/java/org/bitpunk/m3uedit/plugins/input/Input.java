@@ -9,5 +9,4 @@ import java.util.List;
 public interface Input extends Plugin {
     List<Entry> read() throws FileNotFoundException;
     String getSource();
-    void configure();
 }

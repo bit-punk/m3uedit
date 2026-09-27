@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output;
+package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import com.jcraft.jsch.*;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.output.sftp.SftpTargetDialogController;
+import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
@@ -67,29 +68,29 @@ public class SftpOutput extends AbstractPlugin implements Output {
         log.debug("write()");
         if (playlist != null && !playlist.isEmpty() && sftpConnection != null) {
             ChannelSftp channelSftp = null;
-            Session jschSession = null;
             String targetPath = null;
             int payloadBytes = 0;
             try {
                 channelSftp = setupJsch();
                 if (channelSftp != null) {
-                    jschSession = channelSftp.getSession();
-                    channelSftp.connect();
-                    Writer writer = new Writer();
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    writer.write(playlist, outputStream);
-                    byte[] bytes = outputStream.toByteArray();
-                    payloadBytes = bytes.length;
+                    Session jschSession = channelSftp.getSession();
+                    try (SftpSession ignored = new SftpSession(jschSession, channelSftp)) {
+                        channelSftp.connect();
+                        Writer writer = new Writer();
+                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                        writer.write(playlist, outputStream);
+                        byte[] bytes = outputStream.toByteArray();
+                        payloadBytes = bytes.length;
 
-                    ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-
-                    targetPath = resolveTargetPath(channelSftp, sftpConnection.getPath());
-                    ensureParentDirectoriesExist(channelSftp, targetPath);
-                    log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
-                            playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
-                            sftpConnection.getPort(), targetPath, sftpConnection.getPath());
-                    channelSftp.put(inputStream, targetPath);
-                    log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
+                        ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                        targetPath = resolveTargetPath(channelSftp, sftpConnection.getPath());
+                        ensureParentDirectoriesExist(channelSftp, targetPath);
+                        log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
+                                playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
+                                sftpConnection.getPort(), targetPath, sftpConnection.getPath());
+                        channelSftp.put(inputStream, targetPath);
+                        log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
+                    }
                 }
             } catch (SftpException e) {
                 String contextDetails = buildSftpContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
@@ -101,13 +102,18 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 log.error("SSH/JSch session error during SFTP output: {} | Context: {}",
                         e.getMessage(), contextDetails, e);
                 throw new RuntimeException(e);
-            } finally {
-                if (channelSftp != null && channelSftp.isConnected()) {
-                    channelSftp.disconnect();
-                }
-                if (jschSession != null && jschSession.isConnected()) {
-                    jschSession.disconnect();
-                }
+            }
+        }
+    }
+
+    private record SftpSession(Session session, ChannelSftp channel) implements AutoCloseable {
+        @Override
+        public void close() {
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+            if (session != null && session.isConnected()) {
+                session.disconnect();
             }
         }
     }
@@ -205,41 +211,50 @@ public class SftpOutput extends AbstractPlugin implements Output {
         if (channelSftp == null || targetPath == null) {
             return;
         }
-        int lastSlash = targetPath.lastIndexOf('/');
-        if (lastSlash > 0) {
-            String parentDir = targetPath.substring(0, lastSlash);
-            String[] folders = parentDir.split("/");
-            StringBuilder currentPath = new StringBuilder();
-            if (targetPath.startsWith("/")) {
+
+        String parentDir = extractParentPath(targetPath);
+        if (parentDir == null || parentDir.isEmpty()) {
+            return;
+        }
+
+        String[] folders = parentDir.split("/");
+        StringBuilder currentPath = new StringBuilder(targetPath.startsWith("/") ? "/" : "");
+
+        for (String folder : folders) {
+            if (folder.isEmpty()) {
+                continue;
+            }
+            if (!currentPath.isEmpty() && !currentPath.toString().endsWith("/")) {
                 currentPath.append("/");
             }
-            for (String folder : folders) {
-                if (!folder.isEmpty()) {
-                    if (currentPath.length() > 1 && !currentPath.toString().endsWith("/")) {
-                        currentPath.append("/");
-                    }
-                    currentPath.append(folder);
-                    String pathToCheck = currentPath.toString();
-                    try {
-                        SftpATTRS attrs = channelSftp.stat(pathToCheck);
-                        if (!attrs.isDir()) {
-                            log.warn("Remote path element '{}' exists but is NOT a directory (permissions={}, size={})",
-                                    pathToCheck, attrs.getPermissionsString(), attrs.getSize());
-                        } else {
-                            log.debug("Remote directory path element verified: {}", pathToCheck);
-                        }
-                    } catch (SftpException e) {
-                        log.debug("Remote directory path element '{}' does not exist (error: {} - {}); attempting to create",
-                                pathToCheck, getSftpErrorName(e.id), e.getMessage());
-                        try {
-                            channelSftp.mkdir(pathToCheck);
-                            log.debug("Successfully created remote directory: {}", pathToCheck);
-                        } catch (SftpException mkdirEx) {
-                            log.warn("Failed to create remote directory '{}' (error: {} - {})",
-                                    pathToCheck, getSftpErrorName(mkdirEx.id), mkdirEx.getMessage());
-                        }
-                    }
-                }
+            currentPath.append(folder);
+            verifyOrCreateDirectory(channelSftp, currentPath.toString());
+        }
+    }
+
+    private String extractParentPath(String targetPath) {
+        int lastSlash = targetPath.lastIndexOf('/');
+        return lastSlash > 0 ? targetPath.substring(0, lastSlash) : null;
+    }
+
+    private void verifyOrCreateDirectory(ChannelSftp channelSftp, String dirPath) {
+        try {
+            SftpATTRS attrs = channelSftp.stat(dirPath);
+            if (!attrs.isDir()) {
+                log.warn("Remote path element '{}' exists but is NOT a directory (permissions={}, size={})",
+                        dirPath, attrs.getPermissionsString(), attrs.getSize());
+            } else {
+                log.debug("Remote directory path element verified: {}", dirPath);
+            }
+        } catch (SftpException e) {
+            log.debug("Remote directory path element '{}' does not exist (error: {} - {}); attempting to create",
+                    dirPath, getSftpErrorName(e.id), e.getMessage());
+            try {
+                channelSftp.mkdir(dirPath);
+                log.debug("Successfully created remote directory: {}", dirPath);
+            } catch (SftpException mkdirEx) {
+                log.warn("Failed to create remote directory '{}' (error: {} - {})",
+                        dirPath, getSftpErrorName(mkdirEx.id), mkdirEx.getMessage());
             }
         }
     }
@@ -273,7 +288,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 jsch.setKnownHosts(knownHostsPath);
             }
             Session jschSession = jsch.getSession(sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
-            jschSession.setPassword(sftpConnection.getPassword());
+            jschSession.setPassword(sftpConnection.getPassword().getBytes(StandardCharsets.UTF_8));
             Properties config = new Properties();
             config.put("StrictHostKeyChecking", "no");
             jschSession.setConfig(config);
