@@ -82,7 +82,10 @@ public class ProjectPersisterUtil {
                 "org.bitpunk.m3uedit.model.Entry",
                 "org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource",
                 "com.sun.javafx.collections.ObservableListWrapper",
-                "java.lang.String"
+                "javafx.beans.property.**",
+                "java.lang.String",
+                "java.net.**",
+                "java.util.**"
         });
         // @formatter:on
         return xStream;

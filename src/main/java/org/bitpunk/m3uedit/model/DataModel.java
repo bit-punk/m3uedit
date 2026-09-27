@@ -53,6 +53,9 @@ public class DataModel {
     @SuppressWarnings("unused")
     private Object readResolve() {
         initDirtyFlagBindings();
+        initChangedInputsListener();
+        initChangedRawEntries();
+        initChangedFilteredEntries();
         return this;
     }
 

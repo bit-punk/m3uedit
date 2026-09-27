@@ -1,5 +1,8 @@
 package org.bitpunk.m3uedit.plugins.input;
 
+import org.bitpunk.m3uedit.plugins.input.file.FileInput;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
+import org.bitpunk.m3uedit.plugins.input.url.UrlInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

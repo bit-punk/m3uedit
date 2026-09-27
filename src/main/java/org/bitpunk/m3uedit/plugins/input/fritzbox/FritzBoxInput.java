@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.input;
+package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
@@ -6,7 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzboxInputDialogController;
+import org.bitpunk.m3uedit.plugins.input.AbstractInput;
+import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 
