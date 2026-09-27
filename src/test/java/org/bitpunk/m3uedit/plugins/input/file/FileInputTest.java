@@ -46,7 +46,7 @@ class FileInputTest {
 
         assertThat(entries).isNotNull().hasSize(2);
 
-        Entry entry1 = entries.get(0);
+        Entry entry1 = entries.getFirst();
         assertThat(entry1.getName()).isEqualTo("Channel 1");
         assertThat(entry1.getChannelUri()).isEqualTo("http://example.com/stream1.ts");
         assertThat(entry1.getTvgId()).isEqualTo("id1");
@@ -95,7 +95,6 @@ class FileInputTest {
         input3.setSource("/path/to/other.m3u");
 
         assertThat(input1)
-                .isEqualTo(input1)
                 .isEqualTo(input2)
                 .hasSameHashCodeAs(input2)
                 .isNotEqualTo(input3)

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +29,7 @@ class FileOutputTest {
     }
 
     @Test
-    void testWritePlaylistToFile(@TempDir Path tempDir) throws IOException {
+    void testWritePlaylistToFile(@TempDir Path tempDir) {
         FileOutput fileOutput = new FileOutput();
         File targetFile = tempDir.resolve("output.m3u").toFile();
 

@@ -10,7 +10,6 @@ import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 
-import java.io.ObjectStreamException;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,7 +42,7 @@ public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorte
         }
     }
 
-    private Object readResolve() throws ObjectStreamException {
+    private Object readResolve() {
         if (configManager == null) {
             configManager = new PreferredChannelOrderConfigManager();
         }
