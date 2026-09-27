@@ -74,10 +74,10 @@ public class ProjectPersisterUtil {
 
         // @formatter:off
         xStream.allowTypesByWildcard(new String[]{
-                "org.bitpunk.m3uedit.plugins.input.*",
-                "org.bitpunk.m3uedit.plugins.output.*",
-                "org.bitpunk.m3uedit.plugins.filter.*",
-                "org.bitpunk.m3uedit.plugins.sorter.*",
+                "org.bitpunk.m3uedit.plugins.input.**",
+                "org.bitpunk.m3uedit.plugins.output.**",
+                "org.bitpunk.m3uedit.plugins.filter.**",
+                "org.bitpunk.m3uedit.plugins.sorter.**",
                 "org.bitpunk.m3uedit.model.DataModel",
                 "org.bitpunk.m3uedit.model.Entry",
                 "org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource",

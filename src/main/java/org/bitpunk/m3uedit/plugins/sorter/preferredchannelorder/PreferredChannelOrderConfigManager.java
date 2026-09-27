@@ -1,8 +1,8 @@
-package org.bitpunk.m3uedit.plugins.sorter;
+package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.plugins.sorter.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 
 @Slf4j
 public class PreferredChannelOrderConfigManager {
-    private static final String RESOURCE_PATH = "plugin/sorter/preferred_channel_order.yaml";
+    private static final String RESOURCE_PATH = "plugin/sorter/preferredchannelorder/preferred_channel_order.yaml";
     private static final Path DEFAULT_USER_CONFIG_PATH = Paths.get(
             System.getProperty("user.home"), ".m3uedit", "plugins", "preferred_channel_order.yaml"
     );

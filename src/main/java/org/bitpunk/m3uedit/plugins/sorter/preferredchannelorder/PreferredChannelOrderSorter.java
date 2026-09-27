@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.sorter;
+package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
@@ -6,8 +6,9 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.sorter.model.ChannelProfile;
-import org.bitpunk.m3uedit.plugins.sorter.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 
 import java.io.ObjectStreamException;
 import java.util.List;

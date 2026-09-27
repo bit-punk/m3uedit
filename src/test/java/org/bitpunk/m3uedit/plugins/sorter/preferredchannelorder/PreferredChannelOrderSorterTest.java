@@ -1,9 +1,9 @@
-package org.bitpunk.m3uedit.plugins.sorter;
+package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import com.thoughtworks.xstream.XStream;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.sorter.model.ChannelProfile;
-import org.bitpunk.m3uedit.plugins.sorter.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -88,7 +88,7 @@ class PreferredChannelOrderSorterTest {
         xstream.alias("PreferredChannelOrderSorter", PreferredChannelOrderSorter.class);
         xstream.allowTypesByWildcard(new String[]{
                 "javafx.beans.property.*",
-                "org.bitpunk.m3uedit.plugins.sorter.*"
+                "org.bitpunk.m3uedit.plugins.sorter.**"
         });
 
         String xml = xstream.toXML(sorter);

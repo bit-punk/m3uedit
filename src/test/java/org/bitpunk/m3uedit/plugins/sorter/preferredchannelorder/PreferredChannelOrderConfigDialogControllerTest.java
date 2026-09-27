@@ -1,9 +1,9 @@
-package org.bitpunk.m3uedit.plugins.sorter;
+package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import javafx.application.Platform;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.sorter.model.ChannelProfile;
-import org.bitpunk.m3uedit.plugins.sorter.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
+import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

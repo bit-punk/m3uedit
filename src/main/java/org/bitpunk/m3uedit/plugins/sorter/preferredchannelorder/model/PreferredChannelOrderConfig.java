@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.sorter.model;
+package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,5 +16,5 @@ public class PreferredChannelOrderConfig {
     @Builder.Default
     private String defaultProfile = "deutschland_standard";
     @Builder.Default
-    private List<ChannelProfile> profiles = new ArrayList<>();
+    private List<org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile> profiles = new ArrayList<>();
 }

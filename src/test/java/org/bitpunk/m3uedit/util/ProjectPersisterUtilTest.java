@@ -15,8 +15,8 @@ import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.output.FileOutput;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.SftpOutput;
-import org.bitpunk.m3uedit.plugins.sorter.ChannelNameSorter;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;

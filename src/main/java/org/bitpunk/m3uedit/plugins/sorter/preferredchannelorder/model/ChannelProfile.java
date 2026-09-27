@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.sorter.model;
+package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
