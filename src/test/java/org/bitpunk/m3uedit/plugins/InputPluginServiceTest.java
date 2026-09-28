@@ -15,7 +15,7 @@ class InputPluginServiceTest {
         List<? extends Plugin> allPlugins = InputPluginService.getInstance().getAllPlugins();
         assertThat(allPlugins).hasSize(3);
         assertThat(allPlugins)
-                .extracting("name")
+                .extracting(Plugin::getName)
                 .contains(INPUT_NAMES);
 
     }
