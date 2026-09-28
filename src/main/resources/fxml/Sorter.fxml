@@ -3,7 +3,7 @@
 <fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml">
     <TableView fx:id="availableSortersTableView" VBox.vgrow="ALWAYS">
         <columns>
-            <TableColumn fx:id="selectedColumn" prefWidth="50.0" style="-fx-alignment: CENTER;">
+            <TableColumn fx:id="selectedColumn" prefWidth="50.0" sortable="false" style="-fx-alignment: CENTER;">
                 <graphic>
                     <CheckBox fx:id="selectAllEntriesCheckBox" mnemonicParsing="false" />
                 </graphic>
