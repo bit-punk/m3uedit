@@ -1,10 +1,11 @@
-package org.bitpunk.m3uedit.plugins.filter;
+package org.bitpunk.m3uedit.plugins.filter.channelname;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ChannelNameFilter extends AbstractPlugin implements Filter {
-    private static final String FILTER_RESOURCE_NAME = "plugin/filter/ChannelNameFilter.properties";
+    private static final String FILTER_RESOURCE_NAME = "plugin/filter/channelname/ChannelNameFilter.properties";
 
     @XStreamOmitField
     private final List<String> excludeRegexes = getFilterExpressionsFromResourceFile();

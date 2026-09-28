@@ -1,6 +1,8 @@
-package org.bitpunk.m3uedit.plugins.filter;
+package org.bitpunk.m3uedit.plugins.filter.uniquename;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.filter.AbstractFilterTest;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
@@ -16,6 +18,8 @@ class UniqueChannelNameFilterTest extends AbstractFilterTest {
         List<Entry> entryList = readList("duplicate_names.m3u");
         assertThat(entryList).hasSize(6);
         List<Entry> filteredList = filter.filter(entryList);
+
         assertThat(filteredList).hasSize(4);
     }
+
 }

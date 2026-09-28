@@ -1,5 +1,5 @@
-org.bitpunk.m3uedit.plugins.filter.ChannelNameFilter
-org.bitpunk.m3uedit.plugins.filter.SdChannelFilter
-org.bitpunk.m3uedit.plugins.filter.UniqueNameFilter
-org.bitpunk.m3uedit.plugins.filter.UniqueUriFilter
-org.bitpunk.m3uedit.plugins.filter.ReachableUrlFilter
+org.bitpunk.m3uedit.plugins.filter.channelname.ChannelNameFilter
+org.bitpunk.m3uedit.plugins.filter.sdchannel.SdChannelFilter
+org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter
+org.bitpunk.m3uedit.plugins.filter.uniqueuri.UniqueUriFilter
+org.bitpunk.m3uedit.plugins.filter.reachableurl.ReachableUrlFilter

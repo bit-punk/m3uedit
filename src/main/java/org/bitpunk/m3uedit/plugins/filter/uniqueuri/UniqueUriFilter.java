@@ -1,9 +1,11 @@
-package org.bitpunk.m3uedit.plugins.filter;
+package org.bitpunk.m3uedit.plugins.filter.uniqueuri;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
 
 import java.util.List;
 
