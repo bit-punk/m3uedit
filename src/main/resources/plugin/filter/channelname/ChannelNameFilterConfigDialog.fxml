@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.SVGPath?>
+<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="520" prefHeight="420">
+    <content>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <Label text="Filtered Channel Names / Patterns (Regular Expressions):" style="-fx-font-weight: bold;"/>
+            <HBox spacing="8" VBox.vgrow="ALWAYS">
+                <ListView fx:id="patternsListView" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" prefHeight="260"/>
+                <VBox spacing="8" alignment="TOP_CENTER">
+                    <Button fx:id="moveUpButton" minWidth="42" minHeight="36">
+                        <graphic>
+                            <SVGPath content="M7 14l5-5 5 5z" scaleX="1.6" scaleY="1.6"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="moveDownButton" minWidth="42" minHeight="36">
+                        <graphic>
+                            <SVGPath content="M7 10l5 5 5-5z" scaleX="1.6" scaleY="1.6"/>
+                        </graphic>
+                    </Button>
+                    <Separator/>
+                    <Button fx:id="removePatternButton" text="Remove" minWidth="70"/>
+                </VBox>
+            </HBox>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <TextField fx:id="newPatternTextField" promptText="Enter regex pattern or channel name to filter..." HBox.hgrow="ALWAYS"/>
+                <Button fx:id="addPatternButton" text="Add"/>
+            </HBox>
+        </VBox>
+    </content>
+
+    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
+    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+</DialogPane>
