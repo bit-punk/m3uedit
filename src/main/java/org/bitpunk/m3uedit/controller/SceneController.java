@@ -12,10 +12,12 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.SVGPath;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
+import org.bitpunk.m3uedit.util.SvgUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,10 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class SceneController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SceneController.class);
+    private static final String NEW_PROJECT_ICON_RESOURCE = "/icons/new_project.svg";
+    private static final String OPEN_PROJECT_ICON_RESOURCE = "/icons/open_project.svg";
+    private static final String ABOUT_ICON_RESOURCE = "/icons/about.svg";
+
     private final ObservableMap<String, DataModel> dataModelMap = FXCollections.observableMap(new HashMap<>());
     @FXML
     private Label statusLabel;
@@ -38,6 +44,12 @@ public class SceneController implements Initializable {
     private TabPane tabPane;
     @FXML
     private VBox startScreen;
+    @FXML
+    private SVGPath newProjectIcon;
+    @FXML
+    private SVGPath openProjectIcon;
+    @FXML
+    private SVGPath aboutIcon;
 
     @FXML
     private void handleExitAction() {
@@ -92,10 +104,23 @@ public class SceneController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        initIcons();
         initMenuItemDisableListeners();
         initDataModelMapListener();
         initTabPane();
         initStartScreen();
+    }
+
+    private void initIcons() {
+        if (newProjectIcon != null) {
+            newProjectIcon.setContent(SvgUtil.loadSvgPath(NEW_PROJECT_ICON_RESOURCE));
+        }
+        if (openProjectIcon != null) {
+            openProjectIcon.setContent(SvgUtil.loadSvgPath(OPEN_PROJECT_ICON_RESOURCE));
+        }
+        if (aboutIcon != null) {
+            aboutIcon.setContent(SvgUtil.loadSvgPath(ABOUT_ICON_RESOURCE));
+        }
     }
 
     private void initStartScreen() {

@@ -94,4 +94,9 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
         ChannelNameFilterConfigDialogController dialog = new ChannelNameFilterConfigDialogController(this);
         dialog.showAndWait();
     }
+
+    @Override
+    public boolean isConfigurable() {
+        return true;
+    }
 }

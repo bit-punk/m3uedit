@@ -53,6 +53,7 @@ public class OutputController extends AbstractController implements Initializabl
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("output"));
         outputTableView.getColumns().addAll(nameColumn, sourceColumn);
         ListControllerUtil.configureOnRowDoubleClick(outputTableView);
+        ListControllerUtil.addConfigureColumn(outputTableView);
         outputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         outputTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
     }

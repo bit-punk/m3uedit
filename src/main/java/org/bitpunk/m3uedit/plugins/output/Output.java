@@ -12,4 +12,9 @@ public interface Output extends Plugin {
     void configure();
 
     URI getOutput();
+
+    @Override
+    default boolean isConfigurable() {
+        return true;
+    }
 }

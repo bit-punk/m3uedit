@@ -78,12 +78,14 @@ public class InputController extends AbstractController implements Initializable
         TableColumn<Input, String> sourceColumn = new TableColumn<>("Source");
         sourceColumn.setCellValueFactory(new PropertyValueFactory<>("source"));
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
-        ListControllerUtil.configureOnRowDoubleClick(inputTableView, () -> {
+        Runnable onAfterConfigured = () -> {
             if (dataModel != null) {
                 dataModel.getRawEntryList().clear();
                 dataModel.getRawEntryList().addAll(dataModel.loadEntries(dataModel.getInputs()));
             }
-        });
+        };
+        ListControllerUtil.configureOnRowDoubleClick(inputTableView, onAfterConfigured);
+        ListControllerUtil.addConfigureColumn(inputTableView, onAfterConfigured);
         inputTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         inputTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
     }

@@ -7,4 +7,7 @@ public interface Plugin extends NamedItem {
     String getDescription();
     BooleanProperty getEnabled();
     default void configure() {}
+    default boolean isConfigurable() {
+        return false;
+    }
 }
