@@ -356,7 +356,7 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
             this.workingConfig.setDefaultProfile(defaultProfile.getId());
         }
 
-        profileComboBox.setItems(FXCollections.observableArrayList(this.workingConfig.getProfiles()));
+        profileComboBox.getItems().setAll(this.workingConfig.getProfiles());
 
         String targetProfileId = sorter != null ? sorter.getSelectedProfileId() : null;
         ChannelProfile profileToSelect = findProfileById(targetProfileId)

@@ -6,7 +6,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.SVGPath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -58,6 +60,14 @@ class SceneControllerTest {
                 assertThat(newProjectButton).isNotNull();
                 assertThat(openProjectButton).isNotNull();
                 assertThat(aboutButton).isNotNull();
+
+                SVGPath newProjectSvg = (SVGPath) ((Pane) newProjectButton.getGraphic()).getChildren().get(0);
+                SVGPath openProjectSvg = (SVGPath) ((Pane) openProjectButton.getGraphic()).getChildren().get(0);
+                SVGPath aboutSvg = (SVGPath) ((Pane) aboutButton.getGraphic()).getChildren().get(0);
+
+                assertThat(newProjectSvg.getContent()).isNotEmpty();
+                assertThat(openProjectSvg.getContent()).isNotEmpty();
+                assertThat(aboutSvg.getContent()).isNotEmpty();
 
                 assertThat(startScreen.isVisible()).isTrue();
                 assertThat(tabPane.isVisible()).isFalse();

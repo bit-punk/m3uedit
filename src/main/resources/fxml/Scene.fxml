@@ -48,24 +48,21 @@
                         <Button fx:id="newProjectButton" onAction="#handleNewProjectAction" contentDisplay="TOP" text="Neues Projekt" styleClass="start-screen-button">
                             <graphic>
                                 <StackPane prefWidth="64" prefHeight="64">
-                                    <SVGPath content="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"
-                                             scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
+                                    <SVGPath fx:id="newProjectIcon" scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
                                 </StackPane>
                             </graphic>
                         </Button>
                         <Button fx:id="openProjectButton" onAction="#handleOpenProjectAction" contentDisplay="TOP" text="Projekt laden" styleClass="start-screen-button">
                             <graphic>
                                 <StackPane prefWidth="64" prefHeight="64">
-                                    <SVGPath content="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"
-                                             scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
+                                    <SVGPath fx:id="openProjectIcon" scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
                                 </StackPane>
                             </graphic>
                         </Button>
                         <Button fx:id="aboutButton" onAction="#handleAboutAction" contentDisplay="TOP" text="About" styleClass="start-screen-button">
                             <graphic>
                                 <StackPane prefWidth="64" prefHeight="64">
-                                    <SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
-                                             scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
+                                    <SVGPath fx:id="aboutIcon" scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
                                 </StackPane>
                             </graphic>
                         </Button>

@@ -1,6 +1,8 @@
-package org.bitpunk.m3uedit.plugins.filter;
+package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.filter.AbstractFilterTest;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
@@ -20,4 +22,5 @@ class SdChannelFilterTest extends AbstractFilterTest {
                 .extracting("name")
                 .contains("Das Erste HD", "ZDF HD", "3sat HD", "arte HD", "Bingo-TV ᴴᴰ");
     }
+
 }

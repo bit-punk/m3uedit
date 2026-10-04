@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Objects;
 
 public abstract class AbstractFilterTest {
-    List<Entry> readList(String resourceName) throws FileNotFoundException {
+    protected List<Entry> readList(String resourceName) throws FileNotFoundException {
         List<Entry> entryList;
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(Objects.requireNonNull(classLoader.getResource(resourceName)).getFile());

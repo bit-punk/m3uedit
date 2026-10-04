@@ -64,6 +64,7 @@ public class ProjectPersisterUtil {
         xStream.addPermission(NullPermission.NULL);   // allow "null"
         xStream.addPermission(PrimitiveTypePermission.PRIMITIVES); // allow primitive types
         xStream.autodetectAnnotations(true);
+        xStream.ignoreUnknownElements();
         xStream.registerConverter(new ObservableListConverter(xStream.getMapper()));
         // define class-aliases to not expose package-names in the xml-file
         xStream.alias("Project", DataModel.class);

@@ -131,4 +131,9 @@ public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorte
         PreferredChannelOrderConfigDialogController dialog = new PreferredChannelOrderConfigDialogController(this);
         dialog.showAndWait();
     }
+
+    @Override
+    public boolean isConfigurable() {
+        return true;
+    }
 }

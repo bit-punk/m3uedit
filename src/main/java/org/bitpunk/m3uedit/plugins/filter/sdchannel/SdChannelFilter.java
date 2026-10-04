@@ -1,10 +1,11 @@
-package org.bitpunk.m3uedit.plugins.filter;
+package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
+import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -64,11 +64,13 @@ public class FilterController extends AbstractController implements ModelAware {
         addIndexColumn();
         filterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         filterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
-        ListControllerUtil.configureOnRowDoubleClick(availableFiltersTableView, () -> {
+        Runnable onAfterConfigured = () -> {
             if (dataModel != null) {
                 dataModel.filterRawEntries();
             }
-        });
+        };
+        ListControllerUtil.configureOnRowDoubleClick(availableFiltersTableView, onAfterConfigured);
+        ListControllerUtil.addConfigureColumn(availableFiltersTableView, onAfterConfigured);
     }
 
     private void addIndexColumn() {

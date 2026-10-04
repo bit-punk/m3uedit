@@ -65,11 +65,13 @@ public class SorterController extends AbstractController implements ModelAware {
         addIndexColumn();
         sorterNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         sorterDescriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
-        ListControllerUtil.configureOnRowDoubleClick(availableSortersTableView, () -> {
+        Runnable onAfterConfigured = () -> {
             if (dataModel != null) {
                 dataModel.sortFilteredEntries();
             }
-        });
+        };
+        ListControllerUtil.configureOnRowDoubleClick(availableSortersTableView, onAfterConfigured);
+        ListControllerUtil.addConfigureColumn(availableSortersTableView, onAfterConfigured);
     }
 
     @Override
