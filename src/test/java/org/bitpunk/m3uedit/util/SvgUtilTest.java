@@ -20,6 +20,9 @@ class SvgUtilTest {
 
         String aboutPath = SvgUtil.loadSvgPath("/icons/about.svg");
         assertThat(aboutPath).isNotEmpty().startsWith("M12 2C6.48");
+
+        String playPath = SvgUtil.loadSvgPath("/icons/play.svg");
+        assertThat(playPath).isNotEmpty().startsWith("M8 5v14");
     }
 
     @Test

@@ -64,6 +64,7 @@ public class EntryListController extends AbstractController  implements Initiali
             entryTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
             addIndexColumn();
+        ListControllerUtil.addPlayColumn(entryTableView);
 
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
