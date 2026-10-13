@@ -7,6 +7,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,7 @@ public class FilteredEntriesController extends AbstractController  implements In
         filteredEntriesTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         addIndexColumn();
+        ListControllerUtil.addPlayColumn(filteredEntriesTableView);
 
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
