@@ -12,6 +12,9 @@ import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.file.FileInput;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.IptvOrgInput;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
@@ -52,7 +55,11 @@ class ProjectPersisterUtilTest {
         DataModel loaded = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
         assertThat(loaded).isNotNull();
         assertThat(loaded.getName()).isEqualTo("test");
-        assertThat(loaded.getInputs()).hasSize(2);
+        assertThat(loaded.getInputs()).hasSize(3);
+        assertThat(loaded.getInputs().get(2)).isInstanceOf(IptvOrgInput.class);
+        assertThat(((IptvOrgInput) loaded.getInputs().get(2)).getSelectedPlaylists())
+                .containsExactly(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany"));
+        assertThat(loaded.getInputs().get(2).getSource()).isEqualTo("countries/de.m3u");
         assertThat(loaded.getFilters()).hasSize(3);
         assertThat(loaded.getSorters()).hasSize(1);
         assertThat(loaded.getOutputs()).hasSize(2);
@@ -86,6 +93,9 @@ class ProjectPersisterUtilTest {
         List<Input> inputList = new ArrayList<>();
         inputList.add(new FileInput());
         inputList.add(new FritzBoxInput());
+        IptvOrgInput iptvOrgInput = new IptvOrgInput();
+        iptvOrgInput.setSelectedPlaylists(new ArrayList<>(List.of(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany"))));
+        inputList.add(iptvOrgInput);
         return FXCollections.observableArrayList(inputList);
     }
     private static ObservableList<Output> getOutputs() {

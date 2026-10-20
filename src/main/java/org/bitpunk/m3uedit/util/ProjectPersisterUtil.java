@@ -8,6 +8,7 @@ import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.*;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ public class ProjectPersisterUtil {
         xStream.alias("Project", DataModel.class);
         xStream.alias("Entry", Entry.class);
         xStream.alias("StreamSource", StreamSource.class);
+        xStream.alias("IptvOrgPlaylist", IptvOrgPlaylist.class);
 
         addAllPluginAliases(xStream);
 
