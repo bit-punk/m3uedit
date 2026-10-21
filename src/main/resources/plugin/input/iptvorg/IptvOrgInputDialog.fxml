@@ -4,15 +4,15 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Playlists by:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <Label text="Search by:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
             <ComboBox fx:id="groupingComboBox" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
             <Label text="Filter:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
             <TextField fx:id="filterTextField" promptText="name or code" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-            <Label text="Available playlists:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <Label text="Available:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
             <ListView fx:id="availablePlaylistListView" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS"/>
             <Button fx:id="addPlaylistButton" text="Add" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
             <Label fx:id="statusLabel" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-            <Label text="Playlists to import:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            <Label text="To import:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
             <ListView fx:id="selectedPlaylistListView" GridPane.columnIndex="1" GridPane.rowIndex="4" GridPane.vgrow="ALWAYS"/>
             <columnConstraints>
                 <ColumnConstraints/>

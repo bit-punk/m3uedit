@@ -25,7 +25,7 @@ class IptvOrgInputDialogControllerTest {
     private static final IptvOrgPlaylist AUSTRIA = new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "AT", "Austria");
     private static final IptvOrgPlaylist NEWS = new IptvOrgPlaylist(PlaylistGrouping.CATEGORY, "news", "News");
 
-    private static final IptvOrgApiClient STUB_CLIENT = new IptvOrgApiClient("http://localhost/") {
+    private static final IptvOrgApiClient STUB_CLIENT = new IptvOrgApiClient("http://localhost/", "http://localhost/") {
         @Override
         public synchronized List<IptvOrgPlaylist> getPlaylists(PlaylistGrouping grouping) {
             return switch (grouping) {

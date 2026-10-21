@@ -15,6 +15,8 @@ class IptvOrgInputTest {
     private static final IptvOrgPlaylist GERMANY = new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany");
     private static final IptvOrgPlaylist NEWS = new IptvOrgPlaylist(PlaylistGrouping.CATEGORY, "news", "News");
     private static final IptvOrgPlaylist UNKNOWN = new IptvOrgPlaylist(PlaylistGrouping.LANGUAGE, "xyz", "Unknown");
+    private static final IptvOrgPlaylist ZDF = new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "ZDF.de", "ZDF");
+    private static final IptvOrgPlaylist KIKA = new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "KiKA.de", "KiKA");
 
     @Test
     void testBasicProperties() {
@@ -30,8 +32,35 @@ class IptvOrgInputTest {
     @Test
     void testGetSourceListsPlaylistPaths() {
         IptvOrgInput input = new IptvOrgInput();
-        input.setSelectedPlaylists(List.of(GERMANY, NEWS));
-        assertThat(input.getSource()).isEqualTo("countries/de.m3u, categories/news.m3u");
+        input.setSelectedPlaylists(List.of(GERMANY, NEWS, ZDF));
+        assertThat(input.getSource()).isEqualTo("countries/de.m3u, categories/news.m3u, channels/ZDF.de");
+    }
+
+    @Test
+    void testReadOnlyStreamsOfSelectedChannels() throws IOException {
+        try (IptvOrgTestServer server = new IptvOrgTestServer()
+                .serve("/index.m3u", """
+                        #EXTM3U
+                        #EXTINF:-1 tvg-id="ZDF.de@SD" group-title="General",ZDF (720p)
+                        https://example.com/zdf1.m3u8
+                        #EXTINF:-1 tvg-id="3sat.de@SD" group-title="General",3sat
+                        https://example.com/3sat.m3u8
+                        #EXTINF:-1 tvg-id="KiKA.de@SD" group-title="Kids",KiKA
+                        https://example.com/kika.m3u8
+                        #EXTINF:-1 tvg-id="ZDF.de@HD" group-title="General",ZDF HD (1080p)
+                        https://example.com/zdf2.m3u8
+                        """)) {
+            IptvOrgInput input = new IptvOrgInput();
+            input.setPlaylistBaseUrl(server.getBaseUrl());
+            input.setSelectedPlaylists(List.of(ZDF, KIKA));
+
+            List<Entry> entries = input.read();
+
+            assertThat(entries)
+                    .extracting(Entry::getChannelUri)
+                    .containsExactly("https://example.com/zdf1.m3u8", "https://example.com/kika.m3u8", "https://example.com/zdf2.m3u8");
+            assertThat(server.getRequestCount()).isEqualTo(1);
+        }
     }
 
     @Test

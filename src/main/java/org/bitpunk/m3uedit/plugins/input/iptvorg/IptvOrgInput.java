@@ -19,8 +19,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
 
@@ -34,7 +36,7 @@ public class IptvOrgInput extends AbstractInput implements Input {
     @XStreamOmitField
     private final String name = "IPTV-org Input";
     @XStreamOmitField
-    private final String description = "Reads playlists by country, category, language or region from https://github.com/iptv-org/iptv.";
+    private final String description = "Reads playlists by country, category, language, region or channel from https://github.com/iptv-org/iptv.";
     private List<IptvOrgPlaylist> selectedPlaylists = new ArrayList<>();
     @XStreamOmitField
     @EqualsAndHashCode.Exclude
@@ -49,17 +51,36 @@ public class IptvOrgInput extends AbstractInput implements Input {
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .connectTimeout(TIMEOUT)
                     .build();
+            Set<String> selectedChannelIds = new HashSet<>();
             for (IptvOrgPlaylist playlist : selectedPlaylists) {
-                entriesRead.addAll(readEntriesFromPlaylist(client, playlist));
+                if (playlist.getGrouping().isChannel()) {
+                    selectedChannelIds.add(playlist.getId());
+                } else {
+                    entriesRead.addAll(readEntriesFromPlaylist(client, playlist.getPath()));
+                }
+            }
+            if (!selectedChannelIds.isEmpty()) {
+                entriesRead.addAll(readEntriesOfChannels(client, selectedChannelIds));
             }
         }
         return entriesRead;
     }
 
-    private List<Entry> readEntriesFromPlaylist(HttpClient client, IptvOrgPlaylist playlist) {
+    /**
+     * Reads the streams of the given channels out of the playlist containing all streams, as iptv-org provides no
+     * playlist per channel.
+     */
+    private List<Entry> readEntriesOfChannels(HttpClient client, Set<String> channelIds) {
+        log.debug("reading streams of channels {}", channelIds);
+        return readEntriesFromPlaylist(client, IptvOrgPlaylist.ALL_STREAMS_PATH).stream()
+                .filter(entry -> channelIds.contains(IptvOrgChannels.channelIdOf(entry)))
+                .toList();
+    }
+
+    private List<Entry> readEntriesFromPlaylist(HttpClient client, String playlistPath) {
         // playlistBaseUrl is null after loading a project, as omitted fields are not initialized by XStream
-        URI uri = URI.create(Objects.requireNonNullElse(playlistBaseUrl, IPTV_ORG_PLAYLIST_BASE_URL) + playlist.getPath());
-        log.debug("reading playlist {} from {}", playlist, uri);
+        URI uri = URI.create(Objects.requireNonNullElse(playlistBaseUrl, IPTV_ORG_PLAYLIST_BASE_URL) + playlistPath);
+        log.debug("reading playlist from {}", uri);
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build();
         try {
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -84,7 +105,7 @@ public class IptvOrgInput extends AbstractInput implements Input {
         if (selectedPlaylists == null || selectedPlaylists.isEmpty()) {
             return null;
         }
-        return selectedPlaylists.stream().map(IptvOrgPlaylist::getPath).collect(joining(", "));
+        return selectedPlaylists.stream().map(IptvOrgPlaylist::getSourceName).collect(joining(", "));
     }
 
     @Override

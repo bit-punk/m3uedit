@@ -6,17 +6,26 @@ import lombok.RequiredArgsConstructor;
 import java.util.Locale;
 
 /**
- * Represents a single playlist published by iptv-org, e.g. all channels of a country ("countries/de.m3u").
+ * Represents a single playlist published by iptv-org, e.g. all channels of a country ("countries/de.m3u"), or a single
+ * channel (e.g. "3sat.de") whose streams are read from the playlist containing all streams.
  */
 @Data
 @RequiredArgsConstructor
 public class IptvOrgPlaylist {
+    public static final String ALL_STREAMS_PATH = "index.m3u";
     private final PlaylistGrouping grouping;
     private final String id;
     private final String name;
 
     public String getPath() {
+        if (grouping.isChannel()) {
+            return ALL_STREAMS_PATH;
+        }
         return "%s/%s.m3u".formatted(grouping.getPath(), id.toLowerCase(Locale.ROOT));
+    }
+
+    public String getSourceName() {
+        return grouping.isChannel() ? "%s/%s".formatted(grouping.getPath(), id) : getPath();
     }
 
     public String toString() {

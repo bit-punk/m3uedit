@@ -15,6 +15,18 @@ class IptvOrgPlaylistTest {
     }
 
     @Test
+    void testChannelIsReadFromPlaylistContainingAllStreams() {
+        IptvOrgPlaylist channel = new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "3sat.de", "3sat");
+        assertThat(channel.getPath()).isEqualTo("index.m3u");
+        assertThat(channel.getSourceName()).isEqualTo("channels/3sat.de");
+    }
+
+    @Test
+    void testSourceNameOfPlaylistIsItsPath() {
+        assertThat(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany").getSourceName()).isEqualTo("countries/de.m3u");
+    }
+
+    @Test
     void testToString() {
         assertThat(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany")).hasToString("Country: Germany (DE)");
     }

@@ -22,6 +22,15 @@ class IptvOrgApiClientTest {
             [{"id":"news","name":"News","description":"Programming is mostly news"},
              {"id":"auto","name":"Auto","description":"Programming related to cars"}]
             """;
+    private static final String ALL_STREAMS_M3U = """
+            #EXTM3U
+            #EXTINF:-1 tvg-id="ZDF.de@SD" group-title="General",ZDF (720p) [Geo-blocked]
+            https://example.com/zdf1.m3u8
+            #EXTINF:-1 tvg-id="3sat.de@SD" group-title="General",3sat
+            https://example.com/3sat.m3u8
+            #EXTINF:-1 tvg-id="ZDF.de@HD" group-title="General",ZDF HD (1080p)
+            https://example.com/zdf2.m3u8
+            """;
 
     @Test
     void testParseCountriesSortedByNameAndSkipsEntriesWithoutCode() {
@@ -42,9 +51,29 @@ class IptvOrgApiClientTest {
     }
 
     @Test
+    void testParseChannelsReturnsOneEntryPerChannelSortedByName() {
+        List<IptvOrgPlaylist> channels = new IptvOrgApiClient().parseChannels(toStream(ALL_STREAMS_M3U));
+
+        assertThat(channels).containsExactly(
+                new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "3sat.de", "3sat"),
+                new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "ZDF.de", "ZDF"));
+    }
+
+    @Test
+    void testGetChannelsReadsFromPlaylistContainingAllStreams() throws IOException {
+        try (IptvOrgTestServer server = new IptvOrgTestServer().serve("/index.m3u", ALL_STREAMS_M3U)) {
+            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl(), server.getBaseUrl());
+
+            assertThat(client.getPlaylists(PlaylistGrouping.CHANNEL))
+                    .extracting(IptvOrgPlaylist::getName)
+                    .containsExactly("3sat", "ZDF");
+        }
+    }
+
+    @Test
     void testGetPlaylistsReadsFromApiAndCachesResult() throws IOException {
         try (IptvOrgTestServer server = new IptvOrgTestServer().serve("/countries.json", COUNTRIES_JSON)) {
-            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl());
+            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl(), server.getBaseUrl());
 
             assertThat(client.getPlaylists(PlaylistGrouping.COUNTRY)).hasSize(2);
             assertThat(client.getPlaylists(PlaylistGrouping.COUNTRY)).hasSize(2);
@@ -55,7 +84,7 @@ class IptvOrgApiClientTest {
     @Test
     void testGetPlaylistsThrowsIOExceptionOnHttpError() throws IOException {
         try (IptvOrgTestServer server = new IptvOrgTestServer()) {
-            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl());
+            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl(), server.getBaseUrl());
 
             assertThatThrownBy(() -> client.getPlaylists(PlaylistGrouping.REGION))
                     .isInstanceOf(IOException.class)
