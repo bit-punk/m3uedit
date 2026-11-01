@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -174,6 +175,47 @@ class PreferredChannelOrderConfigDialogControllerTest {
             assertThat(controller.getProfileComboBox().getItems()).hasSize(2);
             assertThat(controller.getProfileComboBox().getItems()).extracting(ChannelProfile::getId)
                     .containsExactly("profile1", "profile2");
+        });
+    }
+
+    @Test
+    void testCreateProfileFromPlaylist(@TempDir Path tempDir) throws Exception {
+        Path playlist = tempDir.resolve("my_playlist.m3u");
+        Files.writeString(playlist, """
+                #EXTM3U
+                #EXTINF:-1 tvg-name="ZDF HD",ZDF HD
+                http://example.com/zdf
+                #EXTINF:-1 tvg-name="Das Erste HD",Das Erste HD
+                http://example.com/ard
+                #EXTINF:-1 tvg-name="ZDF HD",ZDF HD
+                http://example.com/zdf2
+                #EXTINF:-1 tvg-name="arte HD",arte HD
+                http://example.com/arte
+                """);
+
+        runOnFxThread(() -> {
+            PreferredChannelOrderSorter sorter = createSampleSorter(tempDir);
+            PreferredChannelOrderConfigDialogController controller = new PreferredChannelOrderConfigDialogController(sorter);
+
+            ChannelProfile newProfile;
+            try {
+                newProfile = controller.addNewProfileFromPlaylist("My Playlist", playlist);
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            assertThat(newProfile.getId()).isEqualTo("my_playlist");
+            assertThat(controller.getProfileComboBox().getValue()).isSameAs(newProfile);
+            assertThat(controller.getChannelsListView().getItems())
+                    .containsExactly("ZDF HD", "Das Erste HD", "arte HD");
+            assertThat(controller.getProfileComboBox().getItems()).hasSize(3);
+
+            controller.saveWorkingState();
+            controller.applyAndPersistConfig();
+            assertThat(sorter.getSelectedProfileId()).isEqualTo("my_playlist");
+            assertThat(sorter.getConfigManager().loadConfig().getProfiles())
+                    .extracting(ChannelProfile::getId)
+                    .containsExactly("profile1", "profile2", "my_playlist");
         });
     }
 

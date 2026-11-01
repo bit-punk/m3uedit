@@ -10,12 +10,20 @@ import javafx.util.Callback;
 import javafx.util.StringConverter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
+import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.parser.Parser;
+import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.util.DialogUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class PreferredChannelOrderConfigDialogController extends AbstractDialogController<PreferredChannelOrderConfig> {
@@ -30,6 +38,10 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
     @FXML
     @Getter
     private Button addProfileButton;
+
+    @FXML
+    @Getter
+    private Button createFromPlaylistButton;
 
     @FXML
     @Getter
@@ -314,10 +326,12 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
 
     private void setupProfileCrudButtons() {
         addProfileButton.setTooltip(new Tooltip("Create a new profile"));
+        createFromPlaylistButton.setTooltip(new Tooltip("Create a new profile from the channel order of an existing playlist"));
         renameProfileButton.setTooltip(new Tooltip("Rename selected profile"));
         deleteProfileButton.setTooltip(new Tooltip("Delete selected profile"));
 
         addProfileButton.setOnAction(e -> handleAddProfile());
+        createFromPlaylistButton.setOnAction(e -> handleCreateProfileFromPlaylist());
         renameProfileButton.setOnAction(e -> handleRenameProfile());
         deleteProfileButton.setOnAction(e -> handleDeleteProfile());
 
@@ -440,16 +454,77 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
     }
 
     public ChannelProfile addNewProfile(String profileName) {
+        return addNewProfile(profileName, List.of());
+    }
+
+    public ChannelProfile addNewProfile(String profileName, List<String> channels) {
         saveWorkingState();
         String id = generateProfileId(profileName);
         ChannelProfile newProfile = ChannelProfile.builder()
                 .id(id)
                 .name(profileName)
-                .channels(new ArrayList<>())
+                .channels(new ArrayList<>(channels))
                 .build();
         profileComboBox.getItems().add(newProfile);
         profileComboBox.getSelectionModel().select(newProfile);
         return newProfile;
+    }
+
+    public void handleCreateProfileFromPlaylist() {
+        Path playlist = DialogUtil.getOpenFilePath("M3U Playlist", "*.m3u", "*.m3u8");
+        if (playlist == null) {
+            return;
+        }
+        TextInputDialog dialog = new TextInputDialog(getPlaylistBaseName(playlist));
+        dialog.setTitle("New Profile from Playlist");
+        dialog.setHeaderText("Create a new channel profile from '" + playlist.getFileName() + "'");
+        dialog.setContentText("Profile name:");
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(name -> {
+            String trimmed = name.trim();
+            if (trimmed.isEmpty()) {
+                return;
+            }
+            try {
+                addNewProfileFromPlaylist(trimmed, playlist);
+            } catch (IOException | ParsingException e) {
+                log.warn("Cannot create profile from playlist {}", playlist, e);
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("New Profile from Playlist");
+                alert.setHeaderText("Cannot read playlist");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        });
+    }
+
+    public ChannelProfile addNewProfileFromPlaylist(String profileName, Path playlist) throws IOException {
+        try (InputStream stream = Files.newInputStream(playlist)) {
+            List<String> channels = extractChannelNames(new Parser().parse(stream));
+            log.debug("Creating profile '{}' with {} channels from playlist {}", profileName, channels.size(), playlist);
+            return addNewProfile(profileName, channels);
+        }
+    }
+
+    /**
+     * Extracts the channel names of the given entries in their playlist order.
+     * Blank names are skipped and duplicate names are only kept at their first position.
+     */
+    static List<String> extractChannelNames(List<Entry> entries) {
+        Set<String> channels = new LinkedHashSet<>();
+        for (Entry entry : entries) {
+            String name = entry.getName();
+            if (name != null && !name.isBlank()) {
+                channels.add(name.trim());
+            }
+        }
+        return new ArrayList<>(channels);
+    }
+
+    private String getPlaylistBaseName(Path playlist) {
+        String fileName = playlist.getFileName().toString();
+        int dot = fileName.lastIndexOf('.');
+        return dot > 0 ? fileName.substring(0, dot) : fileName;
     }
 
     public void handleRenameProfile() {
