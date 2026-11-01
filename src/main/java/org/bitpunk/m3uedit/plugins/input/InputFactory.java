@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.plugins.input;
 
 import org.bitpunk.m3uedit.plugins.input.file.FileInput;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.IptvOrgInput;
 import org.bitpunk.m3uedit.plugins.input.url.UrlInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,10 @@ public class InputFactory {
             case URL_INPUT -> {
                 log.debug("creating new Url Input");
                 yield new UrlInput();
+            }
+            case IPTV_ORG_INPUT -> {
+                log.debug("creating new IPTV-org Input");
+                yield new IptvOrgInput();
             }
         };
     }

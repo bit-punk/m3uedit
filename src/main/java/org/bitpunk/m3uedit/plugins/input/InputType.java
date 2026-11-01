@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum InputType {
     FILE_INPUT("File Input"),
     FRITZBOX_INPUT("FritzBox Input"),
-    URL_INPUT("Url Input");
+    URL_INPUT("Url Input"),
+    IPTV_ORG_INPUT("IPTV-org Input");
 
     private final String type;
 
