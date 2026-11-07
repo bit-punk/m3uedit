@@ -1,7 +1,7 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
-import org.bitpunk.m3uedit.plugins.output.sftp.model.RecentSftpServer;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

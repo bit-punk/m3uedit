@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output.sftp.model;
+package org.bitpunk.m3uedit.plugins.sftp.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

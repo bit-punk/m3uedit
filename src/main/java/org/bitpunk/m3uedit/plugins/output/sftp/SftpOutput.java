@@ -9,7 +9,11 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.RecentSftpServers;
+import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
+import org.bitpunk.m3uedit.plugins.sftp.SftpConnectionDialogController;
+import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +79,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
         log.debug("write()");
         if (playlist != null && !playlist.isEmpty() && sftpConnection != null) {
             SftpUserInteraction userInteraction = createUserInteraction();
-            if (!ensurePassword(userInteraction)) {
+            if (!userInteraction.ensurePassword(sftpConnection)) {
                 log.warn("Writing to SFTP server {}@{}:{} skipped: no password entered",
                         sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
                 return;
@@ -113,7 +117,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
                         e.id, getSftpErrorName(e.id), e.getMessage(), contextDetails, e);
                 throw new RuntimeException(e);
             } catch (JSchException e) {
-                if (isAuthenticationFailure(e)) {
+                if (SftpClient.isAuthenticationFailure(e)) {
                     // ask again on the next attempt instead of retrying a wrong password
                     sftpConnection.setPassword(null);
                 }
@@ -180,25 +184,6 @@ public class SftpOutput extends AbstractPlugin implements Output {
         return new SftpUserInteraction();
     }
 
-    /**
-     * The password is not persisted in the project file, so it has to be requested once per session.
-     *
-     * @return true if a password is available
-     */
-    protected boolean ensurePassword(SftpUserInteraction userInteraction) {
-        String password = sftpConnection.getPassword();
-        if (password != null && !password.isEmpty()) {
-            return true;
-        }
-        Optional<String> entered = userInteraction.requestPassword(
-                sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
-        entered.ifPresent(sftpConnection::setPassword);
-        return entered.isPresent();
-    }
-
-    static boolean isAuthenticationFailure(JSchException e) {
-        return e.getMessage() != null && e.getMessage().startsWith("Auth fail");
-    }
 
     protected String buildSftpContextDetails(ChannelSftp channelSftp, String targetPath, int playlistSize, int payloadBytes) {
         StringBuilder sb = new StringBuilder();
@@ -364,7 +349,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     @Override
     public void configure() {
         log.debug("configure()");
-        SftpTargetDialogController sftpTargetDialogController = new SftpTargetDialogController();
+        SftpConnectionDialogController sftpTargetDialogController = new SftpConnectionDialogController(SftpConnectionDialogController.Mode.OUTPUT);
         sftpTargetDialogController.setSftpConnection(sftpConnection);
         DialogPane dialogPane = sftpTargetDialogController.getDialogPane();
         dialogPane.lookupButton(sftpTargetDialogController.okButtonType)

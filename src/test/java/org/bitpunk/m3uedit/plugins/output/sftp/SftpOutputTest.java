@@ -1,12 +1,11 @@
 package org.bitpunk.m3uedit.plugins.output.sftp;
 
-import com.jcraft.jsch.JSchException;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,48 +95,6 @@ class SftpOutputTest {
         assertThat(jschDetails).doesNotContain("mypassword");
     }
 
-    @Test
-    void testEnsurePasswordUsesExistingPasswordWithoutPrompt() {
-        SftpOutput sftpOutput = new SftpOutput();
-        SftpConnection connection = createConnection();
-        connection.setPassword("known");
-        sftpOutput.setSftpConnection(connection);
-        CountingInteraction interaction = new CountingInteraction(Optional.of("other"));
-
-        assertThat(sftpOutput.ensurePassword(interaction)).isTrue();
-        assertThat(interaction.calls.get()).isZero();
-        assertThat(connection.getPassword()).isEqualTo("known");
-    }
-
-    @Test
-    void testEnsurePasswordPromptsWhenMissing() {
-        SftpOutput sftpOutput = new SftpOutput();
-        SftpConnection connection = createConnection();
-        sftpOutput.setSftpConnection(connection);
-        CountingInteraction interaction = new CountingInteraction(Optional.of("entered"));
-
-        assertThat(sftpOutput.ensurePassword(interaction)).isTrue();
-        assertThat(interaction.calls.get()).isOne();
-        assertThat(connection.getPassword()).isEqualTo("entered");
-    }
-
-    @Test
-    void testEnsurePasswordCancelled() {
-        SftpOutput sftpOutput = new SftpOutput();
-        SftpConnection connection = createConnection();
-        sftpOutput.setSftpConnection(connection);
-
-        assertThat(sftpOutput.ensurePassword(new CountingInteraction(Optional.empty()))).isFalse();
-        assertThat(connection.getPassword()).isNull();
-    }
-
-    @Test
-    void testIsAuthenticationFailure() {
-        assertThat(SftpOutput.isAuthenticationFailure(new JSchException("Auth fail for methods 'password'"))).isTrue();
-        assertThat(SftpOutput.isAuthenticationFailure(new JSchException("reject HostKey: example.com"))).isFalse();
-        assertThat(SftpOutput.isAuthenticationFailure(new JSchException())).isFalse();
-    }
-
     private static SftpConnection createConnection() {
         SftpConnection connection = new SftpConnection();
         connection.setHostName("example.com");
@@ -147,29 +104,6 @@ class SftpOutputTest {
         return connection;
     }
 
-    private static class CountingInteraction extends SftpUserInteraction {
-        private final Optional<String> answer;
-        private final AtomicInteger calls = new AtomicInteger();
-
-        CountingInteraction(Optional<String> answer) {
-            this.answer = answer;
-        }
-
-        @Override
-        public Optional<String> requestPassword(String userName, String hostName, int port) {
-            calls.incrementAndGet();
-            return answer;
-        }
-    }
-
-    @Test
-    void testOverwriteNotAskedIfFileDoesNotExist() {
-        SftpOutput sftpOutput = outputWith(createConnection());
-        OverwriteInteraction interaction = new OverwriteInteraction(SftpUserInteraction.OverwriteDecision.CANCEL);
-
-        assertThat(sftpOutput.confirmOverwriteIfExists("/playlists/tv.m3u", null, interaction)).isTrue();
-        assertThat(interaction.calls.get()).isZero();
-    }
 
     @Test
     void testOverwriteCancelled() {

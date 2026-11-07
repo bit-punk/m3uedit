@@ -17,8 +17,9 @@ import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.Test;
@@ -114,6 +115,26 @@ class ProjectPersisterUtilTest {
                 .getOutputs().get(1)).getSftpConnection();
 
         assertThat(loaded.isOverwriteWithoutAsking()).isTrue();
+    }
+
+    @Test
+    void testSftpInputIsPersistedWithoutPassword() throws Exception {
+        DataModel dataModel = getDataModel();
+        SftpConnection connection = createSftpConnection("topSecret42");
+        connection.setPath("/playlists");
+        connection.setFileName("tv.m3u");
+        SftpInput sftpInput = new SftpInput();
+        sftpInput.setSftpConnection(connection);
+        dataModel.getInputs().add(sftpInput);
+
+        String projectFileName = "target/testproject-sftp-input.m3uproj";
+        ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
+        assertThat(Files.readString(Path.of(projectFileName))).contains("<SftpInput>").doesNotContain("topSecret42");
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
+        SftpInput loadedInput = (SftpInput) loaded.getInputs().get(3);
+        assertThat(loadedInput.getSource()).isEqualTo("sftp://user@example.com:22/playlists/tv.m3u");
+        assertThat(loadedInput.getSftpConnection().getPassword()).isNull();
     }
 
     private static SftpConnection createSftpConnection(String password) {

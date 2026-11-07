@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output.sftp.model;
+package org.bitpunk.m3uedit.plugins.sftp.model;
 
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
 import jakarta.validation.ConstraintViolation;
 import javafx.beans.binding.BooleanBinding;
@@ -17,8 +17,8 @@ import javafx.util.Callback;
 import javafx.util.StringConverter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.RecentSftpServer;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +29,25 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class SftpTargetDialogController extends AbstractDialogController<SftpConnection> implements Initializable {
-    private static final Logger log = LoggerFactory.getLogger(SftpTargetDialogController.class);
-    public static final String FXML_PLUGIN_OUTPUT_SFTP = "plugin/output/sftp/SftpTargetDialog.fxml";
-    public static final String SFTP_DIALOG_TITLE = "Enter SFTP-Connection";
+public class SftpConnectionDialogController extends AbstractDialogController<SftpConnection> implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(SftpConnectionDialogController.class);
+    public static final String FXML_PLUGIN_SFTP = "plugin/sftp/SftpConnectionDialog.fxml";
+
+    /**
+     * INPUT: the file to read from (must exist, file name required);
+     * OUTPUT: the file to write to (empty file name = default, overwrite option).
+     */
+    public enum Mode {
+        INPUT("SFTP Input: Playlist Source"),
+        OUTPUT("SFTP Output: Playlist Target");
+
+        private final String title;
+
+        Mode(String title) {
+            this.title = title;
+        }
+    }
+
     @FXML
     public ButtonType okButtonType;
     @FXML
@@ -69,11 +84,27 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     private BooleanBinding inputsFull;
     // no field initializer: assigned in initialize(), which runs during the super constructor
     private RecentSftpServers recentServers;
+    private final Mode mode;
 
-    public SftpTargetDialogController() {
-        super(FXML_PLUGIN_OUTPUT_SFTP, SFTP_DIALOG_TITLE);
+    public SftpConnectionDialogController(Mode mode) {
+        super(FXML_PLUGIN_SFTP, mode.title);
+        // initialize() already ran inside super(), so mode specific settings are applied here
+        this.mode = mode;
         setResizable(true);
         setResultConverter(getURIResultConverter());
+        applyMode();
+    }
+
+    private void applyMode() {
+        boolean output = mode == Mode.OUTPUT;
+        overwriteWithoutAskingCheckBox.setVisible(output);
+        overwriteWithoutAskingCheckBox.setManaged(output);
+        fileNameTextField.setPromptText(output ? SftpConnection.DEFAULT_FILE_NAME : "name of the playlist file");
+        inputsFull.invalidate();
+    }
+
+    private boolean isFileNameRequired() {
+        return mode == Mode.INPUT;
     }
 
     private Callback<ButtonType, SftpConnection> getURIResultConverter() {
@@ -245,7 +276,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         String path = hostPathTextField.getText();
         String startDirectory = path != null && path.startsWith("/") ? path : ".";
 
-        SftpBrowserDialog browserDialog = new SftpBrowserDialog(connection, startDirectory, userInteraction);
+        SftpBrowserDialog browserDialog = new SftpBrowserDialog(connection, startDirectory, userInteraction, isFileNameRequired());
         browserDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<SftpBrowserDialog.Selection> selection = browserDialog.showAndWait();
         if (browserDialog.isConnected() && isBlank(passwordField.getText())) {
@@ -289,7 +320,11 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         Set<ConstraintViolation<SftpConnection>> errors = validator.validate(sftpConnectionFromInput);
         displayValidationErrors(errors);
         log.debug("Validation-errors found: {}", errors);
-        return errors.isEmpty() && sftpConnectionFromInput.isValidUri();
+        boolean fileNameMissing = isFileNameRequired() && isBlank(sftpConnectionFromInput.getFileName());
+        if (fileNameMissing) {
+            markFieldInvalid(fileNameTextField, "Filename must not be empty");
+        }
+        return errors.isEmpty() && !fileNameMissing && sftpConnectionFromInput.isValidUri();
     }
 
     private void displayValidationErrors(Set<ConstraintViolation<SftpConnection>> errors) {

@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output.sftp.model;
+package org.bitpunk.m3uedit.plugins.sftp.model;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import jakarta.validation.constraints.Digits;
