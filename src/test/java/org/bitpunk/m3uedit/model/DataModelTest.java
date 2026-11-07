@@ -429,7 +429,8 @@ class DataModelTest {
                 output("broken", written, new RuntimeException(new java.io.IOException("disk full"))),
                 output("ok", written, null));
 
-        assertThat(dataModel.saveEntries()).isFalse();
+        dataModel.saveEntries();
+        runAll();
 
         assertThat(written).singleElement().satisfies(playlist -> assertThat(names(playlist)).containsExactly("a"));
         assertThat(errors).singleElement().asString()
@@ -442,9 +443,59 @@ class DataModelTest {
         List<List<Entry>> written = new ArrayList<>();
         dataModel.getOutputs().addAll(output("first", written, null), output("second", written, null));
 
-        assertThat(dataModel.saveEntries()).isTrue();
+        dataModel.saveEntries();
+        runAll();
 
         assertThat(written).hasSize(2);
         assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void testOutputsAreWrittenInTheBackground() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+        List<List<Entry>> written = new ArrayList<>();
+        dataModel.getOutputs().add(output("out", written, null));
+
+        dataModel.saveEntries();
+
+        // nothing is written on the calling thread
+        assertThat(written).isEmpty();
+        assertThat(dataModel.isSaving()).isTrue();
+        // the playlist is taken when saving starts, later changes are not written
+        dataModel.getSortedEntryList().add(entry("added later"));
+
+        background.runAll();
+        assertThat(written).singleElement().satisfies(playlist -> assertThat(names(playlist)).containsExactly("a"));
+        assertThat(dataModel.isSaving()).as("reset on the fx-thread").isTrue();
+        fx.runAll();
+        assertThat(dataModel.isSaving()).isFalse();
+    }
+
+    @Test
+    void testSavingIsNotStartedTwice() {
+        List<List<Entry>> written = new ArrayList<>();
+        dataModel.getOutputs().add(output("out", written, null));
+
+        dataModel.saveEntries();
+        dataModel.saveEntries();
+        runAll();
+
+        assertThat(written).hasSize(1);
+
+        dataModel.saveEntries();
+        runAll();
+        assertThat(written).hasSize(2);
+    }
+
+    @Test
+    void testSavingFlagIsResetIfAnOutputThrowsAnError() {
+        dataModel.getOutputs().add(output("broken", new ArrayList<>(), new IllegalStateException("broken")));
+
+        dataModel.saveEntries();
+        runAll();
+
+        assertThat(dataModel.isSaving()).isFalse();
+        assertThat(errors).singleElement().asString().contains("broken: broken");
     }
 }

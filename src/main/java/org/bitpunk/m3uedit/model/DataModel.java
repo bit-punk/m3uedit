@@ -100,6 +100,9 @@ public class DataModel {
     private transient ReadOnlyBooleanWrapper busy;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
+    private transient ReadOnlyBooleanWrapper saving;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private transient long generation;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -147,6 +150,7 @@ public class DataModel {
         filteredEntryList = FXCollections.observableArrayList();
         sortedEntryList = FXCollections.observableArrayList();
         busy = new ReadOnlyBooleanWrapper(this, "busy", false);
+        saving = new ReadOnlyBooleanWrapper(this, "saving", false);
         // the 'dirty'-flag is set with each change of a persisted list, or the enabled-state of one of its plugins
         pluginEnabledListener = (observable, oldValue, newValue) -> changed = true;
         pluginListListener = this::onPluginListChanged;
@@ -345,25 +349,56 @@ public class DataModel {
     }
 
     /**
-     * Writes the sorted entries to all outputs. Outputs failing are reported, the remaining ones are written anyway.
-     *
-     * @return true if all outputs have been written
+     * Writes the sorted entries to all outputs in the background.
+     * Outputs failing are reported, the remaining ones are written anyway.
+     * Outputs may ask the user (e.g. for a password) from the background thread, the dialogs have to be shown
+     * on the JavaFX application thread by the outputs themselves.
      */
-    public boolean saveEntries() {
-        List<String> errors = new ArrayList<>();
-        for (Output output : outputs) {
-            log.debug("saving {} entries to output {}", sortedEntryList.size(), output.getName());
+    public void saveEntries() {
+        if (isSaving()) {
+            log.debug("project '{}' is already being saved to its outputs", name);
+            return;
+        }
+        saving.set(true);
+        // take snapshots on the calling (JavaFX) thread, the background thread must not access the observable lists
+        List<Output> outputsSnapshot = new ArrayList<>(outputs);
+        List<Entry> playlist = List.copyOf(sortedEntryList);
+        getBackgroundExecutorOrDefault().execute(() -> {
+            List<String> errors = new ArrayList<>();
             try {
-                output.write(sortedEntryList);
+                writeToOutputs(outputsSnapshot, playlist, errors);
+            } finally {
+                getFxExecutorOrDefault().execute(() -> {
+                    saving.set(false);
+                    if (!errors.isEmpty()) {
+                        reportError("The playlist could not be written to all outputs:\n" + String.join("\n", errors));
+                    }
+                });
+            }
+        });
+    }
+
+    private void writeToOutputs(List<Output> outputs, List<Entry> playlist, List<String> errors) {
+        for (Output output : outputs) {
+            log.debug("saving {} entries to output {}", playlist.size(), output.getName());
+            try {
+                output.write(playlist);
             } catch (RuntimeException e) {
                 log.error("Error writing to output {} ({})", output.getName(), output.getOutput(), e);
                 errors.add("%s: %s".formatted(output.getName(), UncaughtExceptionHandler.describe(e)));
             }
         }
-        if (!errors.isEmpty()) {
-            reportError("The playlist could not be written to all outputs:\n" + String.join("\n", errors));
-        }
-        return errors.isEmpty();
+    }
+
+    /**
+     * @return true while the playlist is written to the outputs in the background
+     */
+    public ReadOnlyBooleanProperty savingProperty() {
+        return saving.getReadOnlyProperty();
+    }
+
+    public boolean isSaving() {
+        return saving.get();
     }
 
     private static List<Entry> filterEntries(List<Filter> filters, List<Entry> entries) {

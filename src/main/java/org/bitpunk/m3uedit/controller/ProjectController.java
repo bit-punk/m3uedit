@@ -17,6 +17,7 @@ import java.util.ResourceBundle;
 
 public class ProjectController extends AbstractController implements Initializable, ModelAware {
     static final String LOADING_MESSAGE = "Loading entries ...";
+    static final String SAVING_MESSAGE = "Writing playlist to the outputs ...";
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     @FXML
     public Tab inputTab;
@@ -76,6 +77,7 @@ public class ProjectController extends AbstractController implements Initializab
         dataModel.getFilteredEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
         dataModel.getSortedEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
         dataModel.busyProperty().addListener((observable, wasBusy, isBusy) -> updateStatusLabel());
+        dataModel.savingProperty().addListener((observable, wasSaving, isSaving) -> updateStatusLabel());
         dataModel.setErrorHandler(ProjectController::showError);
     }
 
@@ -95,8 +97,8 @@ public class ProjectController extends AbstractController implements Initializab
         if (isProjectTabSelected() == Boolean.FALSE) {
             return;
         }
-        if (dataModel.isBusy()) {
-            statusLabel.setText(LOADING_MESSAGE);
+        if (dataModel.isBusy() || dataModel.isSaving()) {
+            statusLabel.setText(dataModel.isSaving() ? SAVING_MESSAGE : LOADING_MESSAGE);
             statusLabel.setGraphic(getLoadingIndicator());
             return;
         }
