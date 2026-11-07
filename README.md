@@ -32,6 +32,16 @@ To run the application using the _javafx-maven-plugin_, you should use:
 
 After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`
 
+To create a self-contained application image for your current platform (including a java runtime, no separate JDK
+or JavaFX installation needed), use the `jpackage` profile:
+
+```bash
+./mvnw -Pjpackage package
+```
+
+The application can then be started using `./target/dist/m3uedit/bin/m3uedit` (Linux) or the corresponding launcher
+on Windows/macOS.
+
 ## Developing
 
 ### IntelliJ
