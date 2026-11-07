@@ -10,8 +10,11 @@ import javafx.beans.property.SimpleBooleanProperty;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.*;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.xstream.BooleanPropertyConverter;
 import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
@@ -19,11 +22,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.LinkedList;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
@@ -66,7 +73,8 @@ public class ProjectPersisterUtil {
         return dataModel;
     }
 
-    private static XStream getXStream() {
+    // package-private for tests
+    static XStream getXStream() {
         XStream xStream = new XStream();
         xStream.addPermission(NoTypePermission.NONE); // forbid everything
         xStream.addPermission(NullPermission.NULL);   // allow "null"
@@ -85,22 +93,7 @@ public class ProjectPersisterUtil {
 
         addAllPluginAliases(xStream);
 
-        // @formatter:off
-        xStream.allowTypesByWildcard(new String[]{
-                "org.bitpunk.m3uedit.plugins.input.**",
-                "org.bitpunk.m3uedit.plugins.output.**",
-                "org.bitpunk.m3uedit.plugins.filter.**",
-                "org.bitpunk.m3uedit.plugins.sorter.**",
-                "org.bitpunk.m3uedit.plugins.sftp.**",
-                "org.bitpunk.m3uedit.model.DataModel",
-                "org.bitpunk.m3uedit.model.Entry",
-                "org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource",
-                "com.sun.javafx.collections.ObservableListWrapper",
-                "javafx.beans.property.**",
-                "java.lang.String",
-                "java.net.**",
-                "java.util.**"
-        });
+        allowProjectTypes(xStream);
         // @formatter:on
         return xStream;
     }
@@ -164,6 +157,44 @@ public class ProjectPersisterUtil {
             return SaveResult.CANCELLED;
         }
         return saveProjectFile(saveFilePath.toString(), dataModel) ? SaveResult.SAVED : SaveResult.FAILED;
+    }
+
+    /**
+     * Allows exactly the types used in project-files. Everything else is rejected when loading a project-file,
+     * as a crafted project-file could otherwise instantiate arbitrary classes ("gadget chains").
+     * <p>
+     * Maps and sets are not allowed on purpose: with {@link URL}s as keys, their hashCode would trigger
+     * a DNS lookup while loading.
+     */
+    private static void allowProjectTypes(XStream xStream) {
+        // all plugins, including the ones provided via ServiceLoader
+        xStream.allowTypeHierarchy(Plugin.class);
+        // @formatter:off
+        xStream.allowTypes(new Class[]{
+                DataModel.class,
+                StreamSource.class,
+                FritzBoxConnection.class,
+                IptvOrgPlaylist.class,
+                PlaylistGrouping.class,
+                SftpConnection.class,
+                // legacy format of Plugin.enabled, see BooleanPropertyConverter
+                SimpleBooleanProperty.class,
+                String.class,
+                URL.class,
+                URI.class,
+                ArrayList.class,
+                LinkedList.class
+        });
+        xStream.allowTypes(new String[]{
+                "com.sun.javafx.collections.ObservableListWrapper",
+                "java.util.Collections$EmptyList",
+                "java.util.Collections$SingletonList",
+                "java.util.Collections$UnmodifiableList",
+                "java.util.Collections$UnmodifiableRandomAccessList",
+                "java.util.ImmutableCollections$List12",
+                "java.util.ImmutableCollections$ListN"
+        });
+        // @formatter:on
     }
 
     private static void addAllPluginAliases(XStream xStream) {

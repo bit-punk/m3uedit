@@ -146,6 +146,11 @@ public class DataModel {
     }
 
     private void initTransientState() {
+        // lists missing in a project-file are null after deserialization
+        inputs = inputs != null ? inputs : FXCollections.observableArrayList();
+        filters = filters != null ? filters : FXCollections.observableArrayList();
+        sorters = sorters != null ? sorters : FXCollections.observableArrayList();
+        outputs = outputs != null ? outputs : FXCollections.observableArrayList();
         rawEntryList = FXCollections.observableArrayList();
         filteredEntryList = FXCollections.observableArrayList();
         sortedEntryList = FXCollections.observableArrayList();
