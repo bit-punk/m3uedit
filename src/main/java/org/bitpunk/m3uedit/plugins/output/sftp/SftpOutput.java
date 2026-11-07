@@ -15,18 +15,19 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Properties;
+import java.util.Optional;
 
 @Getter
 @Setter
 public class SftpOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
     public static final String DEFAULT_PLAYLIST_FILENAME = "playlist.m3u";
+    static final int CONNECT_TIMEOUT_MILLIS = 15_000;
     @XStreamOmitField
     private final String name = "SFTP Output";
     @XStreamOmitField
@@ -67,11 +68,17 @@ public class SftpOutput extends AbstractPlugin implements Output {
     public void write(List<Entry> playlist) {
         log.debug("write()");
         if (playlist != null && !playlist.isEmpty() && sftpConnection != null) {
+            SftpUserInteraction userInteraction = createUserInteraction();
+            if (!ensurePassword(userInteraction)) {
+                log.warn("Writing to SFTP server {}@{}:{} skipped: no password entered",
+                        sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
+                return;
+            }
             ChannelSftp channelSftp = null;
             String targetPath = null;
             int payloadBytes = 0;
             try {
-                channelSftp = setupJsch();
+                channelSftp = setupJsch(userInteraction);
                 if (channelSftp != null) {
                     Session jschSession = channelSftp.getSession();
                     try (SftpSession ignored = new SftpSession(jschSession, channelSftp)) {
@@ -98,12 +105,40 @@ public class SftpOutput extends AbstractPlugin implements Output {
                         e.id, getSftpErrorName(e.id), e.getMessage(), contextDetails, e);
                 throw new RuntimeException(e);
             } catch (JSchException e) {
+                if (isAuthenticationFailure(e)) {
+                    // ask again on the next attempt instead of retrying a wrong password
+                    sftpConnection.setPassword(null);
+                }
                 String contextDetails = buildJschContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SSH/JSch session error during SFTP output: {} | Context: {}",
                         e.getMessage(), contextDetails, e);
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    protected SftpUserInteraction createUserInteraction() {
+        return new SftpUserInteraction();
+    }
+
+    /**
+     * The password is not persisted in the project file, so it has to be requested once per session.
+     *
+     * @return true if a password is available
+     */
+    protected boolean ensurePassword(SftpUserInteraction userInteraction) {
+        String password = sftpConnection.getPassword();
+        if (password != null && !password.isEmpty()) {
+            return true;
+        }
+        Optional<String> entered = userInteraction.requestPassword(
+                sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
+        entered.ifPresent(sftpConnection::setPassword);
+        return entered.isPresent();
+    }
+
+    static boolean isAuthenticationFailure(JSchException e) {
+        return e.getMessage() != null && e.getMessage().startsWith("Auth fail");
     }
 
     private record SftpSession(Session session, ChannelSftp channel) implements AutoCloseable {
@@ -279,23 +314,29 @@ public class SftpOutput extends AbstractPlugin implements Output {
         return path;
     }
 
-    protected ChannelSftp setupJsch() throws JSchException {
+    /**
+     * Opens the SSH session. Host keys are verified against {@code ~/.ssh/known_hosts}:
+     * unknown hosts must be confirmed by the user (and are then added to the file),
+     * changed host keys are rejected.
+     */
+    protected ChannelSftp setupJsch(UserInfo userInfo) throws JSchException {
         ChannelSftp channelSftp = null;
         if (sftpConnection != null) {
             JSch jsch = new JSch();
-            String knownHostsPath = System.getProperty("user.home") + "/.ssh/known_hosts";
-            if (new File(knownHostsPath).exists()) {
-                jsch.setKnownHosts(knownHostsPath);
-            }
+            // set even if the file does not exist yet: JSch creates it once the user accepts a host key
+            jsch.setKnownHosts(getKnownHostsPath());
             Session jschSession = jsch.getSession(sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
             jschSession.setPassword(sftpConnection.getPassword().getBytes(StandardCharsets.UTF_8));
-            Properties config = new Properties();
-            config.put("StrictHostKeyChecking", "no");
-            jschSession.setConfig(config);
-            jschSession.connect();
+            jschSession.setConfig("StrictHostKeyChecking", "ask");
+            jschSession.setUserInfo(userInfo);
+            jschSession.connect(CONNECT_TIMEOUT_MILLIS);
             channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
         }
         return channelSftp;
+    }
+
+    static String getKnownHostsPath() {
+        return Path.of(System.getProperty("user.home"), ".ssh", "known_hosts").toString();
     }
 
     @Override

@@ -25,10 +25,21 @@ class SftpConnectionTest {
 
         URI uri = connection.toURI();
         assertThat(uri.getScheme()).isEqualTo("sftp");
-        assertThat(uri.getUserInfo()).isEqualTo("admin:pass");
+        assertThat(uri.getUserInfo()).isEqualTo("admin");
+        assertThat(uri.toString()).doesNotContain("pass");
         assertThat(uri.getHost()).isEqualTo("192.168.1.1");
         assertThat(uri.getPort()).isEqualTo(22);
         assertThat(uri.getPath()).isEqualTo("/etc/playlist.m3u");
+    }
+
+    @Test
+    void testToStringDoesNotContainPassword() {
+        SftpConnection connection = new SftpConnection();
+        connection.setHostName("example.com");
+        connection.setUserName("admin");
+        connection.setPassword("topSecret42");
+
+        assertThat(connection.toString()).contains("example.com").doesNotContain("topSecret42");
     }
 
     @Test

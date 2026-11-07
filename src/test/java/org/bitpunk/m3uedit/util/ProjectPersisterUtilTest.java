@@ -18,6 +18,7 @@ import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
+import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,50 @@ class ProjectPersisterUtilTest {
         assertThat(loaded.getSorters()).hasSize(1);
         assertThat(loaded.getOutputs()).hasSize(2);
         assertThat(loaded.getSortedEntryList()).hasSize(3);
+    }
+
+    @Test
+    void testSftpPasswordIsNotPersisted() throws Exception {
+        DataModel dataModel = getDataModel();
+        SftpOutput sftpOutput = (SftpOutput) dataModel.getOutputs().get(1);
+        sftpOutput.setSftpConnection(createSftpConnection("topSecret42"));
+
+        String projectFileName = "target/testproject-sftp.m3uproj";
+        ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
+        assertThat(Files.readString(Path.of(projectFileName))).doesNotContain("topSecret42").contains("example.com");
+
+        SftpConnection loaded = ((SftpOutput) ProjectPersisterUtil.loadProject(Path.of(projectFileName))
+                .getOutputs().get(1)).getSftpConnection();
+        assertThat(loaded.getHostName()).isEqualTo("example.com");
+        assertThat(loaded.getPassword()).isNull();
+    }
+
+    @Test
+    void testLegacyProjectFileWithSftpPasswordCanBeLoaded() throws Exception {
+        DataModel dataModel = getDataModel();
+        ((SftpOutput) dataModel.getOutputs().get(1)).setSftpConnection(createSftpConnection("ignored"));
+        Path legacyFile = Path.of("target/legacy-sftp.m3uproj");
+        ProjectPersisterUtil.saveProjectFile(legacyFile.toString(), dataModel);
+        // simulate a project file written by an older version, which still contained the password
+        String xml = Files.readString(legacyFile);
+        assertThat(xml).contains("<userName>user</userName>");
+        Files.writeString(legacyFile, xml.replace("<userName>user</userName>",
+                "<userName>user</userName><password>oldSecret</password>"));
+
+        SftpConnection connection = ((SftpOutput) ProjectPersisterUtil.loadProject(legacyFile)
+                .getOutputs().get(1)).getSftpConnection();
+        assertThat(connection.getHostName()).isEqualTo("example.com");
+        assertThat(connection.getPassword()).isNull();
+    }
+
+    private static SftpConnection createSftpConnection(String password) {
+        SftpConnection connection = new SftpConnection();
+        connection.setHostName("example.com");
+        connection.setPort(22);
+        connection.setUserName("user");
+        connection.setPassword(password);
+        connection.setPath("/playlists/tv.m3u");
+        return connection;
     }
 
     private static DataModel getDataModel() {
