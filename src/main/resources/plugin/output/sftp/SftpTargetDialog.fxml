@@ -4,17 +4,41 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Host-URL :" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostnameTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostPortTextField" text="22" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostPathTextField" text="/" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-            <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-            <TextField fx:id="usernameTextField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="2"
+            <Label text="Recent:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <ComboBox fx:id="recentServersComboBox" promptText="recently used servers" maxWidth="Infinity"
+                      GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.columnSpan="2"/>
+            <Button fx:id="removeRecentServerButton" text="Remove" onAction="#handleRemoveRecentServer"
+                    maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+            <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="4"/>
+
+            <Label text="Host:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextField fx:id="hostnameTextField" promptText="hostname or IP address"
+                       GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            <Label text="Port:" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+            <TextField fx:id="hostPortTextField" text="22" prefColumnCount="5"
+                       GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+
+            <Label text="Directory:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+            <TextField fx:id="hostPathTextField" text="/" promptText="/path/on/server"
+                       GridPane.columnIndex="1" GridPane.rowIndex="3" GridPane.columnSpan="2"/>
+            <Button fx:id="browseButton" text="Browse…" onAction="#handleBrowse" maxWidth="Infinity"
+                    GridPane.columnIndex="3" GridPane.rowIndex="3"/>
+
+            <Label text="Filename:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            <TextField fx:id="fileNameTextField" promptText="playlist.m3u"
+                       GridPane.columnIndex="1" GridPane.rowIndex="4" GridPane.columnSpan="3"/>
+
+            <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+            <TextField fx:id="usernameTextField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="5"
                        GridPane.fillWidth="false"/>
 
-            <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-            <PasswordField fx:id="passwordField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="3"
-                           GridPane.fillWidth="false"/>
+            <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+            <PasswordField fx:id="passwordField" prefWidth="200" promptText="empty: ask when writing"
+                           GridPane.columnIndex="1" GridPane.rowIndex="6" GridPane.fillWidth="false"/>
+
+            <CheckBox fx:id="overwriteWithoutAskingCheckBox" text="Overwrite existing file without asking"
+                      GridPane.columnIndex="1" GridPane.rowIndex="7" GridPane.columnSpan="3"/>
             <columnConstraints>
                 <ColumnConstraints/>
                 <ColumnConstraints hgrow="ALWAYS"/>

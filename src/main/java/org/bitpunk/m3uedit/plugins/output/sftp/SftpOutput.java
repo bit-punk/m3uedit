@@ -15,18 +15,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Properties;
+import java.util.Optional;
 
 @Getter
 @Setter
 public class SftpOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
-    public static final String DEFAULT_PLAYLIST_FILENAME = "playlist.m3u";
+    public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
     @XStreamOmitField
     private final String name = "SFTP Output";
     @XStreamOmitField
@@ -37,27 +39,32 @@ public class SftpOutput extends AbstractPlugin implements Output {
         initJschLogger();
     }
 
+    /**
+     * Routes JSch logging to SLF4J. JSch INFO is very verbose (key exchange, authentication and even a
+     * "Socket closed" stack trace on every regular disconnect), so it is logged as DEBUG.
+     */
     private static void initJschLogger() {
         JSch.setLogger(new com.jcraft.jsch.Logger() {
             @Override
             public boolean isEnabled(int level) {
                 return switch (level) {
-                    case com.jcraft.jsch.Logger.DEBUG -> log.isDebugEnabled();
-                    case com.jcraft.jsch.Logger.INFO -> log.isInfoEnabled();
                     case com.jcraft.jsch.Logger.WARN -> log.isWarnEnabled();
                     case com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> log.isErrorEnabled();
-                    default -> false;
+                    default -> log.isDebugEnabled();
                 };
             }
 
             @Override
             public void log(int level, String message) {
+                log(level, message, null);
+            }
+
+            @Override
+            public void log(int level, String message, Throwable cause) {
                 switch (level) {
-                    case com.jcraft.jsch.Logger.DEBUG -> log.debug("[JSch] {}", message);
-                    case com.jcraft.jsch.Logger.INFO -> log.info("[JSch] {}", message);
-                    case com.jcraft.jsch.Logger.WARN -> log.warn("[JSch] {}", message);
-                    case com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> log.error("[JSch] {}", message);
-                    default -> log.debug("[JSch] {}", message);
+                    case com.jcraft.jsch.Logger.WARN -> log.warn("[JSch] {}", message, cause);
+                    case com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> log.error("[JSch] {}", message, cause);
+                    default -> log.debug("[JSch] {}", message, cause);
                 }
             }
         });
@@ -67,37 +74,49 @@ public class SftpOutput extends AbstractPlugin implements Output {
     public void write(List<Entry> playlist) {
         log.debug("write()");
         if (playlist != null && !playlist.isEmpty() && sftpConnection != null) {
+            SftpUserInteraction userInteraction = createUserInteraction();
+            if (!ensurePassword(userInteraction)) {
+                log.warn("Writing to SFTP server {}@{}:{} skipped: no password entered",
+                        sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
+                return;
+            }
             ChannelSftp channelSftp = null;
             String targetPath = null;
             int payloadBytes = 0;
-            try {
-                channelSftp = setupJsch();
-                if (channelSftp != null) {
-                    Session jschSession = channelSftp.getSession();
-                    try (SftpSession ignored = new SftpSession(jschSession, channelSftp)) {
-                        channelSftp.connect();
-                        Writer writer = new Writer();
-                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                        writer.write(playlist, outputStream);
-                        byte[] bytes = outputStream.toByteArray();
-                        payloadBytes = bytes.length;
+            try (SftpClient client = SftpClient.connect(sftpConnection, userInteraction)) {
+                channelSftp = client.channel();
+                Writer writer = new Writer();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                writer.write(playlist, outputStream);
+                byte[] bytes = outputStream.toByteArray();
+                payloadBytes = bytes.length;
 
-                        ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                        targetPath = resolveTargetPath(channelSftp, sftpConnection.getPath());
-                        ensureParentDirectoriesExist(channelSftp, targetPath);
-                        log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
-                                playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
-                                sftpConnection.getPort(), targetPath, sftpConnection.getPath());
-                        channelSftp.put(inputStream, targetPath);
-                        log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
-                    }
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                targetPath = sftpConnection.isLegacyPath()
+                        ? resolveTargetPath(channelSftp, sftpConnection.getPath())
+                        : sftpConnection.getTargetPath();
+                ensureParentDirectoriesExist(channelSftp, targetPath);
+                if (!sftpConnection.isOverwriteWithoutAsking()
+                        && !confirmOverwriteIfExists(targetPath, describeExistingFile(channelSftp, targetPath), userInteraction)) {
+                    log.info("Writing to SFTP destination {} skipped: overwriting the existing file was not confirmed", targetPath);
+                    return;
                 }
+                log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
+                        playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
+                        sftpConnection.getPort(), targetPath, sftpConnection.getPath());
+                channelSftp.put(inputStream, targetPath);
+                log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
+                recordRecentServer();
             } catch (SftpException e) {
                 String contextDetails = buildSftpContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SFTP transfer failed with error code {} ({}): {} | Context: {}",
                         e.id, getSftpErrorName(e.id), e.getMessage(), contextDetails, e);
                 throw new RuntimeException(e);
             } catch (JSchException e) {
+                if (isAuthenticationFailure(e)) {
+                    // ask again on the next attempt instead of retrying a wrong password
+                    sftpConnection.setPassword(null);
+                }
                 String contextDetails = buildJschContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SSH/JSch session error during SFTP output: {} | Context: {}",
                         e.getMessage(), contextDetails, e);
@@ -106,16 +125,79 @@ public class SftpOutput extends AbstractPlugin implements Output {
         }
     }
 
-    private record SftpSession(Session session, ChannelSftp channel) implements AutoCloseable {
-        @Override
-        public void close() {
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-            if (session != null && session.isConnected()) {
-                session.disconnect();
-            }
+    /**
+     * Remembers the target in the "recently used servers" list; failures there must not break the write.
+     */
+    protected void recordRecentServer() {
+        try {
+            new RecentSftpServers().recordSuccess(sftpConnection);
+        } catch (RuntimeException e) {
+            log.warn("Could not update list of recently used SFTP servers: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * @return size and modification date of an existing file, or null if there is no file at the path
+     */
+    static String describeExistingFile(ChannelSftp channelSftp, String path) {
+        try {
+            SftpATTRS attrs = channelSftp.stat(path);
+            if (attrs.isDir()) {
+                return null;
+            }
+            String modified = LocalDateTime.ofInstant(Instant.ofEpochSecond(attrs.getMTime()), ZoneId.systemDefault())
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            return "Existing file: " + attrs.getSize() + " bytes, last modified " + modified;
+        } catch (SftpException e) {
+            return null; // does not exist (or cannot be read; then the upload reports the error)
+        }
+    }
+
+    /**
+     * Asks the user before an existing file is overwritten.
+     *
+     * @param existingFileInfo description of the existing file, null if there is none
+     * @return true if the file may be written
+     */
+    protected boolean confirmOverwriteIfExists(String targetPath, String existingFileInfo, SftpUserInteraction userInteraction) {
+        if (existingFileInfo == null || sftpConnection.isOverwriteWithoutAsking()) {
+            return true;
+        }
+        String target = sftpConnection.getUserName() + "@" + sftpConnection.getHostName() + ":"
+                + sftpConnection.getPort() + targetPath;
+        return switch (userInteraction.confirmOverwrite(target, existingFileInfo)) {
+            case CANCEL -> false;
+            case OVERWRITE -> true;
+            case OVERWRITE_ALWAYS -> {
+                log.info("Overwriting {} without asking from now on", target);
+                sftpConnection.setOverwriteWithoutAsking(true);
+                yield true;
+            }
+        };
+    }
+
+    protected SftpUserInteraction createUserInteraction() {
+        return new SftpUserInteraction();
+    }
+
+    /**
+     * The password is not persisted in the project file, so it has to be requested once per session.
+     *
+     * @return true if a password is available
+     */
+    protected boolean ensurePassword(SftpUserInteraction userInteraction) {
+        String password = sftpConnection.getPassword();
+        if (password != null && !password.isEmpty()) {
+            return true;
+        }
+        Optional<String> entered = userInteraction.requestPassword(
+                sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
+        entered.ifPresent(sftpConnection::setPassword);
+        return entered.isPresent();
+    }
+
+    static boolean isAuthenticationFailure(JSchException e) {
+        return e.getMessage() != null && e.getMessage().startsWith("Auth fail");
     }
 
     protected String buildSftpContextDetails(ChannelSftp channelSftp, String targetPath, int playlistSize, int payloadBytes) {
@@ -279,29 +361,11 @@ public class SftpOutput extends AbstractPlugin implements Output {
         return path;
     }
 
-    protected ChannelSftp setupJsch() throws JSchException {
-        ChannelSftp channelSftp = null;
-        if (sftpConnection != null) {
-            JSch jsch = new JSch();
-            String knownHostsPath = System.getProperty("user.home") + "/.ssh/known_hosts";
-            if (new File(knownHostsPath).exists()) {
-                jsch.setKnownHosts(knownHostsPath);
-            }
-            Session jschSession = jsch.getSession(sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
-            jschSession.setPassword(sftpConnection.getPassword().getBytes(StandardCharsets.UTF_8));
-            Properties config = new Properties();
-            config.put("StrictHostKeyChecking", "no");
-            jschSession.setConfig(config);
-            jschSession.connect();
-            channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
-        }
-        return channelSftp;
-    }
-
     @Override
     public void configure() {
         log.debug("configure()");
         SftpTargetDialogController sftpTargetDialogController = new SftpTargetDialogController();
+        sftpTargetDialogController.setSftpConnection(sftpConnection);
         DialogPane dialogPane = sftpTargetDialogController.getDialogPane();
         dialogPane.lookupButton(sftpTargetDialogController.okButtonType)
                 .disableProperty()

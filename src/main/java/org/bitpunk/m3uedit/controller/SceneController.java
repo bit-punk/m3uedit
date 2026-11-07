@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import javafx.event.Event;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.ResourceBundle;
+import java.util.function.Predicate;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -34,6 +36,10 @@ public class SceneController implements Initializable {
     private static final String ABOUT_ICON_RESOURCE = "/icons/about.svg";
 
     private final ObservableMap<String, DataModel> dataModelMap = FXCollections.observableMap(new HashMap<>());
+    /**
+     * Asks the user whether the project with the given name may be closed despite unsaved changes.
+     */
+    Predicate<String> closeConfirmation = DialogUtil::canProjectBeClosed;
     @FXML
     private Label statusLabel;
     @FXML
@@ -68,31 +74,43 @@ public class SceneController implements Initializable {
         addNewProjectTab(DataModelFactory.createDataModel(newProjectName));
     }
 
-    private void addNewProjectTab(DataModel dataModel) {
+    void addNewProjectTab(DataModel dataModel) {
         ProjectController projectController = getProjectController(dataModel);
         String projectName = dataModel.getName();
         if (isNotEmpty(projectName)) {
             Tab newProjectTab = new Tab(projectName);
             newProjectTab.setContent(projectController);
-            newProjectTab.setOnCloseRequest(this::closeSelectedProjectTab);
+            newProjectTab.setOnCloseRequest(this::handleTabCloseRequest);
             tabPane.getTabs().add(newProjectTab);
         }
     }
 
-    private void closeSelectedProjectTab(Event e) {
-        Tab closeTab = (Tab) e.getSource();
-        if (canTabBeClosed(closeTab)) {
-            TabPane closeTabTabPane = closeTab.getTabPane();
-            if (closeTabTabPane != null) {
-                closeTabTabPane.getTabs().remove(closeTab);
-            }
-            dataModelMap.remove(closeTab.getText());
+    /**
+     * Handles a close-request triggered by the close-button of a project tab.
+     * The tab itself is removed by the TabPane afterwards, unless the event gets consumed.
+     */
+    private void handleTabCloseRequest(Event event) {
+        if (!canTabBeClosed((Tab) event.getSource())) {
+            event.consume();    // veto: keep the tab open
         }
     }
 
-    private boolean canTabBeClosed(Tab closeTab) {
-        DataModel dataModel = ((ProjectController) closeTab.getContent()).getDataModel();
-        return dataModel.isChanged() && DialogUtil.canProjectBeClosed(dataModel.getName());
+    /**
+     * Closes the given project tab after asking the user for confirmation in case of unsaved changes.
+     *
+     * @return true if the tab has been closed
+     */
+    boolean closeProjectTab(Tab tab) {
+        if (tab == null || !canTabBeClosed(tab)) {
+            return false;
+        }
+        tabPane.getTabs().remove(tab);
+        return true;
+    }
+
+    private boolean canTabBeClosed(Tab tab) {
+        DataModel dataModel = ((ProjectController) tab.getContent()).getDataModel();
+        return !dataModel.isChanged() || closeConfirmation.test(dataModel.getName());
     }
 
     private ProjectController getProjectController(DataModel dataModel) {
@@ -151,6 +169,17 @@ public class SceneController implements Initializable {
 
     private void initTabPane() {
         tabPane.getSelectionModel().selectedItemProperty().addListener((ov, t, t1) -> updateStatusLabel(t1));
+        // remove the DataModel of every closed tab, regardless of how the tab got closed
+        tabPane.getTabs().addListener((ListChangeListener<Tab>) change -> {
+            while (change.next()) {
+                for (Tab removedTab : change.getRemoved()) {
+                    if (removedTab.getContent() instanceof ProjectController projectController) {
+                        DataModel dataModel = projectController.getDataModel();
+                        dataModelMap.remove(dataModel.getName(), dataModel);
+                    }
+                }
+            }
+        });
     }
 
     private void updateStatusLabel(Tab selectedTab) {
@@ -181,8 +210,7 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void handleCloseProjectAction() {
-        Tab tab = tabPane.getSelectionModel().getSelectedItem();
-        Event.fireEvent(tab, new Event(Tab.TAB_CLOSE_REQUEST_EVENT));
+    void handleCloseProjectAction() {
+        closeProjectTab(tabPane.getSelectionModel().getSelectedItem());
     }
 }
