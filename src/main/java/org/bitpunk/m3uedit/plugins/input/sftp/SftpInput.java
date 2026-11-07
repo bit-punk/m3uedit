@@ -6,6 +6,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
@@ -14,8 +15,6 @@ import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
 import org.bitpunk.m3uedit.plugins.sftp.SftpConnectionDialogController;
 import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,10 +26,10 @@ import java.util.List;
  * Reads a playlist from an SFTP server. Shares connection handling, dialogs and the list of
  * recently used servers with the SFTP output.
  */
+@Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SftpInput extends AbstractInput implements Input {
-    private static final Logger log = LoggerFactory.getLogger(SftpInput.class);
 
     @XStreamOmitField
     private final String name = "SFTP Input";
