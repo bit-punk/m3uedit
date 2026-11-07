@@ -63,6 +63,22 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         };
     }
 
+    /**
+     * Pre-fills the dialog with an existing connection, e.g. when editing the output.
+     * The password field is only filled if the password is known in this session
+     * (it is not stored in the project file).
+     */
+    public void setSftpConnection(SftpConnection sftpConnection) {
+        if (sftpConnection == null) {
+            return;
+        }
+        hostnameTextField.setText(sftpConnection.getHostName());
+        hostPortTextField.setText(String.valueOf(sftpConnection.getPort()));
+        hostPathTextField.setText(sftpConnection.getPath());
+        usernameTextField.setText(sftpConnection.getUserName());
+        passwordField.setText(sftpConnection.getPassword());
+    }
+
     private SftpConnection createSftpConnectionFromInput() {
         SftpConnection sftpConnection = new SftpConnection();
         sftpConnection.setHostName(hostnameTextField.getText());

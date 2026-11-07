@@ -38,27 +38,32 @@ public class SftpOutput extends AbstractPlugin implements Output {
         initJschLogger();
     }
 
+    /**
+     * Routes JSch logging to SLF4J. JSch INFO is very verbose (key exchange, authentication and even a
+     * "Socket closed" stack trace on every regular disconnect), so it is logged as DEBUG.
+     */
     private static void initJschLogger() {
         JSch.setLogger(new com.jcraft.jsch.Logger() {
             @Override
             public boolean isEnabled(int level) {
                 return switch (level) {
-                    case com.jcraft.jsch.Logger.DEBUG -> log.isDebugEnabled();
-                    case com.jcraft.jsch.Logger.INFO -> log.isInfoEnabled();
                     case com.jcraft.jsch.Logger.WARN -> log.isWarnEnabled();
                     case com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> log.isErrorEnabled();
-                    default -> false;
+                    default -> log.isDebugEnabled();
                 };
             }
 
             @Override
             public void log(int level, String message) {
+                log(level, message, null);
+            }
+
+            @Override
+            public void log(int level, String message, Throwable cause) {
                 switch (level) {
-                    case com.jcraft.jsch.Logger.DEBUG -> log.debug("[JSch] {}", message);
-                    case com.jcraft.jsch.Logger.INFO -> log.info("[JSch] {}", message);
-                    case com.jcraft.jsch.Logger.WARN -> log.warn("[JSch] {}", message);
-                    case com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> log.error("[JSch] {}", message);
-                    default -> log.debug("[JSch] {}", message);
+                    case com.jcraft.jsch.Logger.WARN -> log.warn("[JSch] {}", message, cause);
+                    case com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> log.error("[JSch] {}", message, cause);
+                    default -> log.debug("[JSch] {}", message, cause);
                 }
             }
         });
@@ -343,6 +348,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     public void configure() {
         log.debug("configure()");
         SftpTargetDialogController sftpTargetDialogController = new SftpTargetDialogController();
+        sftpTargetDialogController.setSftpConnection(sftpConnection);
         DialogPane dialogPane = sftpTargetDialogController.getDialogPane();
         dialogPane.lookupButton(sftpTargetDialogController.okButtonType)
                 .disableProperty()

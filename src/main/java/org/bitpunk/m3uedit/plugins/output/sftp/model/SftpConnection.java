@@ -31,9 +31,8 @@ public class SftpConnection {
     private String userName;
     /**
      * Kept in memory only: never persisted to the project file and never logged.
-     * After loading a project the user is asked for it again on the first write.
+     * Optional: if empty (e.g. after loading a project) the user is asked for it on the first write.
      */
-    @NotEmpty(message = "Password must not be empty")
     @XStreamOmitField
     @ToString.Exclude
     private String password;
