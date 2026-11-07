@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.util;
 
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -220,4 +221,70 @@ class ProjectPersisterUtilTest {
         return FXCollections.observableArrayList(entryList);
     }
 
+
+    @Test
+    void testProjectWithBoundEnabledPropertiesCanBeSavedAndLoaded() throws Exception {
+        DataModel dataModel = getDataModel();
+        Filter enabledFilter = dataModel.getFilters().get(1);
+        Filter disabledFilter = dataModel.getFilters().get(2);
+        enabledFilter.getEnabled().set(true);
+        // simulates the UI: checkbox-cells bind bidirectionally (using weak references) and add listeners
+        for (Filter filter : dataModel.getFilters()) {
+            new SimpleBooleanProperty().bindBidirectional(filter.getEnabled());
+            filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
+        }
+        dataModel.getSorters().getFirst().getEnabled().set(true);
+        new SimpleBooleanProperty().bindBidirectional(dataModel.getSorters().getFirst().getEnabled());
+        Path projectFile = Path.of("target/testproject-bound-properties.m3uproj");
+
+        ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
+
+        String xml = Files.readString(projectFile);
+        assertThat(xml).contains("<enabled>true</enabled>").contains("<enabled>false</enabled>")
+                .doesNotContain("SimpleBooleanProperty").doesNotContain("WeakReference");
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.getFilters().get(1).getEnabled().get()).isTrue();
+        assertThat(loaded.getFilters().get(2).getEnabled().get()).isFalse();
+        assertThat(loaded.getSorters().getFirst().getEnabled().get()).isTrue();
+        assertThat(enabledFilter).isNotSameAs(loaded.getFilters().get(1));
+        assertThat(disabledFilter.getEnabled().get()).isFalse();
+    }
+
+    @Test
+    void testLegacyEnabledPropertyFormatCanBeLoaded() throws Exception {
+        DataModel dataModel = getDataModel();
+        Path projectFile = Path.of("target/testproject-legacy-enabled.m3uproj");
+        ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
+        String xml = Files.readString(projectFile);
+        assertThat(xml).contains("<enabled>false</enabled>");
+        // older versions serialized the complete SimpleBooleanProperty object
+        String legacyEnabled = """
+                <enabled class="javafx.beans.property.SimpleBooleanProperty">
+                    <value>true</value>
+                    <valid>false</valid>
+                    <name></name>
+                  </enabled>""";
+        Files.writeString(projectFile, xml.replace("<enabled>false</enabled>", legacyEnabled));
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(filter.getEnabled().get()).isTrue());
+        assertThat(loaded.getInputs()).allSatisfy(input -> assertThat(input.getEnabled().get()).isTrue());
+    }
+
+    @Test
+    void testMissingEnabledElementDefaultsToDisabled() throws Exception {
+        DataModel dataModel = getDataModel();
+        Path projectFile = Path.of("target/testproject-without-enabled.m3uproj");
+        ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
+        Files.writeString(projectFile, Files.readString(projectFile).replace("<enabled>false</enabled>", ""));
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(filter.getEnabled()).isNotNull()
+                .extracting(property -> property.get()).isEqualTo(false));
+    }
 }

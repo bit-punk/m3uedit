@@ -100,4 +100,19 @@ class ProjectControllerTest {
         assertThat(label.getText()).isEqualTo("0 entries loaded");
         assertThat(label.getGraphic()).isNull();
     }
+
+    @Test
+    void testTogglingAPluginRecomputesOnce() {
+        DataModel dataModel = DataModelFactory.createDataModel("test");
+        List<Runnable> backgroundTasks = new ArrayList<>();
+        dataModel.setBackgroundExecutor(backgroundTasks::add);
+        dataModel.setFxExecutor(Runnable::run);
+        new ProjectController(dataModel);
+
+        dataModel.getFilters().getFirst().getEnabled().set(true);
+        assertThat(backgroundTasks).hasSize(1);
+
+        dataModel.getSorters().getFirst().getEnabled().set(true);
+        assertThat(backgroundTasks).hasSize(2);
+    }
 }

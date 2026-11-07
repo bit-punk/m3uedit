@@ -4,11 +4,14 @@ import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.security.NoTypePermission;
 import com.thoughtworks.xstream.security.NullPermission;
 import com.thoughtworks.xstream.security.PrimitiveTypePermission;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.*;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
+import org.bitpunk.m3uedit.xstream.BooleanPropertyConverter;
 import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +70,9 @@ public class ProjectPersisterUtil {
         xStream.autodetectAnnotations(true);
         xStream.ignoreUnknownElements();
         xStream.registerConverter(new ObservableListConverter(xStream.getMapper()));
+        // persist only the value of properties like Plugin.enabled, not their listeners and bindings
+        xStream.registerConverter(new BooleanPropertyConverter());
+        xStream.addDefaultImplementation(SimpleBooleanProperty.class, BooleanProperty.class);
         // define class-aliases to not expose package-names in the xml-file
         xStream.alias("Project", DataModel.class);
         xStream.alias("Entry", Entry.class);

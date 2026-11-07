@@ -6,8 +6,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.bitpunk.m3uedit.control.PluginEnabledTableCell;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
@@ -38,28 +38,14 @@ public class SorterController extends AbstractController implements ModelAware {
         super(FXML_SORTER);
     }
 
-    private TableCell<Sorter, Boolean> createCheckBoxTableCell(TableColumn<Sorter, Boolean> param) {
-        return new CheckBoxTableCell<>() {
-            @Override
-            public void updateItem(Boolean item, boolean empty) {
-                super.updateItem(item, empty);
-                int index = getIndex();
-                if (empty || index < 0 || index >= getTableView().getItems().size()) {
-                    setGraphic(null);
-                } else {
-                    final CheckBox checkBox = new CheckBox();
-                    Sorter sorter = getTableView().getItems().get(index);
-                    checkBox.selectedProperty().bindBidirectional(sorter.getEnabled());
-                    sorter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.sortFilteredEntries());
-                    setGraphic(checkBox);
-                }
-            }
-        };
-    }
 
     private void initAvailableSorterListView() {
         availableSortersTableView.getItems().addAll(dataModel.getSorters());
-        selectedColumn.setCellFactory(this::createCheckBoxTableCell);
+        selectedColumn.setCellFactory(column -> new PluginEnabledTableCell<>());
+        // re-compute the entries once per change of a sorter, independent of the (reused) table cells
+        for (Sorter sorter : dataModel.getSorters()) {
+            sorter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.sortFilteredEntries());
+        }
         selectAllEntriesCheckBox.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> changeAllEntries(newValue));
         addIndexColumn();

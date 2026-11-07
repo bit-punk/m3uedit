@@ -6,8 +6,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.bitpunk.m3uedit.control.PluginEnabledTableCell;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
@@ -37,28 +37,14 @@ public class FilterController extends AbstractController implements ModelAware {
         super(FXML_FILTER);
     }
 
-    private TableCell<Filter, Boolean> getFilterTableCell(TableColumn<Filter, Boolean> param) {
-        return new CheckBoxTableCell<>() {
-            @Override
-            public void updateItem(Boolean item, boolean empty) {
-                super.updateItem(item, empty);
-                int index = getIndex();
-                if (empty || index < 0 || index >= getTableView().getItems().size()) {
-                    setGraphic(null);
-                } else {
-                    final CheckBox checkBox = new CheckBox();
-                    Filter filter = getTableView().getItems().get(index);
-                    checkBox.selectedProperty().bindBidirectional(filter.getEnabled());     // bind CheckBox with enabled-Property of Filter
-                    filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
-                    setGraphic(checkBox);
-                }
-            }
-        };
-    }
 
     private void initAvailableFilterTableView() {
         availableFiltersTableView.getItems().addAll(dataModel.getFilters());
-        selectedColumn.setCellFactory(this::getFilterTableCell);
+        selectedColumn.setCellFactory(column -> new PluginEnabledTableCell<>());
+        // re-compute the entries once per change of a filter, independent of the (reused) table cells
+        for (Filter filter : dataModel.getFilters()) {
+            filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
+        }
         selectedColumn.setCellValueFactory(cellData -> cellData.getValue().getEnabled());
         selectAllEntriesCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> changeAllEntries(newValue));
         addIndexColumn();
