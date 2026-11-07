@@ -43,13 +43,12 @@ public class ProjectPersisterUtil {
     }
 
     /**
-     * Open a file dialog and load a project from the selected file.
+     * Opens a file dialog to choose a project-file.
      *
-     * @return The loaded DataModel object, or null if the project could not be loaded.
+     * @return the selected file, or null if the dialog was cancelled
      */
-    public static DataModel openFileDialogAndLoadProject() {
-        Path projectFilePath = DialogUtil.getOpenFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
-        return loadProject(projectFilePath);
+    public static Path openProjectFileDialog() {
+        return DialogUtil.getOpenFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
     }
 
     public static DataModel loadProject(Path projectFilePath) {
@@ -70,6 +69,7 @@ public class ProjectPersisterUtil {
             log.error("DataModel loaded has an empty name: {}", dataModel);
             return null;
         }
+        dataModel.setProjectFile(projectFilePath.toAbsolutePath());
         return dataModel;
     }
 
@@ -148,7 +148,18 @@ public class ProjectPersisterUtil {
     }
 
     /**
-     * Opens a save-dialog and saves the project to the selected file.
+     * Saves the project to the file it has been loaded from or saved to before.
+     * Opens a save-dialog for a new project.
+     */
+    public static SaveResult saveProject(DataModel dataModel) {
+        if (dataModel.getProjectFile() == null) {
+            return openSaveDialogAndSaveProject(dataModel);
+        }
+        return saveProjectTo(dataModel.getProjectFile(), dataModel);
+    }
+
+    /**
+     * Opens a save-dialog and saves the project to the selected file ("save as").
      */
     public static SaveResult openSaveDialogAndSaveProject(DataModel dataModel) {
         log.debug("Saving the Project");
@@ -156,7 +167,15 @@ public class ProjectPersisterUtil {
         if (saveFilePath == null) {
             return SaveResult.CANCELLED;
         }
-        return saveProjectFile(saveFilePath.toString(), dataModel) ? SaveResult.SAVED : SaveResult.FAILED;
+        return saveProjectTo(saveFilePath, dataModel);
+    }
+
+    private static SaveResult saveProjectTo(Path projectFile, DataModel dataModel) {
+        if (!saveProjectFile(projectFile.toString(), dataModel)) {
+            return SaveResult.FAILED;
+        }
+        dataModel.setProjectFile(projectFile.toAbsolutePath());
+        return SaveResult.SAVED;
     }
 
     /**

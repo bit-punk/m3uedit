@@ -21,6 +21,7 @@ import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -79,6 +80,12 @@ public class DataModel {
     private transient ObservableList<Entry> filteredEntryList;
     @ToString.Exclude
     private transient ObservableList<Entry> sortedEntryList;
+
+    /**
+     * The file this project has been loaded from or saved to, null for a new project.
+     */
+    @ToString.Exclude
+    private transient Path projectFile;
 
     /**
      * Executes the (potentially long-running) re-computation of the entry-lists.

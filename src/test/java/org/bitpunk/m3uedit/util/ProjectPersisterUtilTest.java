@@ -427,4 +427,27 @@ class ProjectPersisterUtilTest {
         assertThat(((FileInput) loaded.getInputs().getFirst()).getSource()).isEqualTo("/tmp/a.m3u");
         assertThat(loaded.getInputs().getFirst().getEnabled().get()).isTrue();
     }
+
+    @Test
+    void testLoadedProjectRemembersItsFileAndIsSavedThereAgain(@TempDir Path tempDir) throws Exception {
+        Path projectFile = tempDir.resolve("remember.m3uproj");
+        assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), getDataModel())).isTrue();
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+        assertThat(loaded.getProjectFile()).isEqualTo(projectFile.toAbsolutePath());
+
+        loaded.setName("renamed");
+        assertThat(ProjectPersisterUtil.saveProject(loaded)).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(Files.readString(projectFile)).contains("<name>renamed</name>");
+        // the project-file itself is not part of the xml
+        assertThat(Files.readString(projectFile)).doesNotContain("projectFile");
+    }
+
+    @Test
+    void testFailingSaveReportsFailed(@TempDir Path tempDir) {
+        DataModel dataModel = getDataModel();
+        dataModel.setProjectFile(tempDir.resolve("missing-directory").resolve("project.m3uproj"));
+
+        assertThat(ProjectPersisterUtil.saveProject(dataModel)).isEqualTo(ProjectPersisterUtil.SaveResult.FAILED);
+    }
 }
