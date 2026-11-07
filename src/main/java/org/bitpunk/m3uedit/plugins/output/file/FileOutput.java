@@ -11,6 +11,7 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +19,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,7 +43,8 @@ public class FileOutput extends AbstractPlugin implements Output {
             try (OutputStream outputStream = new FileOutputStream(Path.of(output).toFile())) {
                 writer.write(playlist, outputStream);
             } catch (IOException e) {
-                throw new UncheckedIOException("Error writing playlist to " + output, e);
+                throw new OutputException("The playlist could not be written to %s: %s".formatted(
+                        Path.of(output), e.getMessage()), e);
             }
         }
     }

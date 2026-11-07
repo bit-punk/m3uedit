@@ -131,8 +131,7 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
                 return inputLine.trim().equalsIgnoreCase("#EXTM3U");
             }
         } catch (IOException e) {
-            //Handle Exception
-            e.printStackTrace();
+            log.warn("Could not read playlist from {}: {}", playListUrl, e.getMessage());
         }
         return false;
     }

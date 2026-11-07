@@ -9,6 +9,7 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.bitpunk.m3uedit.plugins.sftp.RecentSftpServers;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
 import org.bitpunk.m3uedit.plugins.sftp.SftpConnectionDialogController;
@@ -115,7 +116,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 String contextDetails = buildSftpContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SFTP transfer failed with error code {} ({}): {} | Context: {}",
                         e.id, getSftpErrorName(e.id), e.getMessage(), contextDetails, e);
-                throw new RuntimeException(e);
+                throw new OutputException(describeFailure(e), e);
             } catch (JSchException e) {
                 if (SftpClient.isAuthenticationFailure(e)) {
                     // ask again on the next attempt instead of retrying a wrong password
@@ -124,7 +125,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 String contextDetails = buildJschContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SSH/JSch session error during SFTP output: {} | Context: {}",
                         e.getMessage(), contextDetails, e);
-                throw new RuntimeException(e);
+                throw new OutputException(describeFailure(e), e);
             }
         }
     }
@@ -358,12 +359,19 @@ public class SftpOutput extends AbstractPlugin implements Output {
         sftpTargetDialogController.showAndWait().ifPresent(uri -> sftpConnection = uri);
     }
 
+    private String describeFailure(Exception e) {
+        return "Upload to %s@%s:%d failed. %s".formatted(sftpConnection.getUserName(), sftpConnection.getHostName(),
+                sftpConnection.getPort(), SftpClient.describeError(e));
+    }
+
     @Override
     public URI getOutput() {
         try {
             return sftpConnection != null ? sftpConnection.toURI() : null;
         } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+            // shown in the output table, must not fail
+            log.warn("Invalid SFTP connection data: {}", e.getMessage());
+            return null;
         }
     }
 }

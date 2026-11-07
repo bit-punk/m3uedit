@@ -4,6 +4,8 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -376,5 +378,50 @@ class DataModelTest {
         created.getFilters().getFirst().getEnabled().set(true);
 
         assertThat(created.isChanged()).isTrue();
+    }
+
+    private static Output output(String name, List<List<Entry>> written, RuntimeException failure) {
+        return new FileOutput() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public void write(List<Entry> playlist) {
+                if (failure != null) {
+                    throw failure;
+                }
+                written.add(List.copyOf(playlist));
+            }
+        };
+    }
+
+    @Test
+    void testFailingOutputIsReportedAndRemainingOutputsAreWritten() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+        List<List<Entry>> written = new ArrayList<>();
+        dataModel.getOutputs().addAll(
+                output("broken", written, new RuntimeException(new java.io.IOException("disk full"))),
+                output("ok", written, null));
+
+        assertThat(dataModel.saveEntries()).isFalse();
+
+        assertThat(written).singleElement().satisfies(playlist -> assertThat(names(playlist)).containsExactly("a"));
+        assertThat(errors).singleElement().asString()
+                .contains("could not be written to all outputs")
+                .contains("broken: disk full");
+    }
+
+    @Test
+    void testSavingToAllOutputsReportsNoError() {
+        List<List<Entry>> written = new ArrayList<>();
+        dataModel.getOutputs().addAll(output("first", written, null), output("second", written, null));
+
+        assertThat(dataModel.saveEntries()).isTrue();
+
+        assertThat(written).hasSize(2);
+        assertThat(errors).isEmpty();
     }
 }

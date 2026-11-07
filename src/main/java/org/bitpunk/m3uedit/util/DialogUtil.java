@@ -85,6 +85,17 @@ public class DialogUtil {
         return result.isPresent() && result.get() == ButtonType.OK;
     }
 
+    /**
+     * Shows an error not handled anywhere else.
+     */
+    public static void showUnexpectedError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText("An unexpected error occurred");
+        alert.setContentText(message + "\n\nSee the log for details.");
+        alert.showAndWait();
+    }
+
     public static void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");

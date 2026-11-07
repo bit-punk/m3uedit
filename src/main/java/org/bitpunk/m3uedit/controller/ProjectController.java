@@ -82,7 +82,7 @@ public class ProjectController extends AbstractController implements Initializab
     private static void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
-        alert.setHeaderText("Error loading the playlist");
+        alert.setHeaderText(null);
         alert.setContentText(message);
         alert.show();   // not blocking, the error is reported asynchronously
     }

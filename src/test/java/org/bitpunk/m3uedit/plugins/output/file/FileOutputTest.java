@@ -1,12 +1,12 @@
 package org.bitpunk.m3uedit.plugins.output.file;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -72,7 +72,7 @@ class FileOutputTest {
     }
 
     @Test
-    void testWriteToNonExistingDirectoryThrowsUncheckedIOException(@TempDir Path tempDir) {
+    void testWriteToNonExistingDirectoryThrowsOutputException(@TempDir Path tempDir) {
         FileOutput fileOutput = new FileOutput();
         fileOutput.setOutput(tempDir.resolve("missing").resolve("output.m3u").toUri());
         Entry entry = new Entry();
@@ -80,6 +80,7 @@ class FileOutputTest {
         entry.setChannelUri("http://example.com/stream.ts");
         entry.setVlcOpts(Map.of());
 
-        assertThatThrownBy(() -> fileOutput.write(List.of(entry))).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> fileOutput.write(List.of(entry))).isInstanceOf(OutputException.class)
+                .hasMessageContaining("could not be written to").hasMessageContaining("output.m3u");
     }
 }

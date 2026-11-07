@@ -18,6 +18,7 @@ import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -351,18 +352,34 @@ public class DataModel {
                 loadedEntries.addAll(currentInput.read());
             } catch (Exception e) {
                 log.error("Error reading input {} ({})", currentInput.getName(), currentInput.getSource(), e);
-                errors.add("%s (%s): %s".formatted(currentInput.getName(), currentInput.getSource(), e.getMessage()));
+                errors.add("%s (%s): %s".formatted(currentInput.getName(), currentInput.getSource(),
+                        UncaughtExceptionHandler.describe(e)));
             }
         }
         log.debug("{} raw entries loaded", loadedEntries.size());
         return loadedEntries;
     }
 
-    public void saveEntries() {
-        outputs.forEach(output -> {
-            log.debug("saving {} to output {}", sortedEntryList.size(), output);
-            output.write(sortedEntryList);
-        });
+    /**
+     * Writes the sorted entries to all outputs. Outputs failing are reported, the remaining ones are written anyway.
+     *
+     * @return true if all outputs have been written
+     */
+    public boolean saveEntries() {
+        List<String> errors = new ArrayList<>();
+        for (Output output : outputs) {
+            log.debug("saving {} entries to output {}", sortedEntryList.size(), output.getName());
+            try {
+                output.write(sortedEntryList);
+            } catch (RuntimeException e) {
+                log.error("Error writing to output {} ({})", output.getName(), output.getOutput(), e);
+                errors.add("%s: %s".formatted(output.getName(), UncaughtExceptionHandler.describe(e)));
+            }
+        }
+        if (!errors.isEmpty()) {
+            reportError("The playlist could not be written to all outputs:\n" + String.join("\n", errors));
+        }
+        return errors.isEmpty();
     }
 
     private static List<Entry> filterEntries(List<Filter> filters, List<Entry> entries) {
