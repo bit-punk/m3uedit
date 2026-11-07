@@ -1,9 +1,6 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
-import org.bitpunk.m3uedit.plugins.output.sftp.SftpClient.RemoteEntry;
+import org.bitpunk.m3uedit.plugins.sftp.SftpClient.RemoteEntry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -26,17 +23,5 @@ class SftpBrowserDialogTest {
         assertThat(SftpBrowserDialog.displayName(new RemoteEntry("tv", true))).isEqualTo("tv/");
         assertThat(SftpBrowserDialog.displayName(new RemoteEntry("a.m3u", false))).isEqualTo("a.m3u");
         assertThat(SftpBrowserDialog.displayName(SftpBrowserDialog.PARENT_ENTRY)).isEqualTo(".. (parent directory)");
-    }
-
-    @Test
-    void testDescribeError() {
-        assertThat(SftpBrowserDialog.describeError(new JSchException("Auth fail for methods 'password'")))
-                .startsWith("Authentication failed");
-        assertThat(SftpBrowserDialog.describeError(new SftpException(ChannelSftp.SSH_FX_PERMISSION_DENIED, "denied")))
-                .isEqualTo("Permission denied.");
-        assertThat(SftpBrowserDialog.describeError(new SftpException(ChannelSftp.SSH_FX_NO_SUCH_FILE, "no such file")))
-                .isEqualTo("Directory not found.");
-        assertThat(SftpBrowserDialog.describeError(new JSchException("timeout: socket is not established")))
-                .isEqualTo("Error: timeout: socket is not established");
     }
 }

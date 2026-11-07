@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -7,7 +7,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.UserInfo;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -121,6 +121,27 @@ public final class SftpClient implements AutoCloseable {
         String trimmed = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         int lastSlash = trimmed.lastIndexOf('/');
         return lastSlash <= 0 ? "/" : trimmed.substring(0, lastSlash);
+    }
+
+    public static boolean isAuthenticationFailure(JSchException e) {
+        return e.getMessage() != null && e.getMessage().startsWith("Auth fail");
+    }
+
+    /**
+     * @return a short, user readable description of a connection or transfer error
+     */
+    public static String describeError(Throwable error) {
+        if (error instanceof JSchException jschException && isAuthenticationFailure(jschException)) {
+            return "Authentication failed: wrong username or password.";
+        }
+        if (error instanceof SftpException sftpException) {
+            return switch (sftpException.id) {
+                case ChannelSftp.SSH_FX_PERMISSION_DENIED -> "Permission denied.";
+                case ChannelSftp.SSH_FX_NO_SUCH_FILE -> "Directory not found.";
+                default -> "SFTP error: " + sftpException.getMessage();
+            };
+        }
+        return "Error: " + error.getMessage();
     }
 
     static String getKnownHostsPath() {

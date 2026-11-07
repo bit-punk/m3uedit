@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
 import com.jcraft.jsch.UserInfo;
 import javafx.application.Platform;
@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,22 @@ public class SftpUserInteraction implements UserInfo {
             }
             return dontAskAgain.isSelected() ? OverwriteDecision.OVERWRITE_ALWAYS : OverwriteDecision.OVERWRITE;
         });
+    }
+
+    /**
+     * The password is not persisted in the project file, so it has to be requested once per session.
+     * An entered password is stored in the connection (in memory only).
+     *
+     * @return true if a password is available
+     */
+    public boolean ensurePassword(SftpConnection connection) {
+        String password = connection.getPassword();
+        if (password != null && !password.isEmpty()) {
+            return true;
+        }
+        Optional<String> entered = requestPassword(connection.getUserName(), connection.getHostName(), connection.getPort());
+        entered.ifPresent(connection::setPassword);
+        return entered.isPresent();
     }
 
     /**

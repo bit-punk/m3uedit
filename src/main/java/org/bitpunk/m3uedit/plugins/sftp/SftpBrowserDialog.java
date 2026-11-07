@@ -1,11 +1,13 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
-import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -19,8 +21,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
-import org.bitpunk.m3uedit.plugins.output.sftp.SftpClient.RemoteEntry;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.SftpClient.RemoteEntry;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +54,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
 
     private final SftpConnection connection;
     private final SftpUserInteraction userInteraction;
+    private final boolean fileRequired;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "sftp-browser");
         thread.setDaemon(true);
@@ -69,10 +72,13 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
     /**
      * @param connection     connection data including the password
      * @param startDirectory directory to show first; falls back to the home directory if it does not exist
+     * @param fileRequired   true if an existing file has to be selected (input), false if a directory is enough (output)
      */
-    public SftpBrowserDialog(SftpConnection connection, String startDirectory, SftpUserInteraction userInteraction) {
+    public SftpBrowserDialog(SftpConnection connection, String startDirectory, SftpUserInteraction userInteraction,
+                             boolean fileRequired) {
         this.connection = connection;
         this.userInteraction = userInteraction;
+        this.fileRequired = fileRequired;
         initModality(Modality.APPLICATION_MODAL);
         setTitle("Browse SFTP Server");
         setHeaderText(connection.getUserName() + "@" + connection.getHostName() + ":" + connection.getPort());
@@ -89,7 +95,14 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
     private void initContent() {
         ButtonType selectButtonType = new ButtonType("Select", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(selectButtonType, ButtonType.CANCEL);
-        getDialogPane().lookupButton(selectButtonType).disableProperty().bind(loading.or(connected.not()));
+        Button selectButton = (Button) getDialogPane().lookupButton(selectButtonType);
+        BooleanBinding noFileSelected = Bindings.createBooleanBinding(() -> {
+            RemoteEntry selected = listView.getSelectionModel().getSelectedItem();
+            return selected == null || selected.directory();
+        }, listView.getSelectionModel().selectedItemProperty());
+        selectButton.disableProperty().bind(fileRequired
+                ? loading.or(connected.not()).or(noFileSelected)
+                : loading.or(connected.not()));
 
         progressIndicator.setPrefSize(16, 16);
         progressIndicator.visibleProperty().bind(loading);
@@ -108,17 +121,19 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         });
         listView.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                openSelectedDirectory();
+                openSelectedEntry(selectButton);
             }
         });
         listView.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                openSelectedDirectory();
+                openSelectedEntry(selectButton);
                 event.consume();
             }
         });
 
-        Label hint = new Label("Double-click opens a directory. Select a file to overwrite it.");
+        Label hint = new Label(fileRequired
+                ? "Double-click opens a directory or selects a playlist file."
+                : "Double-click opens a directory. Select a file to overwrite it.");
         hint.setStyle("-fx-opacity: 0.7;");
         HBox statusBox = new HBox(5, progressIndicator, statusLabel);
         VBox content = new VBox(8, pathLabel, listView, hint, statusBox);
@@ -153,9 +168,16 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         return result;
     }
 
-    private void openSelectedDirectory() {
+    /**
+     * Opens the selected directory; a selected file is taken over directly (like pressing "Select").
+     */
+    private void openSelectedEntry(Button selectButton) {
         RemoteEntry selected = listView.getSelectionModel().getSelectedItem();
-        if (selected == null || !selected.directory() || loading.get() || currentDirectory == null) {
+        if (selected == null || loading.get() || currentDirectory == null) {
+            return;
+        }
+        if (!selected.directory()) {
+            selectButton.fire();
             return;
         }
         String target = selected == PARENT_ENTRY
@@ -201,7 +223,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         task.setOnFailed(event -> {
             Throwable error = task.getException();
             log.warn("SFTP browser: {}", error.getMessage(), error);
-            statusLabel.setText(describeError(error));
+            statusLabel.setText(SftpClient.describeError(error));
             connected.set(client != null);
             loading.set(false);
         });
@@ -210,19 +232,6 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         executor.submit(task);
     }
 
-    static String describeError(Throwable error) {
-        if (error instanceof JSchException jschException && SftpOutput.isAuthenticationFailure(jschException)) {
-            return "Authentication failed: wrong username or password.";
-        }
-        if (error instanceof SftpException sftpException) {
-            return switch (sftpException.id) {
-                case com.jcraft.jsch.ChannelSftp.SSH_FX_PERMISSION_DENIED -> "Permission denied.";
-                case com.jcraft.jsch.ChannelSftp.SSH_FX_NO_SUCH_FILE -> "Directory not found.";
-                default -> "SFTP error: " + sftpException.getMessage();
-            };
-        }
-        return "Error: " + error.getMessage();
-    }
 
     private void shutdown() {
         executor.submit(() -> {

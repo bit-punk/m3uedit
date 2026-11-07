@@ -1,10 +1,10 @@
-package org.bitpunk.m3uedit.plugins.output.sftp;
+package org.bitpunk.m3uedit.plugins.sftp;
 
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.RecentSftpServer;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.RecentSftpServersConfig;
-import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
+import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServersConfig;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
