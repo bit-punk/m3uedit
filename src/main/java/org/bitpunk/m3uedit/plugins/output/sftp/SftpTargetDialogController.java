@@ -4,6 +4,8 @@ import jakarta.validation.ConstraintViolation;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.beans.binding.Bindings;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.PasswordField;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -45,6 +48,9 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private PasswordField passwordField;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private Button browseButton;
     @Getter
     private BooleanBinding inputsFull;
 
@@ -133,6 +139,53 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     public void initialize(URL url, ResourceBundle resourceBundle) {
         log.debug("initialize()");
         initializeBinding();
+        initializeBrowseButton();
+    }
+
+    private void initializeBrowseButton() {
+        browseButton.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> isBlank(hostnameTextField.getText()) || isBlank(usernameTextField.getText())
+                        || parsePort(hostPortTextField.getText()) <= 0,
+                hostnameTextField.textProperty(), usernameTextField.textProperty(), hostPortTextField.textProperty()));
+    }
+
+    private static boolean isBlank(String text) {
+        return text == null || text.isBlank();
+    }
+
+    /**
+     * Opens the {@link SftpBrowserDialog} with the entered connection data and takes over the chosen
+     * directory (and file name, if an existing file was selected).
+     */
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private void handleBrowse() {
+        SftpConnection connection = createSftpConnectionFromInput();
+        SftpUserInteraction userInteraction = new SftpUserInteraction();
+        if (isBlank(connection.getPassword())) {
+            Optional<String> password = userInteraction.requestPassword(
+                    connection.getUserName(), connection.getHostName(), connection.getPort());
+            if (password.isEmpty()) {
+                return;
+            }
+            connection.setPassword(password.get());
+        }
+        String path = hostPathTextField.getText();
+        String startDirectory = path != null && path.startsWith("/") ? path : ".";
+
+        SftpBrowserDialog browserDialog = new SftpBrowserDialog(connection, startDirectory, userInteraction);
+        browserDialog.initOwner(getDialogPane().getScene().getWindow());
+        Optional<SftpBrowserDialog.Selection> selection = browserDialog.showAndWait();
+        if (browserDialog.isConnected() && isBlank(passwordField.getText())) {
+            // the password worked, keep it for this session
+            passwordField.setText(connection.getPassword());
+        }
+        selection.ifPresent(selected -> {
+            hostPathTextField.setText(selected.directory());
+            if (selected.fileName() != null) {
+                fileNameTextField.setText(selected.fileName());
+            }
+        });
     }
 
     private void initializeBinding() {

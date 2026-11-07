@@ -13,7 +13,9 @@
 
             <Label text="Directory:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
             <TextField fx:id="hostPathTextField" text="/" promptText="/path/on/server"
-                       GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="3"/>
+                       GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2"/>
+            <Button fx:id="browseButton" text="Browse…" onAction="#handleBrowse" maxWidth="Infinity"
+                    GridPane.columnIndex="3" GridPane.rowIndex="1"/>
 
             <Label text="Filename:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
             <TextField fx:id="fileNameTextField" promptText="playlist.m3u"

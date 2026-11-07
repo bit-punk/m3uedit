@@ -17,8 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +25,6 @@ import java.util.Optional;
 public class SftpOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
     public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
-    static final int CONNECT_TIMEOUT_MILLIS = 15_000;
     @XStreamOmitField
     private final String name = "SFTP Output";
     @XStreamOmitField
@@ -82,30 +79,24 @@ public class SftpOutput extends AbstractPlugin implements Output {
             ChannelSftp channelSftp = null;
             String targetPath = null;
             int payloadBytes = 0;
-            try {
-                channelSftp = setupJsch(userInteraction);
-                if (channelSftp != null) {
-                    Session jschSession = channelSftp.getSession();
-                    try (SftpSession ignored = new SftpSession(jschSession, channelSftp)) {
-                        channelSftp.connect();
-                        Writer writer = new Writer();
-                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                        writer.write(playlist, outputStream);
-                        byte[] bytes = outputStream.toByteArray();
-                        payloadBytes = bytes.length;
+            try (SftpClient client = SftpClient.connect(sftpConnection, userInteraction)) {
+                channelSftp = client.channel();
+                Writer writer = new Writer();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                writer.write(playlist, outputStream);
+                byte[] bytes = outputStream.toByteArray();
+                payloadBytes = bytes.length;
 
-                        ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                        targetPath = sftpConnection.isLegacyPath()
-                                ? resolveTargetPath(channelSftp, sftpConnection.getPath())
-                                : sftpConnection.getTargetPath();
-                        ensureParentDirectoriesExist(channelSftp, targetPath);
-                        log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
-                                playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
-                                sftpConnection.getPort(), targetPath, sftpConnection.getPath());
-                        channelSftp.put(inputStream, targetPath);
-                        log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
-                    }
-                }
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                targetPath = sftpConnection.isLegacyPath()
+                        ? resolveTargetPath(channelSftp, sftpConnection.getPath())
+                        : sftpConnection.getTargetPath();
+                ensureParentDirectoriesExist(channelSftp, targetPath);
+                log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
+                        playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
+                        sftpConnection.getPort(), targetPath, sftpConnection.getPath());
+                channelSftp.put(inputStream, targetPath);
+                log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
             } catch (SftpException e) {
                 String contextDetails = buildSftpContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SFTP transfer failed with error code {} ({}): {} | Context: {}",
@@ -146,18 +137,6 @@ public class SftpOutput extends AbstractPlugin implements Output {
 
     static boolean isAuthenticationFailure(JSchException e) {
         return e.getMessage() != null && e.getMessage().startsWith("Auth fail");
-    }
-
-    private record SftpSession(Session session, ChannelSftp channel) implements AutoCloseable {
-        @Override
-        public void close() {
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-            if (session != null && session.isConnected()) {
-                session.disconnect();
-            }
-        }
     }
 
     protected String buildSftpContextDetails(ChannelSftp channelSftp, String targetPath, int playlistSize, int payloadBytes) {
@@ -319,31 +298,6 @@ public class SftpOutput extends AbstractPlugin implements Output {
             // Path does not exist or is not a directory; treat as file destination
         }
         return path;
-    }
-
-    /**
-     * Opens the SSH session. Host keys are verified against {@code ~/.ssh/known_hosts}:
-     * unknown hosts must be confirmed by the user (and are then added to the file),
-     * changed host keys are rejected.
-     */
-    protected ChannelSftp setupJsch(UserInfo userInfo) throws JSchException {
-        ChannelSftp channelSftp = null;
-        if (sftpConnection != null) {
-            JSch jsch = new JSch();
-            // set even if the file does not exist yet: JSch creates it once the user accepts a host key
-            jsch.setKnownHosts(getKnownHostsPath());
-            Session jschSession = jsch.getSession(sftpConnection.getUserName(), sftpConnection.getHostName(), sftpConnection.getPort());
-            jschSession.setPassword(sftpConnection.getPassword().getBytes(StandardCharsets.UTF_8));
-            jschSession.setConfig("StrictHostKeyChecking", "ask");
-            jschSession.setUserInfo(userInfo);
-            jschSession.connect(CONNECT_TIMEOUT_MILLIS);
-            channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
-        }
-        return channelSftp;
-    }
-
-    static String getKnownHostsPath() {
-        return Path.of(System.getProperty("user.home"), ".ssh", "known_hosts").toString();
     }
 
     @Override
