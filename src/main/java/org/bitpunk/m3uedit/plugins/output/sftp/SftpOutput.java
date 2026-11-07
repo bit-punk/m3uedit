@@ -26,7 +26,7 @@ import java.util.Optional;
 @Setter
 public class SftpOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
-    public static final String DEFAULT_PLAYLIST_FILENAME = "playlist.m3u";
+    public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
     static final int CONNECT_TIMEOUT_MILLIS = 15_000;
     @XStreamOmitField
     private final String name = "SFTP Output";
@@ -95,7 +95,9 @@ public class SftpOutput extends AbstractPlugin implements Output {
                         payloadBytes = bytes.length;
 
                         ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                        targetPath = resolveTargetPath(channelSftp, sftpConnection.getPath());
+                        targetPath = sftpConnection.isLegacyPath()
+                                ? resolveTargetPath(channelSftp, sftpConnection.getPath())
+                                : sftpConnection.getTargetPath();
                         ensureParentDirectoriesExist(channelSftp, targetPath);
                         log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
                                 playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),

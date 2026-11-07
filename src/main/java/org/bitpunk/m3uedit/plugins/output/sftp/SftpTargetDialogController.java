@@ -38,6 +38,9 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     private TextField hostPathTextField;
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
+    private TextField fileNameTextField;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TextField usernameTextField;
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
@@ -74,7 +77,14 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         }
         hostnameTextField.setText(sftpConnection.getHostName());
         hostPortTextField.setText(String.valueOf(sftpConnection.getPort()));
-        hostPathTextField.setText(sftpConnection.getPath());
+        if (sftpConnection.isLegacyPath()) {
+            String[] directoryAndFile = splitLegacyPath(sftpConnection.getPath());
+            hostPathTextField.setText(directoryAndFile[0]);
+            fileNameTextField.setText(directoryAndFile[1]);
+        } else {
+            hostPathTextField.setText(sftpConnection.getPath());
+            fileNameTextField.setText(sftpConnection.getFileName());
+        }
         usernameTextField.setText(sftpConnection.getUserName());
         passwordField.setText(sftpConnection.getPassword());
     }
@@ -82,11 +92,41 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     private SftpConnection createSftpConnectionFromInput() {
         SftpConnection sftpConnection = new SftpConnection();
         sftpConnection.setHostName(hostnameTextField.getText());
-        sftpConnection.setPort(Integer.parseInt(hostPortTextField.getText()));
+        sftpConnection.setPort(parsePort(hostPortTextField.getText()));
         sftpConnection.setPath(hostPathTextField.getText());
+        sftpConnection.setFileName(fileNameTextField.getText() == null ? "" : fileNameTextField.getText().trim());
         sftpConnection.setUserName(usernameTextField.getText());
         sftpConnection.setPassword(passwordField.getText());
         return sftpConnection;
+    }
+
+    /**
+     * Older project files only contain a single path which may denote a directory or a file.
+     * A last path element with an extension (e.g. "/storage/tv.m3u") is treated as file name.
+     *
+     * @return directory and file name (file name may be empty)
+     */
+    static String[] splitLegacyPath(String path) {
+        if (path == null || path.isEmpty()) {
+            return new String[]{"/", ""};
+        }
+        int lastSlash = path.lastIndexOf('/');
+        String lastElement = path.substring(lastSlash + 1);
+        if (lastSlash < 0 || !lastElement.contains(".")) {
+            return new String[]{path, ""};
+        }
+        return new String[]{lastSlash == 0 ? "/" : path.substring(0, lastSlash), lastElement};
+    }
+
+    /**
+     * @return the port, or -1 for non-numeric input (reported by the validation instead of throwing)
+     */
+    static int parsePort(String text) {
+        try {
+            return Integer.parseInt(text == null ? "" : text.trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     @Override
@@ -102,6 +142,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
                     hostnameTextField.textProperty(),
                     hostPortTextField.textProperty(),
                     hostPathTextField.textProperty(),
+                    fileNameTextField.textProperty(),
                     usernameTextField.textProperty(),
                     passwordField.textProperty()
                 );
@@ -133,6 +174,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
                 case "hostName" -> markFieldInvalid(hostnameTextField, errorMessage);
                 case "port" -> markFieldInvalid(hostPortTextField, errorMessage);
                 case "path" -> markFieldInvalid(hostPathTextField, errorMessage);
+                case "fileName" -> markFieldInvalid(fileNameTextField, errorMessage);
                 case "userName" -> markFieldInvalid(usernameTextField, errorMessage);
                 case "password" -> markFieldInvalid(passwordField, errorMessage);
                 default -> throw new IllegalStateException("Unexpected value: " + fieldName);
@@ -144,6 +186,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         resetTextField(hostnameTextField);
         resetTextField(hostPortTextField);
         resetTextField(hostPathTextField);
+        resetTextField(fileNameTextField);
         resetTextField(usernameTextField);
         resetTextField(passwordField);
     }

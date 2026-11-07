@@ -4,17 +4,28 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Host-URL :" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostnameTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostPortTextField" text="22" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-            <TextField fx:id="hostPathTextField" text="/" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-            <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-            <TextField fx:id="usernameTextField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="2"
+            <Label text="Host:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <TextField fx:id="hostnameTextField" promptText="hostname or IP address"
+                       GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            <Label text="Port:" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+            <TextField fx:id="hostPortTextField" text="22" prefColumnCount="5"
+                       GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+            <Label text="Directory:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <TextField fx:id="hostPathTextField" text="/" promptText="/path/on/server"
+                       GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="3"/>
+
+            <Label text="Filename:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextField fx:id="fileNameTextField" promptText="playlist.m3u"
+                       GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="3"/>
+
+            <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+            <TextField fx:id="usernameTextField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="3"
                        GridPane.fillWidth="false"/>
 
-            <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-            <PasswordField fx:id="passwordField" prefWidth="200" promptText="empty: ask when writing" GridPane.columnIndex="1" GridPane.rowIndex="3"
-                           GridPane.fillWidth="false"/>
+            <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            <PasswordField fx:id="passwordField" prefWidth="200" promptText="empty: ask when writing"
+                           GridPane.columnIndex="1" GridPane.rowIndex="4" GridPane.fillWidth="false"/>
             <columnConstraints>
                 <ColumnConstraints/>
                 <ColumnConstraints hgrow="ALWAYS"/>
