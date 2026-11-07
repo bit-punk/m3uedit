@@ -161,4 +161,67 @@ class SftpOutputTest {
             return answer;
         }
     }
+
+    @Test
+    void testOverwriteNotAskedIfFileDoesNotExist() {
+        SftpOutput sftpOutput = outputWith(createConnection());
+        OverwriteInteraction interaction = new OverwriteInteraction(SftpUserInteraction.OverwriteDecision.CANCEL);
+
+        assertThat(sftpOutput.confirmOverwriteIfExists("/playlists/tv.m3u", null, interaction)).isTrue();
+        assertThat(interaction.calls.get()).isZero();
+    }
+
+    @Test
+    void testOverwriteCancelled() {
+        SftpOutput sftpOutput = outputWith(createConnection());
+        OverwriteInteraction interaction = new OverwriteInteraction(SftpUserInteraction.OverwriteDecision.CANCEL);
+
+        assertThat(sftpOutput.confirmOverwriteIfExists("/playlists/tv.m3u", "Existing file: 10 bytes", interaction)).isFalse();
+        assertThat(interaction.calls.get()).isOne();
+        assertThat(interaction.lastTarget).isEqualTo("user@example.com:22/playlists/tv.m3u");
+        assertThat(sftpOutput.getSftpConnection().isOverwriteWithoutAsking()).isFalse();
+    }
+
+    @Test
+    void testOverwriteOnceKeepsAsking() {
+        SftpOutput sftpOutput = outputWith(createConnection());
+        OverwriteInteraction interaction = new OverwriteInteraction(SftpUserInteraction.OverwriteDecision.OVERWRITE);
+
+        assertThat(sftpOutput.confirmOverwriteIfExists("/playlists/tv.m3u", "Existing file: 10 bytes", interaction)).isTrue();
+        assertThat(sftpOutput.getSftpConnection().isOverwriteWithoutAsking()).isFalse();
+    }
+
+    @Test
+    void testOverwriteAlwaysStopsAsking() {
+        SftpOutput sftpOutput = outputWith(createConnection());
+        OverwriteInteraction interaction = new OverwriteInteraction(SftpUserInteraction.OverwriteDecision.OVERWRITE_ALWAYS);
+
+        assertThat(sftpOutput.confirmOverwriteIfExists("/playlists/tv.m3u", "Existing file: 10 bytes", interaction)).isTrue();
+        assertThat(sftpOutput.getSftpConnection().isOverwriteWithoutAsking()).isTrue();
+        assertThat(sftpOutput.confirmOverwriteIfExists("/playlists/tv.m3u", "Existing file: 10 bytes", interaction)).isTrue();
+        assertThat(interaction.calls.get()).isOne();
+    }
+
+    private static SftpOutput outputWith(SftpConnection connection) {
+        SftpOutput sftpOutput = new SftpOutput();
+        sftpOutput.setSftpConnection(connection);
+        return sftpOutput;
+    }
+
+    private static class OverwriteInteraction extends SftpUserInteraction {
+        private final OverwriteDecision decision;
+        private final AtomicInteger calls = new AtomicInteger();
+        private String lastTarget;
+
+        OverwriteInteraction(OverwriteDecision decision) {
+            this.decision = decision;
+        }
+
+        @Override
+        public OverwriteDecision confirmOverwrite(String target, String existingFileInfo) {
+            calls.incrementAndGet();
+            lastTarget = target;
+            return decision;
+        }
+    }
 }

@@ -8,6 +8,7 @@ import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.PasswordField;
@@ -61,6 +62,9 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private Button removeRecentServerButton;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private CheckBox overwriteWithoutAskingCheckBox;
     @Getter
     private BooleanBinding inputsFull;
     // no field initializer: assigned in initialize(), which runs during the super constructor
@@ -105,6 +109,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         }
         usernameTextField.setText(sftpConnection.getUserName());
         passwordField.setText(sftpConnection.getPassword());
+        overwriteWithoutAskingCheckBox.setSelected(sftpConnection.isOverwriteWithoutAsking());
     }
 
     private SftpConnection createSftpConnectionFromInput() {
@@ -115,6 +120,7 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         sftpConnection.setFileName(fileNameTextField.getText() == null ? "" : fileNameTextField.getText().trim());
         sftpConnection.setUserName(usernameTextField.getText());
         sftpConnection.setPassword(passwordField.getText());
+        sftpConnection.setOverwriteWithoutAsking(overwriteWithoutAskingCheckBox.isSelected());
         return sftpConnection;
     }
 

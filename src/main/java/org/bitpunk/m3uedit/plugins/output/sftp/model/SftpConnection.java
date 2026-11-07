@@ -42,6 +42,10 @@ public class SftpConnection {
     @NotEmpty(message = "Username must not be empty")
     private String userName;
     /**
+     * If false, the user is asked before an existing file on the server is overwritten.
+     */
+    private boolean overwriteWithoutAsking;
+    /**
      * Kept in memory only: never persisted to the project file and never logged.
      * Optional: if empty (e.g. after loading a project) the user is asked for it on the first write.
      */

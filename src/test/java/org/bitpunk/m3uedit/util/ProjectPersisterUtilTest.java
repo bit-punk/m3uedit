@@ -101,6 +101,21 @@ class ProjectPersisterUtilTest {
         assertThat(connection.getPassword()).isNull();
     }
 
+    @Test
+    void testSftpOverwriteFlagIsPersisted() {
+        DataModel dataModel = getDataModel();
+        SftpConnection connection = createSftpConnection("ignored");
+        connection.setOverwriteWithoutAsking(true);
+        ((SftpOutput) dataModel.getOutputs().get(1)).setSftpConnection(connection);
+
+        String projectFileName = "target/testproject-sftp-overwrite.m3uproj";
+        ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
+        SftpConnection loaded = ((SftpOutput) ProjectPersisterUtil.loadProject(Path.of(projectFileName))
+                .getOutputs().get(1)).getSftpConnection();
+
+        assertThat(loaded.isOverwriteWithoutAsking()).isTrue();
+    }
+
     private static SftpConnection createSftpConnection(String password) {
         SftpConnection connection = new SftpConnection();
         connection.setHostName("example.com");

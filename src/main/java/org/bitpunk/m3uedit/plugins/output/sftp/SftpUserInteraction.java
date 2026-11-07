@@ -3,9 +3,14 @@ package org.bitpunk.m3uedit.plugins.output.sftp;
 import com.jcraft.jsch.UserInfo;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.PasswordField;
+import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +26,40 @@ import java.util.function.Supplier;
  */
 public class SftpUserInteraction implements UserInfo {
     private static final Logger log = LoggerFactory.getLogger(SftpUserInteraction.class);
+
+    public enum OverwriteDecision {
+        CANCEL, OVERWRITE, OVERWRITE_ALWAYS
+    }
+
+    /**
+     * Asks whether an existing file on the server may be overwritten.
+     *
+     * @param target           e.g. "root@host:22/storage/tv.m3u"
+     * @param existingFileInfo size / modification date of the existing file
+     */
+    public OverwriteDecision confirmOverwrite(String target, String existingFileInfo) {
+        return callOnFxThread(() -> {
+            ButtonType overwrite = new ButtonType("Overwrite", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            CheckBox dontAskAgain = new CheckBox("Don't ask again for this target");
+            Label message = new Label(target + "\n" + existingFileInfo + "\n\nDo you want to overwrite it?");
+            message.setWrapText(true);
+
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, null, overwrite, cancel);
+            alert.setTitle("SFTP Output");
+            alert.setHeaderText("The playlist already exists on the server");
+            alert.getDialogPane().setContent(new VBox(10, message, dontAskAgain));
+            // never overwrite by accidentally pressing Enter
+            ((Button) alert.getDialogPane().lookupButton(overwrite)).setDefaultButton(false);
+            ((Button) alert.getDialogPane().lookupButton(cancel)).setDefaultButton(true);
+
+            boolean confirmed = alert.showAndWait().filter(overwrite::equals).isPresent();
+            if (!confirmed) {
+                return OverwriteDecision.CANCEL;
+            }
+            return dontAskAgain.isSelected() ? OverwriteDecision.OVERWRITE_ALWAYS : OverwriteDecision.OVERWRITE;
+        });
+    }
 
     /**
      * Asks the user for the SFTP password.

@@ -36,6 +36,9 @@
             <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
             <PasswordField fx:id="passwordField" prefWidth="200" promptText="empty: ask when writing"
                            GridPane.columnIndex="1" GridPane.rowIndex="6" GridPane.fillWidth="false"/>
+
+            <CheckBox fx:id="overwriteWithoutAskingCheckBox" text="Overwrite existing file without asking"
+                      GridPane.columnIndex="1" GridPane.rowIndex="7" GridPane.columnSpan="3"/>
             <columnConstraints>
                 <ColumnConstraints/>
                 <ColumnConstraints hgrow="ALWAYS"/>

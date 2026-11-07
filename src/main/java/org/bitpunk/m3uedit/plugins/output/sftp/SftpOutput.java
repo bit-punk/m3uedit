@@ -17,6 +17,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -92,6 +96,11 @@ public class SftpOutput extends AbstractPlugin implements Output {
                         ? resolveTargetPath(channelSftp, sftpConnection.getPath())
                         : sftpConnection.getTargetPath();
                 ensureParentDirectoriesExist(channelSftp, targetPath);
+                if (!sftpConnection.isOverwriteWithoutAsking()
+                        && !confirmOverwriteIfExists(targetPath, describeExistingFile(channelSftp, targetPath), userInteraction)) {
+                    log.info("Writing to SFTP destination {} skipped: overwriting the existing file was not confirmed", targetPath);
+                    return;
+                }
                 log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
                         playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
                         sftpConnection.getPort(), targetPath, sftpConnection.getPath());
@@ -125,6 +134,46 @@ public class SftpOutput extends AbstractPlugin implements Output {
         } catch (RuntimeException e) {
             log.warn("Could not update list of recently used SFTP servers: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * @return size and modification date of an existing file, or null if there is no file at the path
+     */
+    static String describeExistingFile(ChannelSftp channelSftp, String path) {
+        try {
+            SftpATTRS attrs = channelSftp.stat(path);
+            if (attrs.isDir()) {
+                return null;
+            }
+            String modified = LocalDateTime.ofInstant(Instant.ofEpochSecond(attrs.getMTime()), ZoneId.systemDefault())
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            return "Existing file: " + attrs.getSize() + " bytes, last modified " + modified;
+        } catch (SftpException e) {
+            return null; // does not exist (or cannot be read; then the upload reports the error)
+        }
+    }
+
+    /**
+     * Asks the user before an existing file is overwritten.
+     *
+     * @param existingFileInfo description of the existing file, null if there is none
+     * @return true if the file may be written
+     */
+    protected boolean confirmOverwriteIfExists(String targetPath, String existingFileInfo, SftpUserInteraction userInteraction) {
+        if (existingFileInfo == null || sftpConnection.isOverwriteWithoutAsking()) {
+            return true;
+        }
+        String target = sftpConnection.getUserName() + "@" + sftpConnection.getHostName() + ":"
+                + sftpConnection.getPort() + targetPath;
+        return switch (userInteraction.confirmOverwrite(target, existingFileInfo)) {
+            case CANCEL -> false;
+            case OVERWRITE -> true;
+            case OVERWRITE_ALWAYS -> {
+                log.info("Overwriting {} without asking from now on", target);
+                sftpConnection.setOverwriteWithoutAsking(true);
+                yield true;
+            }
+        };
     }
 
     protected SftpUserInteraction createUserInteraction() {
