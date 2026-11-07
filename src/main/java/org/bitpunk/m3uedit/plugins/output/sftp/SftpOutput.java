@@ -97,6 +97,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
                         sftpConnection.getPort(), targetPath, sftpConnection.getPath());
                 channelSftp.put(inputStream, targetPath);
                 log.info("Successfully wrote playlist to SFTP destination: {}", targetPath);
+                recordRecentServer();
             } catch (SftpException e) {
                 String contextDetails = buildSftpContextDetails(channelSftp, targetPath, playlist.size(), payloadBytes);
                 log.error("SFTP transfer failed with error code {} ({}): {} | Context: {}",
@@ -112,6 +113,17 @@ public class SftpOutput extends AbstractPlugin implements Output {
                         e.getMessage(), contextDetails, e);
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /**
+     * Remembers the target in the "recently used servers" list; failures there must not break the write.
+     */
+    protected void recordRecentServer() {
+        try {
+            new RecentSftpServers().recordSuccess(sftpConnection);
+        } catch (RuntimeException e) {
+            log.warn("Could not update list of recently used SFTP servers: {}", e.getMessage(), e);
         }
     }
 

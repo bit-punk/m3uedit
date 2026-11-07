@@ -8,11 +8,15 @@ import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.util.Callback;
+import javafx.util.StringConverter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
+import org.bitpunk.m3uedit.plugins.output.sftp.model.RecentSftpServer;
 import org.bitpunk.m3uedit.plugins.output.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
 import org.slf4j.Logger;
@@ -51,8 +55,16 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private Button browseButton;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private ComboBox<RecentSftpServer> recentServersComboBox;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private Button removeRecentServerButton;
     @Getter
     private BooleanBinding inputsFull;
+    // no field initializer: assigned in initialize(), which runs during the super constructor
+    private RecentSftpServers recentServers;
 
     public SftpTargetDialogController() {
         super(FXML_PLUGIN_OUTPUT_SFTP, SFTP_DIALOG_TITLE);
@@ -140,6 +152,60 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
         log.debug("initialize()");
         initializeBinding();
         initializeBrowseButton();
+        initializeRecentServers();
+    }
+
+    private void initializeRecentServers() {
+        recentServers = new RecentSftpServers();
+        recentServersComboBox.getItems().setAll(recentServers.getServers());
+        recentServersComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(RecentSftpServer server) {
+                return server == null ? "" : server.displayName();
+            }
+
+            @Override
+            public RecentSftpServer fromString(String text) {
+                return null; // not editable
+            }
+        });
+        recentServersComboBox.setCellFactory(view -> new ListCell<>() {
+            @Override
+            protected void updateItem(RecentSftpServer server, boolean empty) {
+                super.updateItem(server, empty);
+                setText(empty || server == null ? null : server.displayName());
+            }
+        });
+        recentServersComboBox.disableProperty().bind(Bindings.isEmpty(recentServersComboBox.getItems()));
+        recentServersComboBox.setOnAction(event -> applyRecentServer(recentServersComboBox.getValue()));
+        removeRecentServerButton.disableProperty().bind(recentServersComboBox.valueProperty().isNull());
+    }
+
+    /**
+     * Fills the fields with a recently used target. The password is kept only if the server and user stay the same.
+     */
+    private void applyRecentServer(RecentSftpServer server) {
+        if (server == null) {
+            return;
+        }
+        SftpConnection current = createSftpConnectionFromInput();
+        boolean sameLogin = server.getPort() == current.getPort()
+                && server.getHostName().equalsIgnoreCase(Objects.toString(current.getHostName(), ""))
+                && server.getUserName().equals(current.getUserName());
+        SftpConnection selected = server.toConnection();
+        selected.setPassword(sameLogin ? current.getPassword() : null);
+        setSftpConnection(selected);
+    }
+
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private void handleRemoveRecentServer() {
+        RecentSftpServer selected = recentServersComboBox.getValue();
+        if (selected != null) {
+            recentServers.remove(selected);
+            recentServersComboBox.setValue(null);
+            recentServersComboBox.getItems().remove(selected);
+        }
     }
 
     private void initializeBrowseButton() {
@@ -186,6 +252,9 @@ public class SftpTargetDialogController extends AbstractDialogController<SftpCon
                 fileNameTextField.setText(selected.fileName());
             }
         });
+        if (browserDialog.isConnected()) {
+            recentServers.recordSuccess(createSftpConnectionFromInput());
+        }
     }
 
     private void initializeBinding() {
