@@ -5,11 +5,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class FileOutputTest {
 
@@ -42,5 +47,39 @@ class FileOutputTest {
         // When output is null, write should do nothing and not throw
         fileOutput.write(List.of(entry));
         assertThat(targetFile.exists()).isFalse();
+    }
+
+    @Test
+    void testWriteOverwritesConfiguredFileCompletely(@TempDir Path tempDir) throws IOException {
+        Path target = tempDir.resolve("output.m3u");
+        Files.writeString(target, "old content that is much longer than the new playlist ".repeat(20));
+        FileOutput fileOutput = new FileOutput();
+        fileOutput.setOutput(target.toUri());
+
+        Entry entry = new Entry();
+        entry.setDuration("-1");
+        entry.setName("Test Channel");
+        entry.setChannelUri("http://example.com/stream.ts");
+        entry.setVlcOpts(Map.of());
+        fileOutput.write(List.of(entry));
+
+        assertThat(Files.readString(target)).isEqualTo(
+                "#EXTM3U" + System.lineSeparator()
+                        + "#EXTINF:-1,Test Channel" + System.lineSeparator()
+                        + "http://example.com/stream.ts");
+        // the stream has been closed, so the file can be moved/deleted right away (fails on Windows otherwise)
+        Files.delete(target);
+    }
+
+    @Test
+    void testWriteToNonExistingDirectoryThrowsUncheckedIOException(@TempDir Path tempDir) {
+        FileOutput fileOutput = new FileOutput();
+        fileOutput.setOutput(tempDir.resolve("missing").resolve("output.m3u").toUri());
+        Entry entry = new Entry();
+        entry.setName("Test Channel");
+        entry.setChannelUri("http://example.com/stream.ts");
+        entry.setVlcOpts(Map.of());
+
+        assertThatThrownBy(() -> fileOutput.write(List.of(entry))).isInstanceOf(UncheckedIOException.class);
     }
 }

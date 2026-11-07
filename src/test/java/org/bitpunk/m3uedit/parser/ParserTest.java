@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,5 +93,80 @@ class ParserTest {
         assertThat(stream).isNotNull();
         stream.close();
         assertThatExceptionOfType(ParsingException.class).isThrownBy(() -> new Parser().parse(stream));
+    }
+
+    private static List<Entry> parseString(String content) {
+        return new Parser().parse(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "#EXTINF:-1 tvg-name=\"Foo\",Foo, Bar                        | Foo, Bar",
+            "#EXTINF:-1 tvg-name=\"Foo, Bar\" group-title=\"A,B\",Foo Bar | Foo Bar",
+            "#EXTINF:-1, Leading and trailing blanks                       | Leading and trailing blanks",
+            "#EXTINF:-1,Sat.1 Gold, HD, Österreich                         | Sat.1 Gold, HD, Österreich",
+    })
+    void testChannelNameKeepsCommas(String extInf, String expectedName) {
+        List<Entry> entries = parseString("#EXTM3U\n" + extInf + "\nhttp://example.com/stream.ts\n");
+        assertThat(entries).singleElement().extracting(Entry::getName).isEqualTo(expectedName);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "#EXTINF:-1 tvg-name=\"Foo\"",
+            "#EXTINF:-1 tvg-name=\"Foo\",",
+            "#EXTINF:-1 tvg-name=\"Foo, Bar\",   ",
+    })
+    void testMissingChannelNameIsNull(String extInf) {
+        List<Entry> entries = parseString("#EXTM3U\n" + extInf + "\nhttp://example.com/stream.ts\n");
+        assertThat(entries).singleElement().extracting(Entry::getName).isNull();
+    }
+
+    @Test
+    void testBlankLinesAndUnsupportedDirectivesAreIgnored() {
+        List<Entry> entries = parseString("""
+                #EXTM3U
+
+                # a plain comment
+                #EXTINF:-1,First
+                #EXTGRP:News
+
+                http://example.com/first.ts
+
+                #EXTINF:-1,Second
+                #EXTVLCOPT:network-caching=1000
+                http://example.com/second.ts   \r
+                """);
+
+        assertThat(entries).extracting(Entry::getName).containsExactly("First", "Second");
+        assertThat(entries).extracting(Entry::getChannelUri)
+                .containsExactly("http://example.com/first.ts", "http://example.com/second.ts");
+        assertThat(entries.get(1).getVlcOpts()).containsEntry("network-caching", "1000");
+    }
+
+    @Test
+    void testUriWithoutPrecedingExtInfIsRejected() {
+        String content = """
+                #EXTM3U
+                #EXTINF:-1,First
+                http://example.com/first.ts
+                http://example.com/orphan.ts
+                """;
+        assertThatExceptionOfType(ParsingException.class).isThrownBy(() -> parseString(content));
+    }
+
+    @Test
+    void testEntriesDoNotShareVlcOptions() {
+        List<Entry> entries = parseString("""
+                #EXTM3U
+                #EXTINF:-1,First
+                #EXTVLCOPT:network-caching=1000
+                http://example.com/first.ts
+                #EXTINF:-1,Second
+                http://example.com/second.ts
+                """);
+
+        assertThat(entries.get(0).getVlcOpts()).containsOnlyKeys("network-caching");
+        assertThat(entries.get(1).getVlcOpts()).isEmpty();
     }
 }

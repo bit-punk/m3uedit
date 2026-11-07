@@ -10,9 +10,11 @@ import org.bitpunk.m3uedit.util.DialogUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -29,7 +31,13 @@ public class FileInput extends AbstractInput implements Input {
 
     @Override
     public List<Entry> read() throws FileNotFoundException {
-        return readData(new DataInputStream(new FileInputStream(source)));
+        try (InputStream inputStream = new FileInputStream(source)) {
+            return readData(inputStream);
+        } catch (FileNotFoundException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Error reading playlist from " + source, e);
+        }
     }
 
     @Override
