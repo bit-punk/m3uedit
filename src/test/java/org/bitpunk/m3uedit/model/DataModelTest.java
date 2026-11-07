@@ -315,4 +315,66 @@ class DataModelTest {
 
         assertThat(dataModel).isEqualTo(other);
     }
+
+    @Test
+    void testTogglingAPluginMarksTheProjectAsChanged() {
+        TestInput input = new TestInput("in", List.of());
+        dataModel.getInputs().add(input);
+        runAll();
+
+        for (var plugin : List.of(uniqueNameFilter, channelNameSorter, input)) {
+            dataModel.setChanged(false);
+            plugin.getEnabled().set(!plugin.getEnabled().get());
+            assertThat(dataModel.isChanged()).as(plugin.getName()).isTrue();
+        }
+    }
+
+    @Test
+    void testRemovedPluginsDoNotMarkTheProjectAsChanged() {
+        dataModel.getFilters().remove(uniqueNameFilter);
+        dataModel.setChanged(false);
+
+        uniqueNameFilter.getEnabled().set(true);
+
+        assertThat(dataModel.isChanged()).isFalse();
+    }
+
+    @Test
+    void testReplacedListsKeepTheirListeners() {
+        UniqueNameFilter newFilter = new UniqueNameFilter();
+        dataModel.setFilters(javafx.collections.FXCollections.observableArrayList(newFilter));
+        dataModel.setChanged(false);
+
+        // plugins of the old list are no longer observed
+        uniqueNameFilter.getEnabled().set(true);
+        assertThat(dataModel.isChanged()).isFalse();
+
+        newFilter.getEnabled().set(true);
+        assertThat(dataModel.isChanged()).isTrue();
+
+        dataModel.setChanged(false);
+        dataModel.getFilters().add(new UniqueNameFilter());
+        assertThat(dataModel.isChanged()).isTrue();
+    }
+
+    @Test
+    void testReplacedInputListStillTriggersReload() {
+        dataModel.setInputs(javafx.collections.FXCollections.observableArrayList());
+        assertThat(background.size()).isZero();
+
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("a");
+    }
+
+    @Test
+    void testDataModelFactoryKeepsListeners() {
+        DataModel created = DataModelFactory.createDataModel("factory");
+        created.setChanged(false);
+
+        created.getFilters().getFirst().getEnabled().set(true);
+
+        assertThat(created.isChanged()).isTrue();
+    }
 }

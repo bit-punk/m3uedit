@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -67,5 +68,28 @@ public class DialogUtil {
         alert.setContentText("Do you want to close the project without saving the changed data?");
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    /**
+     * Asks whether the application may be closed although the given projects contain unsaved changes.
+     *
+     * @return true if the user confirmed
+     */
+    public static boolean canApplicationBeClosed(List<String> unsavedProjectNames) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Exit");
+        alert.setHeaderText("There are projects with unsaved changes!");
+        alert.setContentText("Unsaved projects: %s%n%nDo you want to exit without saving the changed data?"
+                .formatted(String.join(", ", unsavedProjectNames)));
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    public static void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

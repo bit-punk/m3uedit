@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.model;
 import jakarta.validation.constraints.NotNull;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -12,7 +13,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.plugins.Plugin;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.output.Output;
@@ -61,10 +62,14 @@ public class DataModel {
 
     private boolean changed = true;
 
-    // initialize Observable Lists
+    // initialize Observable Lists; the setters are implemented explicitly to move the listeners to a new list
+    @Setter(AccessLevel.NONE)
     private ObservableList<Input> inputs = FXCollections.observableArrayList();
+    @Setter(AccessLevel.NONE)
     private ObservableList<Filter> filters = FXCollections.observableArrayList();
+    @Setter(AccessLevel.NONE)
     private ObservableList<Sorter> sorters = FXCollections.observableArrayList();
+    @Setter(AccessLevel.NONE)
     private ObservableList<Output> outputs = FXCollections.observableArrayList();
 
     // derived data: transient fields are neither persisted by XStream nor part of equals/hashCode
@@ -108,6 +113,20 @@ public class DataModel {
     @Setter(AccessLevel.NONE)
     private transient boolean applyingResults;
 
+    // listeners are kept, so they can be moved to a new list passed to a setter
+    @ToString.Exclude
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient ListChangeListener<Plugin> pluginListListener;
+    @ToString.Exclude
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient ChangeListener<Boolean> pluginEnabledListener;
+    @ToString.Exclude
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient ListChangeListener<Input> inputsRecomputeListener;
+
     public DataModel(String name) {
         this.name = name;
         initTransientState();
@@ -131,29 +150,67 @@ public class DataModel {
         filteredEntryList = FXCollections.observableArrayList();
         sortedEntryList = FXCollections.observableArrayList();
         busy = new ReadOnlyBooleanWrapper(this, "busy", false);
-        // add Change-Listeners to the persisted lists to set the 'dirty'-flag for the DataModel in case of changes
-        initDirtyFlagBindings();
+        // the 'dirty'-flag is set with each change of a persisted list, or the enabled-state of one of its plugins
+        pluginEnabledListener = (observable, oldValue, newValue) -> changed = true;
+        pluginListListener = this::onPluginListChanged;
+        inputsRecomputeListener = change -> reloadInputs();
+        observePluginList(inputs);
+        observePluginList(filters);
+        observePluginList(sorters);
+        observePluginList(outputs);
         initRecomputeListeners();
     }
 
-    /**
-     * Initializes the changed data bindings for this object.
-     * Whenever any of the persisted lists changes, the 'changed' flag is set to true.
-     */
-    private void initDirtyFlagBindings() {
-        inputs.addListener(this::onChanged);
-        filters.addListener(this::onChanged);
-        sorters.addListener(this::onChanged);
-        outputs.addListener(this::onChanged);
+    private void observePluginList(ObservableList<? extends Plugin> plugins) {
+        plugins.forEach(plugin -> plugin.getEnabled().addListener(pluginEnabledListener));
+        plugins.addListener(pluginListListener);
     }
 
-    private void onChanged(ListChangeListener.Change<? extends NamedItem> c) {
+    private void stopObservingPluginList(ObservableList<? extends Plugin> plugins) {
+        plugins.forEach(plugin -> plugin.getEnabled().removeListener(pluginEnabledListener));
+        plugins.removeListener(pluginListListener);
+    }
+
+    private void onPluginListChanged(ListChangeListener.Change<? extends Plugin> change) {
         changed = true;
+        while (change.next()) {
+            change.getRemoved().forEach(plugin -> plugin.getEnabled().removeListener(pluginEnabledListener));
+            change.getAddedSubList().forEach(plugin -> plugin.getEnabled().addListener(pluginEnabledListener));
+        }
+    }
+
+    /**
+     * Replaces the list of inputs. The entries are not reloaded, call {@link #reloadInputs()} to do so.
+     */
+    public void setInputs(ObservableList<Input> inputs) {
+        stopObservingPluginList(this.inputs);
+        this.inputs.removeListener(inputsRecomputeListener);
+        this.inputs = inputs;
+        observePluginList(this.inputs);
+        this.inputs.addListener(inputsRecomputeListener);
+    }
+
+    public void setFilters(ObservableList<Filter> filters) {
+        stopObservingPluginList(this.filters);
+        this.filters = filters;
+        observePluginList(this.filters);
+    }
+
+    public void setSorters(ObservableList<Sorter> sorters) {
+        stopObservingPluginList(this.sorters);
+        this.sorters = sorters;
+        observePluginList(this.sorters);
+    }
+
+    public void setOutputs(ObservableList<Output> outputs) {
+        stopObservingPluginList(this.outputs);
+        this.outputs = outputs;
+        observePluginList(this.outputs);
     }
 
     private void initRecomputeListeners() {
         // reload entries with each change in the list of Inputs
-        inputs.addListener((ListChangeListener<? super Input>) change -> reloadInputs());
+        inputs.addListener(inputsRecomputeListener);
         // entries removed by the user from the raw / filtered list are propagated to the following lists
         rawEntryList.addListener((ListChangeListener<? super Entry>) change -> {
             if (!applyingResults) {

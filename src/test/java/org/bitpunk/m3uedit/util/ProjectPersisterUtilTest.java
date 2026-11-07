@@ -24,7 +24,9 @@ import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -286,5 +288,42 @@ class ProjectPersisterUtilTest {
         assertThat(loaded).isNotNull();
         assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(filter.getEnabled()).isNotNull()
                 .extracting(property -> property.get()).isEqualTo(false));
+    }
+
+    @Test
+    void testSaveReturnsTrueAndLeavesNoTemporaryFiles(@TempDir Path tempDir) throws Exception {
+        Path projectFile = tempDir.resolve("project.m3uproj");
+
+        assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), getDataModel())).isTrue();
+
+        assertThat(projectFile).exists();
+        try (var files = Files.list(tempDir)) {
+            assertThat(files).containsExactly(projectFile);
+        }
+    }
+
+    @Test
+    void testFailedSaveKeepsExistingProjectFile(@TempDir Path tempDir) throws Exception {
+        Path projectFile = tempDir.resolve("project.m3uproj");
+        Files.writeString(projectFile, "existing project");
+        DataModel dataModel = getDataModel();
+        // a weak reference cannot be serialized on java 17+, like the bindings of the UI
+        dataModel.getFilters().add(new UniqueNameFilter() {
+            @SuppressWarnings("unused")
+            private final Object reference = new WeakReference<>(new Object());
+        });
+
+        assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isFalse();
+
+        assertThat(projectFile).hasContent("existing project");
+        try (var files = Files.list(tempDir)) {
+            assertThat(files).containsExactly(projectFile);
+        }
+    }
+
+    @Test
+    void testLoadingCorruptProjectFileReturnsNull(@TempDir Path tempDir) throws Exception {
+        Path projectFile = Files.writeString(tempDir.resolve("corrupt.m3uproj"), "<Project><name>x</name><inputs");
+        assertThat(ProjectPersisterUtil.loadProject(projectFile)).isNull();
     }
 }

@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.XStreamException;
 import com.thoughtworks.xstream.security.NoTypePermission;
 import com.thoughtworks.xstream.security.NullPermission;
 import com.thoughtworks.xstream.security.PrimitiveTypePermission;
@@ -16,10 +17,13 @@ import org.bitpunk.m3uedit.xstream.ObservableListConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
@@ -45,9 +49,9 @@ public class ProjectPersisterUtil {
         DataModel dataModel = null;
         if (projectFilePath != null) {
             XStream xstream = getXStream();
-            try (FileReader reader = new FileReader(projectFilePath.toFile())) {
+            try (Reader reader = Files.newBufferedReader(projectFilePath, StandardCharsets.UTF_8)) {
                 dataModel = (DataModel) xstream.fromXML(reader);
-            } catch (IOException e) {
+            } catch (IOException | XStreamException e) {
                 log.error("Exception trying to load project-file: {}", projectFilePath, e);
             }
         }
@@ -101,22 +105,65 @@ public class ProjectPersisterUtil {
         return xStream;
     }
 
-    public static void saveProjectFile(String fileName, DataModel dataModel) {
+    /**
+     * Result of saving a project via the save-dialog.
+     */
+    public enum SaveResult {
+        SAVED, CANCELLED, FAILED
+    }
+
+    /**
+     * Saves the project to the given file.
+     * The xml is created completely before writing, and the file is replaced atomically (where supported),
+     * so an existing project-file is not destroyed if saving fails.
+     *
+     * @return true if the project has been saved
+     */
+    public static boolean saveProjectFile(String fileName, DataModel dataModel) {
         log.debug("saving projectFile to: {}", fileName);
-        XStream xstream = getXStream();
-        try (FileWriter writer = new FileWriter(fileName)) {
-            xstream.toXML(dataModel, writer);
-        } catch (IOException e) {
+        Path target = Path.of(fileName).toAbsolutePath();
+        Path tempFile = null;
+        try {
+            String xml = getXStream().toXML(dataModel);
+            tempFile = Files.createTempFile(target.getParent(), target.getFileName().toString(), ".tmp");
+            Files.writeString(tempFile, xml, StandardCharsets.UTF_8);
+            moveReplacing(tempFile, target);
+            return true;
+        } catch (IOException | XStreamException e) {
             log.error("Error persisting dataModel to file: {}", fileName, e);
+            deleteQuietly(tempFile);
+            return false;
         }
     }
 
-    public static void openSaveDialogAndSaveProject(DataModel dataModel) {
+    private static void moveReplacing(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static void deleteQuietly(Path file) {
+        if (file != null) {
+            try {
+                Files.deleteIfExists(file);
+            } catch (IOException e) {
+                log.warn("Could not delete temporary file {}", file, e);
+            }
+        }
+    }
+
+    /**
+     * Opens a save-dialog and saves the project to the selected file.
+     */
+    public static SaveResult openSaveDialogAndSaveProject(DataModel dataModel) {
         log.debug("Saving the Project");
         Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
-        if (saveFilePath != null) {
-            ProjectPersisterUtil.saveProjectFile(saveFilePath.toString(), dataModel);
+        if (saveFilePath == null) {
+            return SaveResult.CANCELLED;
         }
+        return saveProjectFile(saveFilePath.toString(), dataModel) ? SaveResult.SAVED : SaveResult.FAILED;
     }
 
     private static void addAllPluginAliases(XStream xStream) {

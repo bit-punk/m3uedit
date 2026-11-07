@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -24,7 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -40,6 +44,18 @@ public class SceneController implements Initializable {
      * Asks the user whether the project with the given name may be closed despite unsaved changes.
      */
     Predicate<String> closeConfirmation = DialogUtil::canProjectBeClosed;
+    /**
+     * Asks the user whether the application may be closed although the given projects contain unsaved changes.
+     */
+    Predicate<List<String>> exitConfirmation = DialogUtil::canApplicationBeClosed;
+    /**
+     * Saves the given project, usually asking the user for the file to save to.
+     */
+    Function<DataModel, ProjectPersisterUtil.SaveResult> projectSaver = ProjectPersisterUtil::openSaveDialogAndSaveProject;
+    /**
+     * Shows an error message to the user.
+     */
+    Consumer<String> errorReporter = DialogUtil::showError;
     @FXML
     private Label statusLabel;
     @FXML
@@ -58,8 +74,27 @@ public class SceneController implements Initializable {
     private SVGPath aboutIcon;
 
     @FXML
-    private void handleExitAction() {
-        System.exit(0);
+    void handleExitAction() {
+        if (canApplicationBeClosed()) {
+            Platform.exit();
+        }
+    }
+
+    /**
+     * Asks for confirmation if any open project contains unsaved changes.
+     * Used for the exit menu-item as well as for closing the main window.
+     *
+     * @return true if the application may be closed
+     */
+    public boolean canApplicationBeClosed() {
+        List<String> unsavedProjects = tabPane.getTabs().stream()
+                .map(Tab::getContent)
+                .filter(ProjectController.class::isInstance)
+                .map(content -> ((ProjectController) content).getDataModel())
+                .filter(DataModel::isChanged)
+                .map(DataModel::getName)
+                .toList();
+        return unsavedProjects.isEmpty() || exitConfirmation.test(unsavedProjects);
     }
 
     @FXML
@@ -202,12 +237,17 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void handleSaveProjectAction() {
-        ProjectPersisterUtil.openSaveDialogAndSaveProject(getCurrentlySelectedProject().getDataModel());
-    }
-
-    private ProjectController getCurrentlySelectedProject() {
-        return (ProjectController) tabPane.getSelectionModel().getSelectedItem().getContent();
+    void handleSaveProjectAction() {
+        Tab selectedTab = tabPane.getSelectionModel().getSelectedItem();
+        if (selectedTab == null) {
+            return;
+        }
+        DataModel dataModel = ((ProjectController) selectedTab.getContent()).getDataModel();
+        switch (projectSaver.apply(dataModel)) {
+            case SAVED -> dataModel.setChanged(false);  // clear dirty-flag
+            case FAILED -> errorReporter.accept("Project '%s' could not be saved, see the log for details.".formatted(dataModel.getName()));
+            case CANCELLED -> log.debug("saving project '{}' cancelled", dataModel.getName());
+        }
     }
 
     @FXML
