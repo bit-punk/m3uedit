@@ -3,12 +3,22 @@ package org.bitpunk.m3uedit.model;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.bitpunk.m3uedit.NamedItem;
 
 import java.util.Map;
 
-@Data
+/**
+ * A channel of a playlist.
+ * <p>
+ * Entries are compared by identity: a playlist may contain several entries with the same values (e.g. the same
+ * channel from two inputs), and removing or moving one of them must not affect the others.
+ */
+@Getter
+@Setter
+@ToString
 public class Entry implements NamedItem {
     public static final String REGEX_URL = "^(https?|ftp|file|rtsp)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
     public static final String REGEX_NUMERIC = "[+-]?\\d*";
