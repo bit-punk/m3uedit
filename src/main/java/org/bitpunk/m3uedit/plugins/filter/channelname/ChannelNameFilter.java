@@ -1,8 +1,8 @@
 package org.bitpunk.m3uedit.plugins.filter.channelname;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
@@ -15,9 +15,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 
-@Data
+@Getter
+@Setter
 @Slf4j
-@EqualsAndHashCode(callSuper = true)
 public class ChannelNameFilter extends AbstractPlugin implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/channelname/channel_name_filter.yaml";
     public static final String CONFIG_FILE_NAME = "channel_name_filter.yaml";

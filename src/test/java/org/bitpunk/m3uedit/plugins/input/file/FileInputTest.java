@@ -82,23 +82,16 @@ class FileInputTest {
     }
 
     @Test
-    void testEqualsAndHashCode() {
+    void testInputsAreComparedByIdentity() {
         FileInput input1 = new FileInput();
         input1.setSource("/path/to/playlist.m3u");
-
         FileInput input2 = new FileInput();
-        input2.setEnabled(input1.getEnabled());
         input2.setSource("/path/to/playlist.m3u");
+        int hashCode = input1.hashCode();
 
-        FileInput input3 = new FileInput();
-        input3.setEnabled(input1.getEnabled());
-        input3.setSource("/path/to/other.m3u");
-
-        assertThat(input1)
-                .isEqualTo(input2)
-                .hasSameHashCodeAs(input2)
-                .isNotEqualTo(input3)
-                .isNotEqualTo(null)
-                .isNotEqualTo("someString");
+        assertThat(input1).isEqualTo(input1).isNotEqualTo(input2).isNotEqualTo(null);
+        input1.setSource("/other/playlist.m3u");
+        assertThat(input1.hashCode()).isEqualTo(hashCode);
+        assertThat(input1).hasToString("FileInput[File Input]");
     }
 }

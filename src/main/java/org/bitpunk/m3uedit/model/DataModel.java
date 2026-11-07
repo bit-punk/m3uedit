@@ -9,10 +9,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import lombok.AccessLevel;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import org.bitpunk.m3uedit.plugins.Plugin;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
@@ -40,7 +38,8 @@ import java.util.function.Consumer;
  * <p>
  * The methods triggering a re-computation must be called on the JavaFX application thread.
  */
-@Data
+@Getter
+@Setter
 public class DataModel {
     private static final Logger log = LoggerFactory.getLogger(DataModel.class);
     private static final ExecutorService DEFAULT_BACKGROUND_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
@@ -75,62 +74,47 @@ public class DataModel {
     private ObservableList<Output> outputs = FXCollections.observableArrayList();
 
     // derived data: transient fields are neither persisted by XStream nor part of equals/hashCode
-    @ToString.Exclude
     private transient ObservableList<Entry> rawEntryList;
-    @ToString.Exclude
     private transient ObservableList<Entry> filteredEntryList;
-    @ToString.Exclude
     private transient ObservableList<Entry> sortedEntryList;
 
     /**
      * The file this project has been loaded from or saved to, null for a new project.
      */
-    @ToString.Exclude
     private transient Path projectFile;
 
     /**
      * Executes the (potentially long-running) re-computation of the entry-lists.
      */
-    @ToString.Exclude
     private transient Executor backgroundExecutor;
     /**
      * Executes the application of computed results to the observable lists (the JavaFX application thread).
      */
-    @ToString.Exclude
     private transient Executor fxExecutor;
     /**
      * Receives error messages to be shown to the user, e.g. if an input cannot be read.
      */
-    @ToString.Exclude
     private transient Consumer<String> errorHandler;
-
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ReadOnlyBooleanWrapper busy;
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient long generation;
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient Step pendingStep;
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient boolean applyingResults;
 
     // listeners are kept, so they can be moved to a new list passed to a setter
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ListChangeListener<Plugin> pluginListListener;
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ChangeListener<Boolean> pluginEnabledListener;
-    @ToString.Exclude
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ListChangeListener<Input> inputsRecomputeListener;
@@ -404,5 +388,14 @@ public class DataModel {
 
     private Executor getFxExecutorOrDefault() {
         return fxExecutor != null ? fxExecutor : Platform::runLater;
+    }
+
+    /**
+     * Projects are compared by identity, see {@link org.bitpunk.m3uedit.plugins.AbstractPlugin#toString()}.
+     */
+    @Override
+    public String toString() {
+        return "DataModel[name=%s, projectFile=%s, inputs=%d, filters=%d, sorters=%d, outputs=%d]".formatted(
+                name, projectFile, inputs.size(), filters.size(), sorters.size(), outputs.size());
     }
 }

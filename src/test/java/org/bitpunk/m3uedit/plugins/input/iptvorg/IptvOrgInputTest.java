@@ -6,6 +6,7 @@ import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,22 +99,13 @@ class IptvOrgInputTest {
     }
 
     @Test
-    void testEqualsAndHashCodeIgnoreBaseUrl() {
+    void testInputsAreComparedByIdentity() {
         IptvOrgInput input1 = new IptvOrgInput();
-        input1.setSelectedPlaylists(List.of(GERMANY));
-
         IptvOrgInput input2 = new IptvOrgInput();
-        input2.setEnabled(input1.getEnabled());
-        input2.setSelectedPlaylists(List.of(GERMANY));
-        input2.setPlaylistBaseUrl("http://localhost/");
+        int hashCode = input1.hashCode();
 
-        IptvOrgInput input3 = new IptvOrgInput();
-        input3.setEnabled(input1.getEnabled());
-        input3.setSelectedPlaylists(List.of(NEWS));
-
-        assertThat(input1)
-                .isEqualTo(input2)
-                .hasSameHashCodeAs(input2)
-                .isNotEqualTo(input3);
+        assertThat(input1).isEqualTo(input1).isNotEqualTo(input2);
+        input1.setSelectedPlaylists(new ArrayList<>(List.of(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany"))));
+        assertThat(input1.hashCode()).isEqualTo(hashCode);
     }
 }

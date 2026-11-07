@@ -309,13 +309,36 @@ class DataModelTest {
     }
 
     @Test
-    void testDataModelsWithDifferentEntriesAreEqual() {
+    void testDataModelsAreComparedByIdentity() {
         DataModel other = new DataModel("test");
         other.getFilters().add(uniqueNameFilter);
         other.getSorters().add(channelNameSorter);
-        other.getSortedEntryList().add(entry("a"));
 
-        assertThat(dataModel).isEqualTo(other);
+        assertThat(dataModel).isNotEqualTo(other).isEqualTo(dataModel);
+        assertThat(dataModel.hashCode()).isEqualTo(System.identityHashCode(dataModel));
+    }
+
+    @Test
+    void testHashCodeDoesNotChangeWithTheConfiguration() {
+        int hashCode = dataModel.hashCode();
+        int filterHashCode = uniqueNameFilter.hashCode();
+
+        dataModel.setName("renamed");
+        dataModel.getInputs().add(new TestInput("in", List.of()));
+        uniqueNameFilter.getEnabled().set(true);
+
+        assertThat(dataModel.hashCode()).isEqualTo(hashCode);
+        assertThat(uniqueNameFilter.hashCode()).isEqualTo(filterHashCode);
+    }
+
+    @Test
+    void testToStringIsShort() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+
+        assertThat(dataModel).hasToString(
+                "DataModel[name=test, projectFile=null, inputs=1, filters=1, sorters=1, outputs=0]");
+        assertThat(uniqueNameFilter).hasToString("UniqueNameFilter[Unique Name Filter]");
     }
 
     @Test

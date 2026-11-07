@@ -4,7 +4,6 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.model.Entry;
@@ -24,7 +23,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 @Getter
-@EqualsAndHashCode(callSuper = false)
 public class FileOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
     @XStreamOmitField

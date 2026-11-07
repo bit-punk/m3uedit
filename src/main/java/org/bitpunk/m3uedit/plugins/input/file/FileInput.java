@@ -1,8 +1,8 @@
 package org.bitpunk.m3uedit.plugins.input.file;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
@@ -18,8 +18,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 public class FileInput extends AbstractInput implements Input {
     private static final Logger log = LoggerFactory.getLogger(FileInput.class);
 

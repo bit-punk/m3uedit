@@ -137,7 +137,8 @@ class ReachableUrlFilterTest {
     }
 
     @Test
-    void testFilterInstancesWithDifferentConfigsAreEqual() {
-        assertThat(filter).isEqualTo(new ReachableUrlFilter(null));
+    void testFiltersAreComparedByIdentity() {
+        assertThat(filter).isEqualTo(filter).isNotEqualTo(new ReachableUrlFilter(null));
+        assertThat(filter).hasToString("ReachableUrlFilter[Reachable URL Filter]");
     }
 }

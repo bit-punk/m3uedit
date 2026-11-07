@@ -2,8 +2,8 @@ package org.bitpunk.m3uedit.plugins.input.url;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -18,8 +18,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 public class UrlInput extends AbstractInput implements Input {
 
     private static final Logger log = LoggerFactory.getLogger(UrlInput.class);

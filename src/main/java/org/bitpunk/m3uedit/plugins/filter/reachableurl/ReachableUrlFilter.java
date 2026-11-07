@@ -1,9 +1,8 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.Setter;
+import lombok.Getter;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.model.Entry;
@@ -29,8 +28,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
+@Getter
+@Setter
 public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(ReachableUrlFilter.class);
     public static final String RESOURCE_PATH = "plugin/filter/reachableurl/reachable_url_filter.yaml";
@@ -51,8 +50,6 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     private final String description = "Filters for entries with an unreachable URL";
 
     @XStreamOmitField
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
     private transient YamlConfigManager<ReachableUrlFilterConfig> configManager;
 
     public ReachableUrlFilter() {

@@ -58,30 +58,18 @@ class FritzBoxInputTest {
     }
 
     @Test
-    void testEqualsAndHashCode() {
+    void testInputsAreComparedByIdentity() {
         FritzBoxInput input1 = new FritzBoxInput();
-        FritzBoxConnection conn1 = new FritzBoxConnection();
-        conn1.setBaseUrl("http://fritz.box/dvb/m3u/");
-        input1.setFritzBoxConnection(conn1);
-
+        FritzBoxConnection connection = new FritzBoxConnection();
+        connection.setBaseUrl("http://fritz.box/dvb/m3u/");
+        input1.setFritzBoxConnection(connection);
         FritzBoxInput input2 = new FritzBoxInput();
-        input2.setEnabled(input1.getEnabled());
-        FritzBoxConnection conn2 = new FritzBoxConnection();
-        conn2.setBaseUrl("http://fritz.box/dvb/m3u/");
-        input2.setFritzBoxConnection(conn2);
+        input2.setFritzBoxConnection(connection);
+        int hashCode = input1.hashCode();
 
-        FritzBoxInput input3 = new FritzBoxInput();
-        input3.setEnabled(input1.getEnabled());
-        FritzBoxConnection conn3 = new FritzBoxConnection();
-        conn3.setBaseUrl("http://other.box/dvb/m3u/");
-        input3.setFritzBoxConnection(conn3);
-
-        assertThat(input1)
-                .isEqualTo(input2)
-                .hasSameHashCodeAs(input2)
-                .isNotEqualTo(input3)
-                .isNotEqualTo(null)
-                .isNotEqualTo("otherString");
+        assertThat(input1).isEqualTo(input1).isNotEqualTo(input2).isNotEqualTo(null);
+        input1.setSelectedStreamSources(List.of(new StreamSource("tvhd.m3u", "HD streams")));
+        assertThat(input1.hashCode()).isEqualTo(hashCode);
     }
 
     private static final String PLAYLIST = """

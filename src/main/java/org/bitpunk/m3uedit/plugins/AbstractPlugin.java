@@ -2,11 +2,12 @@ package org.bitpunk.m3uedit.plugins;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import lombok.Setter;
 import lombok.AccessLevel;
-import lombok.Data;
 import lombok.Getter;
 
-@Data
+@Getter
+@Setter
 public abstract class AbstractPlugin {
     private String name;
     private String description;
@@ -19,5 +20,15 @@ public abstract class AbstractPlugin {
             enabled = new SimpleBooleanProperty();
         }
         return enabled;
+    }
+
+    /**
+     * Plugins are compared by identity: their fields are mutable (configuration) and there may be several
+     * equally configured instances in one project. Only a short description is returned here, as the configuration
+     * may be large (e.g. lists of urls or playlists).
+     */
+    @Override
+    public String toString() {
+        return "%s[%s]".formatted(getClass().getSimpleName(), getName());
     }
 }
