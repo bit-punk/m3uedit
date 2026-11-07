@@ -65,7 +65,36 @@ class ProjectPersisterUtilTest {
         assertThat(loaded.getFilters()).hasSize(3);
         assertThat(loaded.getSorters()).hasSize(1);
         assertThat(loaded.getOutputs()).hasSize(2);
-        assertThat(loaded.getSortedEntryList()).hasSize(3);
+        // entries are derived data, they are re-loaded from the inputs instead of being persisted
+        assertThat(loaded.getRawEntryList()).isEmpty();
+        assertThat(loaded.getFilteredEntryList()).isEmpty();
+        assertThat(loaded.getSortedEntryList()).isEmpty();
+    }
+
+    @Test
+    void testEntriesAreNotPersisted() throws Exception {
+        DataModel dataModel = getDataModel();
+        dataModel.getRawEntryList().addAll(getEntries());
+        dataModel.getFilteredEntryList().addAll(getEntries());
+        String projectFileName = "target/testproject-without-entries.m3uproj";
+
+        ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
+
+        String xml = Files.readString(Path.of(projectFileName));
+        assertThat(xml).doesNotContain("EntryList").doesNotContain("<Entry>").contains("<inputs");
+    }
+
+    @Test
+    void testLegacyProjectFileWithEntriesCanBeLoaded() throws Exception {
+        String xml = Files.readString(Path.of("src/test/resources/project/testproject.m3uproj"));
+        assertThat(xml).contains("<rawEntryList").contains("<Entry>");
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(Path.of("src/test/resources/project/testproject.m3uproj"));
+
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.getInputs()).isNotEmpty();
+        assertThat(loaded.getRawEntryList()).isEmpty();
+        assertThat(loaded.getSortedEntryList()).isEmpty();
     }
 
     @Test

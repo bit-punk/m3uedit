@@ -197,6 +197,7 @@ public class SceneController implements Initializable {
         if (dataModel != null) {
             dataModel.setChanged(false);    // clear dirty-flag
             addNewProjectTab(dataModel);
+            dataModel.reloadInputs();       // entries are not persisted, so they are loaded from the inputs
         }
     }
 
