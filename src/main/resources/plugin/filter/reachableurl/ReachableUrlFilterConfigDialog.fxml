@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="420">
+    <content>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="Connect-Timeout:" style="-fx-font-weight: bold;"/>
+                <Spinner fx:id="timeoutSpinner" editable="true" prefWidth="120"/>
+                <Label text="ms"/>
+            </HBox>
+            <Label fx:id="hintLabel" wrapText="true"
+                   text="Entries whose host does not accept a connection within this time are filtered out as unreachable."/>
+        </VBox>
+    </content>
+
+    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
+    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+</DialogPane>
