@@ -20,7 +20,8 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: xvfb-run --auto-servernum mvn -B package --file pom.xml
+      # the maven wrapper ensures the same maven version as in local builds
+      run: xvfb-run --auto-servernum ./mvnw -B --no-transfer-progress package
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
 #    - name: Update dependency graph
