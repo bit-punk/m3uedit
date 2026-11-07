@@ -2,9 +2,8 @@ package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.Setter;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -26,8 +25,8 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 @Slf4j
 public class IptvOrgInput extends AbstractInput implements Input {
     public static final String IPTV_ORG_PLAYLIST_BASE_URL = "https://iptv-org.github.io/iptv/";
@@ -39,8 +38,6 @@ public class IptvOrgInput extends AbstractInput implements Input {
     private final String description = "Reads playlists by country, category, language, region or channel from https://github.com/iptv-org/iptv.";
     private List<IptvOrgPlaylist> selectedPlaylists = new ArrayList<>();
     @XStreamOmitField
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
     private String playlistBaseUrl = IPTV_ORG_PLAYLIST_BASE_URL;
 
     @Override

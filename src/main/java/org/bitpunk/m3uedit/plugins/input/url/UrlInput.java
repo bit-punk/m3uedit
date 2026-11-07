@@ -2,8 +2,8 @@ package org.bitpunk.m3uedit.plugins.input.url;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -12,15 +12,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 public class UrlInput extends AbstractInput implements Input {
 
     private static final Logger log = LoggerFactory.getLogger(UrlInput.class);
+    private static final int TIMEOUT_MILLIS = 20_000;
     private List<URL> selectedInputUrls;
     private List<URL> urlList = null;
 
@@ -46,9 +49,14 @@ public class UrlInput extends AbstractInput implements Input {
     private List<Entry> readEntriesFromUrl(URL url) {
         List<Entry> entries = new ArrayList<>();
         try {
-            List<Entry> parsed = new Parser().parse(url.openStream());
-            if (parsed != null) {
-                entries.addAll(parsed);
+            URLConnection connection = url.openConnection();
+            connection.setConnectTimeout(TIMEOUT_MILLIS);
+            connection.setReadTimeout(TIMEOUT_MILLIS);
+            try (InputStream inputStream = connection.getInputStream()) {
+                List<Entry> parsed = new Parser().parse(inputStream);
+                if (parsed != null) {
+                    entries.addAll(parsed);
+                }
             }
         } catch (IOException e) {
             log.error("Error parsing playlist read from url {}", url, e);

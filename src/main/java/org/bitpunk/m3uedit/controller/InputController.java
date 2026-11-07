@@ -80,8 +80,7 @@ public class InputController extends AbstractController implements Initializable
         inputTableView.getColumns().addAll(nameColumn, sourceColumn);
         Runnable onAfterConfigured = () -> {
             if (dataModel != null) {
-                dataModel.getRawEntryList().clear();
-                dataModel.getRawEntryList().addAll(dataModel.loadEntries(dataModel.getInputs()));
+                dataModel.reloadInputs();
             }
         };
         ListControllerUtil.configureOnRowDoubleClick(inputTableView, onAfterConfigured);

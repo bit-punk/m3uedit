@@ -11,7 +11,16 @@ public final class AppConfigPaths {
         // Utility class
     }
 
+    /**
+     * System property to use a different configuration directory than {@code ~/.m3uedit}, e.g. for tests.
+     */
+    public static final String CONFIG_DIR_PROPERTY = "m3uedit.config.dir";
+
     public static Path getBaseDir() {
+        String configDir = System.getProperty(CONFIG_DIR_PROPERTY);
+        if (configDir != null && !configDir.isBlank()) {
+            return Paths.get(configDir);
+        }
         return Paths.get(System.getProperty("user.home"), APP_DIR_NAME);
     }
 

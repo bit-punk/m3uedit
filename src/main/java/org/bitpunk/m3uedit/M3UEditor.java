@@ -5,6 +5,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import org.bitpunk.m3uedit.controller.SceneController;
+import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
 import java.util.List;
 import java.util.Objects;
@@ -18,8 +20,18 @@ public class M3UEditor extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Scene scene = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
+        // show errors not handled anywhere else instead of only printing them to the console
+        new UncaughtExceptionHandler().install();
+        FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
+        Scene scene = loader.load();
+        SceneController sceneController = loader.getController();
         primaryStage.setScene(scene);
+        // ask before closing the main window if there are unsaved projects
+        primaryStage.setOnCloseRequest(event -> {
+            if (!sceneController.canApplicationBeClosed()) {
+                event.consume();
+            }
+        });
         primaryStage.getIcons().addAll(loadAppIcons());
         primaryStage.show();
     }

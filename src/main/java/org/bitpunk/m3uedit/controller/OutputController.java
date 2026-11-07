@@ -94,5 +94,7 @@ public class OutputController extends AbstractController implements Initializabl
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
         outputTableView.setItems(this.dataModel.getOutputs());
+        // writing to the outputs runs in the background, prevent starting it twice
+        saveFileButton.disableProperty().bind(this.dataModel.savingProperty());
     }
 }

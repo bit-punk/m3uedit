@@ -2,11 +2,15 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.application.Platform;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +51,9 @@ class ProjectControllerTest {
     @Test
     void testStatusLabelUpdates() {
         DataModel dataModel = DataModelFactory.createDataModel("test");
+        // compute synchronously
+        dataModel.setBackgroundExecutor(Runnable::run);
+        dataModel.setFxExecutor(Runnable::run);
         ProjectController projectController = new ProjectController(dataModel);
 
         Label label = new Label();
@@ -73,5 +80,39 @@ class ProjectControllerTest {
         // Select sorter tab
         projectController.sorterTab.getTabPane().getSelectionModel().select(projectController.sorterTab);
         assertThat(label.getText()).isEqualTo("1 entries loaded");
+    }
+
+    @Test
+    void testStatusLabelShowsLoadingIndicatorWhileBusy() {
+        DataModel dataModel = DataModelFactory.createDataModel("test");
+        List<Runnable> backgroundTasks = new ArrayList<>();
+        dataModel.setBackgroundExecutor(backgroundTasks::add);
+        dataModel.setFxExecutor(Runnable::run);
+        ProjectController projectController = new ProjectController(dataModel);
+        Label label = new Label();
+        projectController.setStatusLabel(label);
+
+        dataModel.reloadInputs();
+        assertThat(label.getText()).isEqualTo(ProjectController.LOADING_MESSAGE);
+        assertThat(label.getGraphic()).isInstanceOf(ProgressIndicator.class);
+
+        backgroundTasks.forEach(Runnable::run);
+        assertThat(label.getText()).isEqualTo("0 entries loaded");
+        assertThat(label.getGraphic()).isNull();
+    }
+
+    @Test
+    void testTogglingAPluginRecomputesOnce() {
+        DataModel dataModel = DataModelFactory.createDataModel("test");
+        List<Runnable> backgroundTasks = new ArrayList<>();
+        dataModel.setBackgroundExecutor(backgroundTasks::add);
+        dataModel.setFxExecutor(Runnable::run);
+        new ProjectController(dataModel);
+
+        dataModel.getFilters().getFirst().getEnabled().set(true);
+        assertThat(backgroundTasks).hasSize(1);
+
+        dataModel.getSorters().getFirst().getEnabled().set(true);
+        assertThat(backgroundTasks).hasSize(2);
     }
 }

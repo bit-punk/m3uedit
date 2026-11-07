@@ -22,9 +22,14 @@
                             <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                         </accelerator>
                     </MenuItem>
-                    <MenuItem fx:id="saveProjectMenuItem" onAction="#handleSaveProjectAction" text="Save Project">
+                    <MenuItem fx:id="saveProjectMenuItem" disable="true" onAction="#handleSaveProjectAction" text="Save Project">
                         <accelerator>
                             <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                        </accelerator>
+                    </MenuItem>
+                    <MenuItem fx:id="saveProjectAsMenuItem" disable="true" onAction="#handleSaveProjectAsAction" text="Save Project As...">
+                        <accelerator>
+                            <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" />
                         </accelerator>
                     </MenuItem>
                     <MenuItem fx:id="closeProjectMenuItem" disable="true" onAction="#handleCloseProjectAction" text="Close Project">

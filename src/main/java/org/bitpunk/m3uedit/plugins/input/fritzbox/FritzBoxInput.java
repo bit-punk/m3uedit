@@ -2,8 +2,8 @@ package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -11,8 +11,8 @@ import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -21,8 +21,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
+@Getter
+@Setter
 @Slf4j
 public class FritzBoxInput extends AbstractInput implements Input {
     @XStreamOmitField
@@ -31,21 +33,41 @@ public class FritzBoxInput extends AbstractInput implements Input {
     private final String description = "Downloads a playlist from a FritzBox.";
     private List<StreamSource> selectedStreamSources;
     private FritzBoxConnection fritzBoxConnection = null;
-    private static final String BASE_URL = "http://fritz.box//dvb/m3u/";
+    /**
+     * Used if no connection has been configured (e.g. for projects saved by older versions).
+     */
+    static final String DEFAULT_BASE_URL = "http://fritz.box/dvb/m3u/";
+    private static final Duration TIMEOUT = Duration.ofSeconds(20);
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(TIMEOUT)
+            .build();
 
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
         if (selectedStreamSources != null) {
             for (StreamSource selectedStreamSource : selectedStreamSources) {
-                HttpResponse<String> response = readHttpResponse(BASE_URL + selectedStreamSource.getName());
-                log.debug("Status-code: [{}]", response.statusCode());
-                String responseBody = response.body();
-                log.debug("response: [{}]", responseBody);
-                entriesRead.addAll(readData(new ByteArrayInputStream(responseBody.getBytes())));
+                URI uri = resolveStreamSourceUri(selectedStreamSource);
+                try (InputStream playlist = fetch(uri)) {
+                    entriesRead.addAll(readData(playlist));
+                } catch (IOException e) {
+                    log.error("Error reading playlist {} from FritzBox: {}", uri, e.getMessage(), e);
+                }
             }
         }
         return entriesRead;
+    }
+
+    URI resolveStreamSourceUri(StreamSource streamSource) {
+        String baseUrl = fritzBoxConnection != null && isNotBlank(fritzBoxConnection.getBaseUrl())
+                ? fritzBoxConnection.getBaseUrl().strip()
+                : DEFAULT_BASE_URL;
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
+        }
+        return URI.create(baseUrl).resolve(streamSource.getName());
     }
 
     @Override
@@ -67,26 +89,21 @@ public class FritzBoxInput extends AbstractInput implements Input {
         selectedStreamSources = fritzboxInputDialogController.getFritzBoxConnection().getSelectedStreamSources();
     }
 
-    private HttpResponse<String> readHttpResponse(String url) {
-        log.debug("reading HttpResponse for url: {}", url);
-        // @formatter:off
-        HttpClient client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(20))
-                .build();
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(url))
-                .build();
-        // @formatter:on
-        HttpResponse<String> response;
+    private InputStream fetch(URI uri) throws IOException {
+        log.debug("reading playlist from FritzBox: {}", uri);
+        HttpRequest request = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build();
         try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+            HttpResponse<InputStream> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            log.debug("Status-code: [{}]", response.statusCode());
+            if (response.statusCode() != 200) {
+                response.body().close();
+                throw new IOException("Unexpected status-code %d reading %s".formatted(response.statusCode(), uri));
+            }
+            return response.body();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while reading " + uri, e);
         }
-        return response;
     }
 
 }

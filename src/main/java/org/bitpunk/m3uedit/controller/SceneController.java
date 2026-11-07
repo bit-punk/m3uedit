@@ -1,10 +1,9 @@
 package org.bitpunk.m3uedit.controller;
 
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.collections.FXCollections;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.ListChangeListener;
-import javafx.collections.MapChangeListener;
-import javafx.collections.ObservableMap;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -23,8 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
-import java.util.HashMap;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.Predicate;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -35,15 +39,40 @@ public class SceneController implements Initializable {
     private static final String OPEN_PROJECT_ICON_RESOURCE = "/icons/open_project.svg";
     private static final String ABOUT_ICON_RESOURCE = "/icons/about.svg";
 
-    private final ObservableMap<String, DataModel> dataModelMap = FXCollections.observableMap(new HashMap<>());
     /**
      * Asks the user whether the project with the given name may be closed despite unsaved changes.
      */
     Predicate<String> closeConfirmation = DialogUtil::canProjectBeClosed;
+    /**
+     * Asks the user whether the application may be closed although the given projects contain unsaved changes.
+     */
+    Predicate<List<String>> exitConfirmation = DialogUtil::canApplicationBeClosed;
+    /**
+     * Saves the given project to its project-file, asking for a file for new projects ("save").
+     */
+    Function<DataModel, ProjectPersisterUtil.SaveResult> projectSaver = ProjectPersisterUtil::saveProject;
+    /**
+     * Saves the given project, always asking the user for the file to save to ("save as").
+     */
+    Function<DataModel, ProjectPersisterUtil.SaveResult> projectSaverAs = ProjectPersisterUtil::openSaveDialogAndSaveProject;
+    /**
+     * Lets the user choose a project-file to open, returns null if cancelled.
+     */
+    Supplier<Path> projectFileChooser = ProjectPersisterUtil::openProjectFileDialog;
+    /**
+     * Loads a project-file, returns null if it cannot be loaded.
+     */
+    Function<Path, DataModel> projectLoader = ProjectPersisterUtil::loadProject;
+    /**
+     * Shows an error message to the user.
+     */
+    Consumer<String> errorReporter = DialogUtil::showError;
     @FXML
     private Label statusLabel;
     @FXML
     private MenuItem saveProjectMenuItem;
+    @FXML
+    private MenuItem saveProjectAsMenuItem;
     @FXML
     private MenuItem closeProjectMenuItem;
     @FXML
@@ -58,8 +87,27 @@ public class SceneController implements Initializable {
     private SVGPath aboutIcon;
 
     @FXML
-    private void handleExitAction() {
-        System.exit(0);
+    void handleExitAction() {
+        if (canApplicationBeClosed()) {
+            Platform.exit();
+        }
+    }
+
+    /**
+     * Asks for confirmation if any open project contains unsaved changes.
+     * Used for the exit menu-item as well as for closing the main window.
+     *
+     * @return true if the application may be closed
+     */
+    public boolean canApplicationBeClosed() {
+        List<String> unsavedProjects = tabPane.getTabs().stream()
+                .map(Tab::getContent)
+                .filter(ProjectController.class::isInstance)
+                .map(content -> ((ProjectController) content).getDataModel())
+                .filter(DataModel::isChanged)
+                .map(DataModel::getName)
+                .toList();
+        return unsavedProjects.isEmpty() || exitConfirmation.test(unsavedProjects);
     }
 
     @FXML
@@ -114,7 +162,6 @@ public class SceneController implements Initializable {
     }
 
     private ProjectController getProjectController(DataModel dataModel) {
-        dataModelMap.put(dataModel.getName(), dataModel);
         ProjectController projectController = new ProjectController(dataModel);
         projectController.setStatusLabel(statusLabel);
         return projectController;
@@ -124,7 +171,6 @@ public class SceneController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         initIcons();
         initMenuItemDisableListeners();
-        initDataModelMapListener();
         initTabPane();
         initStartScreen();
     }
@@ -150,34 +196,19 @@ public class SceneController implements Initializable {
         }
     }
 
-    /**
-     * Initializes a listener for the dataModelMap.
-     * This listener checks if the dataModelMap is empty, and if so, sets the text of the statusLabel to an empty string.
-     */
-    private void initDataModelMapListener() {
-        dataModelMap.addListener((MapChangeListener<? super String, ? super DataModel>) change -> {
-            if (dataModelMap.isEmpty()) {
-                statusLabel.setText("");
-            }
-        });
-    }
-
     private void initMenuItemDisableListeners() {
-        saveProjectMenuItem.disableProperty().bind(Bindings.isEmpty(dataModelMap));
-        closeProjectMenuItem.disableProperty().bind(Bindings.isEmpty(dataModelMap));
+        BooleanBinding noProjectOpen = Bindings.isEmpty(tabPane.getTabs());
+        saveProjectMenuItem.disableProperty().bind(noProjectOpen);
+        saveProjectAsMenuItem.disableProperty().bind(noProjectOpen);
+        closeProjectMenuItem.disableProperty().bind(noProjectOpen);
     }
 
     private void initTabPane() {
         tabPane.getSelectionModel().selectedItemProperty().addListener((ov, t, t1) -> updateStatusLabel(t1));
-        // remove the DataModel of every closed tab, regardless of how the tab got closed
         tabPane.getTabs().addListener((ListChangeListener<Tab>) change -> {
-            while (change.next()) {
-                for (Tab removedTab : change.getRemoved()) {
-                    if (removedTab.getContent() instanceof ProjectController projectController) {
-                        DataModel dataModel = projectController.getDataModel();
-                        dataModelMap.remove(dataModel.getName(), dataModel);
-                    }
-                }
+            if (tabPane.getTabs().isEmpty()) {
+                statusLabel.setText("");
+                statusLabel.setGraphic(null);
             }
         });
     }
@@ -190,23 +221,58 @@ public class SceneController implements Initializable {
     }
 
     @FXML
-    private void handleOpenProjectAction() {
-        DataModel dataModel;
+    void handleOpenProjectAction() {
         log.debug("Loading new Project ...");
-        dataModel = ProjectPersisterUtil.openFileDialogAndLoadProject();
-        if (dataModel != null) {
-            dataModel.setChanged(false);    // clear dirty-flag
-            addNewProjectTab(dataModel);
+        Path projectFile = projectFileChooser.get();
+        if (projectFile == null) {
+            return;
         }
+        Optional<Tab> alreadyOpen = findProjectTab(projectFile);
+        if (alreadyOpen.isPresent()) {
+            log.debug("project-file {} is already open", projectFile);
+            tabPane.getSelectionModel().select(alreadyOpen.get());
+            return;
+        }
+        DataModel dataModel = projectLoader.apply(projectFile);
+        if (dataModel == null) {
+            errorReporter.accept("Project-file '%s' could not be opened, see the log for details.".formatted(projectFile));
+            return;
+        }
+        dataModel.setChanged(false);    // clear dirty-flag
+        addNewProjectTab(dataModel);
+        dataModel.reloadInputs();       // entries are not persisted, so they are loaded from the inputs
+    }
+
+    private Optional<Tab> findProjectTab(Path projectFile) {
+        Path normalized = projectFile.toAbsolutePath().normalize();
+        return tabPane.getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof ProjectController projectController
+                        && projectController.getDataModel().getProjectFile() != null
+                        && projectController.getDataModel().getProjectFile().toAbsolutePath().normalize().equals(normalized))
+                .findFirst();
     }
 
     @FXML
-    private void handleSaveProjectAction() {
-        ProjectPersisterUtil.openSaveDialogAndSaveProject(getCurrentlySelectedProject().getDataModel());
+    void handleSaveProjectAction() {
+        saveSelectedProject(projectSaver);
     }
 
-    private ProjectController getCurrentlySelectedProject() {
-        return (ProjectController) tabPane.getSelectionModel().getSelectedItem().getContent();
+    @FXML
+    void handleSaveProjectAsAction() {
+        saveSelectedProject(projectSaverAs);
+    }
+
+    private void saveSelectedProject(Function<DataModel, ProjectPersisterUtil.SaveResult> saver) {
+        Tab selectedTab = tabPane.getSelectionModel().getSelectedItem();
+        if (selectedTab == null) {
+            return;
+        }
+        DataModel dataModel = ((ProjectController) selectedTab.getContent()).getDataModel();
+        switch (saver.apply(dataModel)) {
+            case SAVED -> dataModel.setChanged(false);  // clear dirty-flag
+            case FAILED -> errorReporter.accept("Project '%s' could not be saved, see the log for details.".formatted(dataModel.getName()));
+            case CANCELLED -> log.debug("saving project '{}' cancelled", dataModel.getName());
+        }
     }
 
     @FXML

@@ -4,8 +4,8 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.scene.control.DialogPane;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -27,8 +27,8 @@ import java.util.List;
  * recently used servers with the SFTP output.
  */
 @Slf4j
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 public class SftpInput extends AbstractInput implements Input {
 
     @XStreamOmitField

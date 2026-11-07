@@ -1,8 +1,8 @@
 package org.bitpunk.m3uedit.plugins.sorter.channelname;
 
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
@@ -10,8 +10,8 @@ import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import java.util.Comparator;
 import java.util.List;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
+@Getter
+@Setter
 public class ChannelNameSorter extends AbstractPlugin implements Sorter {
     @XStreamOmitField
     private final String name = "ChannelName Sorter";

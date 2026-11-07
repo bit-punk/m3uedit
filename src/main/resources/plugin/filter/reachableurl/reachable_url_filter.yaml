@@ -1,0 +1,2 @@
+# connect-timeout in milliseconds used to check whether the host of an entry is reachable
+timeoutMillis: 2000

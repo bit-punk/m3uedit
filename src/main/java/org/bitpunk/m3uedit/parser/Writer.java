@@ -3,72 +3,89 @@ package org.bitpunk.m3uedit.parser;
 import org.bitpunk.m3uedit.model.Entry;
 
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.text.MessageFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Writes entries as extended m3u playlist (UTF-8 encoded).
+ */
 public class Writer {
 
     private static final String M3U_START_MARKER = "#EXTM3U";
     private static final String M3U_INFO_MARKER = "#EXTINF:";
     private static final String M3U_VLC_OPT_MARKER = "#EXTVLCOPT:";
-    private static final String DURATION_PATTERN = "{0} ";
-    private static final String TVG_ID_PATTERN = "tvg-id=\"{0}\" ";
-    private static final String TVG_NAME_PATTERN = "tvg-name=\"{0}\" ";
-    private static final String TVG_LOGO_PATTERN = "tvg-logo=\"{0}\" ";
-    private static final String TVG_SHIFT_PATTERN = "tvg-shift=\"{0}\" ";
-    private static final String GROUP_TITLE_PATTERN = "group-title=\"{0}\" ";
-    private static final String RADIO_PATTERN = "radio=\"{0}\" ";
-    private static final String CHANNEL_NAME_PATTERN = ",{0}";
+    /**
+     * Duration used if an entry has none, as {@code #EXTINF} requires one (-1: unknown / live stream).
+     */
+    static final String DEFAULT_DURATION = "-1";
 
     public void write(List<Entry> entries, OutputStream outputStream) {
-        PrintWriter printWriter = new PrintWriter(outputStream);
-
-        printWriter.println(M3U_START_MARKER);
-
-        StringBuilder builder;
+        PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+        printWriter.print(M3U_START_MARKER);
         for (Entry entry : entries) {
-            builder = new StringBuilder();
+            StringBuilder builder = new StringBuilder();
+            builder.append(System.lineSeparator());
             appendExtInfo(entry, builder);
             appendExtVlcOptions(entry, builder);
-            builder.append(entry.getChannelUri());
-            if (entries.indexOf(entry) != entries.size() - 1) {
-                builder.append(System.lineSeparator());
-            }
+            builder.append(singleLine(entry.getChannelUri()));
             printWriter.print(builder);
-            printWriter.flush();
         }
         printWriter.flush();
     }
 
     private void appendExtInfo(Entry entry, StringBuilder builder) {
         builder.append(M3U_INFO_MARKER);
-        appendIfNotNull(builder, entry.getDuration(), DURATION_PATTERN);
-        appendIfNotNull(builder, entry.getTvgId(), TVG_ID_PATTERN);
-        appendIfNotNull(builder, entry.getTvgName(), TVG_NAME_PATTERN);
-        appendIfNotNull(builder, entry.getTvgShift(), TVG_SHIFT_PATTERN);
-        appendIfNotNull(builder, entry.getRadio(), RADIO_PATTERN);
-        appendIfNotNull(builder, entry.getTvgLogo(), TVG_LOGO_PATTERN);
-        appendIfNotNull(builder, entry.getGroupTitle(), GROUP_TITLE_PATTERN);
-        builder.deleteCharAt(builder.length() - 1);
-        appendIfNotNull(builder, entry.getName(), CHANNEL_NAME_PATTERN);
+        String duration = entry.getDuration();
+        builder.append(duration == null || duration.isBlank() ? DEFAULT_DURATION : singleLine(duration.strip()));
+        appendAttribute(builder, "tvg-id", entry.getTvgId());
+        appendAttribute(builder, "tvg-name", entry.getTvgName());
+        appendAttribute(builder, "tvg-shift", entry.getTvgShift());
+        appendAttribute(builder, "radio", entry.getRadio());
+        appendAttribute(builder, "tvg-logo", entry.getTvgLogo());
+        appendAttribute(builder, "group-title", entry.getGroupTitle());
+        if (entry.getName() != null) {
+            builder.append(',').append(singleLine(entry.getName()));
+        }
         builder.append(System.lineSeparator());
     }
-    private void appendExtVlcOptions(Entry entry, StringBuilder builder){
-        for (Map.Entry<String, String> stringStringEntry : entry.getVlcOpts().entrySet()) {
-            builder.append(M3U_VLC_OPT_MARKER);
-            builder.append(stringStringEntry.getKey());
-            builder.append("=");
-            builder.append(stringStringEntry.getValue());
-            builder.append(System.lineSeparator());
-        }
 
+    private void appendExtVlcOptions(Entry entry, StringBuilder builder) {
+        Map<String, String> vlcOpts = entry.getVlcOpts();
+        if (vlcOpts == null) {
+            return;
+        }
+        for (Map.Entry<String, String> vlcOpt : vlcOpts.entrySet()) {
+            builder.append(M3U_VLC_OPT_MARKER)
+                    .append(singleLine(vlcOpt.getKey()))
+                    .append('=')
+                    .append(singleLine(vlcOpt.getValue()))
+                    .append(System.lineSeparator());
+        }
     }
 
-    private void appendIfNotNull(StringBuilder sb, String toWrite, String pattern) {
-        if (toWrite != null) {
-            sb.append(MessageFormat.format(pattern, toWrite));
+    private static void appendAttribute(StringBuilder builder, String attributeName, String value) {
+        if (value != null) {
+            builder.append(' ').append(attributeName).append("=\"").append(attributeValue(value)).append('"');
         }
+    }
+
+    /**
+     * m3u has no escaping for attribute values: a double quote would end the value, so it is replaced by a single quote.
+     */
+    static String attributeValue(String value) {
+        return singleLine(value).replace('"', '\'');
+    }
+
+    /**
+     * Every m3u directive has to fit into a single line, so line breaks are replaced by blanks.
+     */
+    static String singleLine(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\r\n", " ").replace('\r', ' ').replace('\n', ' ');
     }
 }

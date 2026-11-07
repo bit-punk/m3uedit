@@ -88,7 +88,13 @@ public class EntryListController extends AbstractController  implements Initiali
         });
     }
 
-    private void moveEntryToNewPosition(Entry entry) {
+    // package-private for tests
+    TableView<Entry> entryTableView() {
+        return entryTableView;
+    }
+
+    // package-private for tests
+    void moveEntryToNewPosition(Entry entry) {
         ObservableList<Entry> items = entryTableView.getItems();
         items.remove(entry);
         items.add(entry.getIndex() - 1, entry);
@@ -112,7 +118,8 @@ public class EntryListController extends AbstractController  implements Initiali
         });
     }
 
-    private void moveItems(List<Integer> draggedIndices, int dropIndex) {
+    // package-private for tests
+    void moveItems(List<Integer> draggedIndices, int dropIndex) {
         ObservableList<Entry> items = entryTableView.getItems();
         List<Entry> itemsToMove = draggedIndices.stream()
                 .map(items::get)

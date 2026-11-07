@@ -42,7 +42,9 @@ class SftpInputTest {
     void testToStringDoesNotContainPassword() {
         SftpInput sftpInput = new SftpInput();
         sftpInput.setSftpConnection(createConnection());
-        assertThat(sftpInput.toString()).contains("192.168.178.22").doesNotContain("topSecret42");
+        assertThat(sftpInput.toString()).isEqualTo("SftpInput[SFTP Input]").doesNotContain("topSecret42");
+        // the connection itself shows its host, but never the password
+        assertThat(sftpInput.getSftpConnection().toString()).contains("192.168.178.22").doesNotContain("topSecret42");
     }
 
     @Test

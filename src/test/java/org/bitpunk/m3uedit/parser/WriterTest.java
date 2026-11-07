@@ -3,10 +3,14 @@ package org.bitpunk.m3uedit.parser;
 import org.bitpunk.m3uedit.builder.Builder;
 import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +46,74 @@ class WriterTest {
         assertThat(baos.toString()).hasToString("#EXTM3U" + System.lineSeparator() +
                 "#EXTINF:-1 tvg-name=\"testing\" group-title=\"TV'Group\",test-channel'name" + System.lineSeparator() +
                 "http://test.com");
+    }
+
+    private static String write(List<Entry> entries) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        new Writer().write(entries, outputStream);
+        return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    private static List<Entry> parse(String content) {
+        return new Parser().parse(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/test.m3u", "/tvhd_orig.m3u", "/tvsd_orig.m3u", "/test_global_tvg_shift.m3u",
+            "/duplicate_names.m3u", "/tvhd.m3u", "/test_big_file.m3u"})
+    void testRoundTripKeepsAllEntries(String resource) {
+        List<Entry> original = new Parser().parse(WriterTest.class.getResourceAsStream(resource));
+
+        List<Entry> reparsed = parse(write(original));
+
+        assertThat(reparsed).usingRecursiveFieldByFieldElementComparator().containsExactlyElementsOf(original);
+    }
+
+    @Test
+    void testEntryWithoutDurationAndAttributesIsStillValid() {
+        Entry entry = new Builder().channelName("Plain").channelUri("http://example.com/plain.ts").build();
+        entry.setVlcOpts(null);    // e.g. entries created in the entry-dialog
+
+        String written = write(List.of(entry));
+
+        assertThat(written).isEqualTo("#EXTM3U" + System.lineSeparator()
+                + "#EXTINF:-1,Plain" + System.lineSeparator()
+                + "http://example.com/plain.ts");
+        assertThat(parse(written)).singleElement()
+                .satisfies(parsed -> assertThat(parsed.getName()).isEqualTo("Plain"))
+                .satisfies(parsed -> assertThat(parsed.getDuration()).isEqualTo("-1"));
+    }
+
+    @Test
+    void testDoubleQuotesAndLineBreaksDoNotBreakThePlaylist() {
+        Entry entry = new Builder()
+                .channelName("Name with\nline break")
+                .tvgName("The \"best\" channel")
+                .groupTitle("News\r\nWorld")
+                .channelUri("http://example.com/a.ts")
+                .duration("-1")
+                .build();
+
+        List<Entry> reparsed = parse(write(List.of(entry)));
+
+        assertThat(reparsed).singleElement().satisfies(parsed -> {
+            assertThat(parsed.getName()).isEqualTo("Name with line break");
+            assertThat(parsed.getTvgName()).isEqualTo("The 'best' channel");
+            assertThat(parsed.getGroupTitle()).isEqualTo("News World");
+            assertThat(parsed.getChannelUri()).isEqualTo("http://example.com/a.ts");
+        });
+    }
+
+    @Test
+    void testCommaInNameAndUtf8AreKept() {
+        Entry entry = new Builder()
+                .channelName("ARD, Das Erste – Österreich")
+                .groupTitle("Öffentlich-rechtlich")
+                .channelUri("http://example.com/ä.ts")
+                .duration("0")
+                .build();
+
+        assertThat(parse(write(List.of(entry)))).usingRecursiveFieldByFieldElementComparator().containsExactly(entry);
     }
 
     private String getOrigFile(String fileName) {

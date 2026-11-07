@@ -3,30 +3,33 @@ package org.bitpunk.m3uedit.plugins.output.file;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import lombok.EqualsAndHashCode;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 
 @Getter
-@EqualsAndHashCode(callSuper = false)
 public class FileOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
     @XStreamOmitField
     private final String name = "File Output";
     @XStreamOmitField
     private final String description = "Writes a playlist to a local file.";
+    @Setter(AccessLevel.PACKAGE)
     private URI output = null;
 
     @Override
@@ -35,10 +38,11 @@ public class FileOutput extends AbstractPlugin implements Output {
         if (playlist != null && !playlist.isEmpty() && output != null) {
             log.debug("writing playlist [{}] to file [{}]", playlist, output);
             Writer writer = new Writer();
-            try {
-                writer.write(playlist, new FileOutputStream(output.getPath()));
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
+            try (OutputStream outputStream = new FileOutputStream(Path.of(output).toFile())) {
+                writer.write(playlist, outputStream);
+            } catch (IOException e) {
+                throw new OutputException("The playlist could not be written to %s: %s".formatted(
+                        Path.of(output), e.getMessage()), e);
             }
         }
     }
