@@ -4,16 +4,22 @@
 
 M3UEditor is a small editor written in Java based on JavaFX for managing m3u-playlist files.
 
-* load m3u-playlists from various sources (File, Fritzbox)
-* automatically filter the playlist using the build in Filters
-* sort entries of your playlist using built-in sorters
-* save the resulting playlist to various output-channels
+* load m3u-playlists from various sources: local files, URLs, a FritzBox, [iptv-org](https://github.com/iptv-org/iptv)
+  (by country, category, language, region or single channels) and SFTP servers
+* automatically filter the playlist using the built-in filters: channel names (regular expressions), SD channels,
+  duplicate names, duplicate URLs and unreachable URLs
+* sort the entries of your playlist alphabetically or by a preferred channel order (custom profiles can be created
+  from existing playlists)
+* edit, add, remove and reorder single entries and play them in an external player (vlc by default)
+* save the resulting playlist to a local file or an SFTP server
+* save your inputs, filters, sorters and outputs as project (`*.m3uproj`) to re-create the playlist later on
 
 ## Prerequisites
 
-* JDK 22+
-* [JavaFX 25+](/home/jochen/javafx-sdk-25.0.1/)
-* Linux, Windows, MacOS
+* JDK 21+
+* Linux, Windows, macOS
+
+JavaFX is pulled in by Maven, a separate JavaFX SDK is not needed.
 
 ## Building
 
@@ -30,7 +36,9 @@ To run the application using the _javafx-maven-plugin_, you should use:
 ./mvnw javafx:run
 ```
 
-After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`
+After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`, which
+can be started using `java -jar target/m3uedit-1.0-SNAPSHOT.jar`. The jar contains the JavaFX libraries of the platform
+it has been built on, so it only runs on that platform.
 
 To create a self-contained application image for your current platform (including a java runtime, no separate JDK
 or JavaFX installation needed), use the `jpackage` profile:
@@ -42,14 +50,31 @@ or JavaFX installation needed), use the `jpackage` profile:
 The application can then be started using `./target/dist/m3uedit/bin/m3uedit` (Linux) or the corresponding launcher
 on Windows/macOS.
 
+## Configuration
+
+Besides the project files, the configuration is stored in the directory `~/.m3uedit`. The files are created with
+default values on first use and can be edited by hand:
+
+| File                                   | Content                                                    |
+|----------------------------------------|------------------------------------------------------------|
+| `external_player.yaml`                 | command and arguments of the external player (vlc)          |
+| `plugins/channel_name_filter.yaml`     | regular expressions of channel names to filter             |
+| `plugins/preferred_channel_order.yaml` | profiles with the preferred order of channels              |
+| `plugins/reachable_url_filter.yaml`    | connect-timeout used to check whether a stream is reachable |
+| `plugins/sftp_recent_servers.yaml`     | recently used SFTP servers (passwords are never stored)    |
+
+A different directory can be used by setting the system property `m3uedit.config.dir`, e.g.
+`java -Dm3uedit.config.dir=/tmp/m3uedit -jar target/m3uedit-1.0-SNAPSHOT.jar`.
+
 ## Developing
 
 ### IntelliJ
 
-* To be able to run the JavaFX application from IntelliJ, add the following VM options of your run-configuration:
-    ```
-      --module-path /home/jochen/javafx-sdk-25.0.1/lib --add-modules javafx.controls,javafx.fxml
-    ```
+* To run the application from IntelliJ, create a run-configuration for the class `org.bitpunk.m3uedit.Main`. It does not
+  extend `javafx.application.Application`, so the JavaFX libraries can be used from the classpath and no module path is
+  needed.
+* Tests use a temporary configuration directory instead of `~/.m3uedit`
+  (see `src/test/java/org/bitpunk/m3uedit/testsupport/TestConfigDirListener.java`), in Maven as well as in the IDE.
 
 ### Links
 
