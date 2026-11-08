@@ -5,6 +5,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.model.ManualChange;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.filter.channelname.ChannelNameFilter;
@@ -47,6 +48,7 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 class ProjectPersisterUtilTest {
 
@@ -530,5 +532,47 @@ class ProjectPersisterUtilTest {
     void testSaveAsWithCancelledDialog() {
         assertThat(ProjectPersisterUtil.saveProjectAs(getDataModel(), null, file -> true))
                 .isEqualTo(ProjectPersisterUtil.SaveResult.CANCELLED);
+    }
+
+    @Test
+    void testManualChangesArePersisted(@TempDir Path tempDir) throws Exception {
+        DataModel dataModel = new DataModel("manual");
+        Entry a = new Entry();
+        a.setName("a");
+        a.setChannelUri("http://example.com/a");
+        Entry b = new Entry();
+        b.setName("b");
+        b.setChannelUri("http://example.com/b");
+        dataModel.getSortedEntryList().setAll(a, b);
+        Entry added = new Entry();
+        added.setName("added");
+        added.setChannelUri("http://example.com/added");
+        added.setGroupTitle("Favorites");
+        added.setIndex(7);
+        dataModel.addEntry(added);
+        dataModel.moveEntries(List.of(b), 0);
+        dataModel.removeEntries(List.of(a));
+        Path projectFile = tempDir.resolve("manual.m3uproj");
+
+        assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isTrue();
+
+        String yaml = Files.readString(projectFile);
+        assertThat(yaml).contains("manualChanges:").contains("action: ADD").contains("action: MOVE")
+                .contains("action: REMOVE")
+                // the position shown in the playlist is not persisted
+                .doesNotContain("index");
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+        // entries are compared by identity, so the other values are compared
+        assertThat(loaded.getManualChanges())
+                .extracting(ManualChange::action, ManualChange::target, ManualChange::after)
+                .containsExactlyElementsOf(dataModel.getManualChanges().stream()
+                        .map(change -> tuple(change.action(), change.target(), change.after()))
+                        .toList());
+        Entry loadedAdded = loaded.getManualChanges().getFirst().entry();
+        assertThat(loadedAdded.getName()).isEqualTo("added");
+        assertThat(loadedAdded.getGroupTitle()).isEqualTo("Favorites");
+        // re-applied to the playlist computed from the inputs
+        assertThat(ManualChange.applyAll(List.of(a, b), loaded.getManualChanges()))
+                .extracting(Entry::getName).containsExactly("b", "added");
     }
 }

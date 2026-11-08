@@ -83,6 +83,21 @@ public class DialogUtil {
     }
 
     /**
+     * Asks whether the changes the user made to the playlist shall be discarded.
+     *
+     * @return true if the user confirmed
+     */
+    public static boolean canManualChangesBeReset(int numberOfChanges) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Reset Changes");
+        alert.setHeaderText("Discard %d manual change(s) of the playlist?".formatted(numberOfChanges));
+        alert.setContentText("Entries removed, added, edited or moved manually are restored as computed "
+                + "from the inputs, filters and sorters.");
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    /**
      * Asks whether the application may be closed although the given projects contain unsaved changes.
      *
      * @return true if the user confirmed
