@@ -3,45 +3,27 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
 <?import org.bitpunk.m3uedit.controller.*?>
-<fx:root stylesheets="@css/project.css" type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml/1"
-         xmlns="http://javafx.com/javafx/17.0.2-ea">
-    <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="ALWAYS">
-        <TabPane fx:id="projectTabPane" rotateGraphic="true" side="LEFT" tabClosingPolicy="UNAVAILABLE">
-            <Tab fx:id="inputTab" text="Inputs">
-                <content>
-                    <InputController fx:id="inputController"/>
-                </content>
-            </Tab>
-            <Tab fx:id="rawEntriesTab" text="Raw Entries">
-                <content>
-                    <RawEntriesController fx:id="rawEntriesController"/>
-                </content>
-            </Tab>
-            <Tab fx:id="filterTab" text="Filters">
-                <content>
-                    <FilterController fx:id="filterController"/>
-                </content>
-            </Tab>
-            <Tab fx:id="filteredEntriesTab" text="Filtered Entries">
-                <content>
-                    <FilteredEntriesController fx:id="filteredEntriesController"/>
-                </content>
-            </Tab>
-            <Tab fx:id="sorterTab" text="Sorters">
-                <content>
-                    <SorterController fx:id="sorterController"/>
-                </content>
-            </Tab>
-            <Tab fx:id="entryTab" text="Playlist">
-                <content>
-                    <EntryListController fx:id="entryListController"/>
-                </content>
-            </Tab>
-            <Tab fx:id="outputTab" text="Outputs">
-                <content>
-                    <OutputController fx:id="outputController"/>
-                </content>
-            </Tab>
-        </TabPane>
-    </ScrollPane>
+<fx:root stylesheets="@css/project.css" styleClass="project" type="javafx.scene.layout.VBox"
+         xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.2-ea">
+    <SplitPane fx:id="splitPane" dividerPositions="0.3" VBox.vgrow="ALWAYS">
+        <ScrollPane fx:id="pipelineScrollPane" fitToWidth="true" hbarPolicy="NEVER" minWidth="300"
+                    styleClass="pipeline-scroll-pane">
+            <PipelineController fx:id="pipelineController"/>
+        </ScrollPane>
+        <VBox minWidth="400">
+            <PipelineSummaryView fx:id="summaryView"/>
+            <TabPane fx:id="resultTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="result-tabs">
+                <Tab fx:id="playlistTab" text="Playlist">
+                    <content>
+                        <EntryListController fx:id="entryListController"/>
+                    </content>
+                </Tab>
+                <Tab fx:id="diffTab" text="Diff">
+                    <content>
+                        <DiffController fx:id="diffController"/>
+                    </content>
+                </Tab>
+            </TabPane>
+        </VBox>
+    </SplitPane>
 </fx:root>

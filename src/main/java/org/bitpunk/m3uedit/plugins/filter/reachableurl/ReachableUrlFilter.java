@@ -92,6 +92,12 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     }
 
     @Override
+    public String describeRemoval(Entry removed, List<Entry> input) {
+        // the check is not repeated here, it would block the user interface
+        return "no connection to %s".formatted(removed.getChannelUri());
+    }
+
+    @Override
     public List<Entry> filter(List<Entry> list) {
         int timeoutMillis = getTimeoutMillis();
         log.debug("checking reachability of {} entries using a timeout of {} ms", list.size(), timeoutMillis);

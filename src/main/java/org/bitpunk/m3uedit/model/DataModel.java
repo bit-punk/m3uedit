@@ -9,6 +9,8 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -25,8 +27,12 @@ import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,7 +66,7 @@ public class DataModel {
         LOAD_INPUTS, FILTER, SORT
     }
 
-    private record Result(List<Entry> raw, List<Entry> filtered, List<Entry> sorted, List<String> inputErrors) {
+    private record Result(PipelineResult pipeline, List<String> inputErrors) {
     }
 
     @NotNull
@@ -110,6 +116,9 @@ public class DataModel {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ReadOnlyBooleanWrapper saving;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient ReadOnlyObjectWrapper<PipelineResult> pipelineResult;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient long generation;
@@ -165,6 +174,7 @@ public class DataModel {
         sortedEntryList = FXCollections.observableArrayList();
         busy = new ReadOnlyBooleanWrapper(this, "busy", false);
         saving = new ReadOnlyBooleanWrapper(this, "saving", false);
+        pipelineResult = new ReadOnlyObjectWrapper<>(this, "pipelineResult", PipelineResult.EMPTY);
         // the 'dirty'-flag is set with each change of a persisted list, or the enabled-state of one of its plugins
         pluginEnabledListener = (observable, oldValue, newValue) -> changed = true;
         pluginListListener = this::onPluginListChanged;
@@ -251,6 +261,17 @@ public class DataModel {
     }
 
     /**
+     * @return the intermediate results of the last computation, updated together with the entry-lists
+     */
+    public ReadOnlyObjectProperty<PipelineResult> pipelineResultProperty() {
+        return pipelineResult.getReadOnlyProperty();
+    }
+
+    public PipelineResult getPipelineResult() {
+        return pipelineResult.get();
+    }
+
+    /**
      * Reads all inputs in the background and re-computes all entry-lists.
      */
     public void reloadInputs() {
@@ -285,15 +306,37 @@ public class DataModel {
         List<Sorter> enabledSorters = sorters.stream().filter(sorter -> sorter.getEnabled().get()).toList();
         List<Entry> rawSnapshot = new ArrayList<>(rawEntryList);
         List<Entry> filteredSnapshot = new ArrayList<>(filteredEntryList);
+        // the results of the steps not re-computed are taken over from the previous computation (immutable)
+        PipelineResult previous = pipelineResult.get();
         log.debug("re-computing entries of project '{}' starting with step {}", name, step);
 
         getBackgroundExecutorOrDefault().execute(() -> {
             try {
                 List<String> inputErrors = new ArrayList<>();
-                List<Entry> raw = step == Step.LOAD_INPUTS ? loadEntries(inputsSnapshot, inputErrors) : rawSnapshot;
-                List<Entry> filtered = step.compareTo(Step.SORT) < 0 ? filterEntries(enabledFilters, raw) : filteredSnapshot;
-                List<Entry> sorted = sortEntries(enabledSorters, filtered);
-                Result result = new Result(raw, filtered, sorted, inputErrors);
+                Map<Entry, Input> sources = new IdentityHashMap<>();
+                Map<Plugin, StepResult> steps = new IdentityHashMap<>();
+                Map<Entry, Filter> removedBy = new IdentityHashMap<>();
+                List<Entry> raw;
+                if (step == Step.LOAD_INPUTS) {
+                    raw = loadEntries(inputsSnapshot, inputErrors, sources);
+                } else {
+                    raw = rawSnapshot;
+                    sources.putAll(previous.sources());
+                }
+                List<Entry> filtered;
+                if (step.compareTo(Step.SORT) < 0) {
+                    filtered = filterEntries(enabledFilters, raw, steps, removedBy);
+                } else {
+                    filtered = filteredSnapshot;
+                    previous.steps().forEach((plugin, stepResult) -> {
+                        if (plugin instanceof Filter) {
+                            steps.put(plugin, stepResult);
+                        }
+                    });
+                    removedBy.putAll(previous.removedBy());
+                }
+                List<Entry> sorted = sortEntries(enabledSorters, filtered, steps);
+                Result result = new Result(new PipelineResult(raw, filtered, sorted, sources, steps, removedBy), inputErrors);
                 getFxExecutorOrDefault().execute(() -> applyResult(currentGeneration, step, result));
             } catch (RuntimeException e) {
                 log.error("Error re-computing the entries of project '{}'", name, e);
@@ -309,13 +352,15 @@ public class DataModel {
         }
         applyingResults = true;
         try {
+            PipelineResult pipeline = result.pipeline();
             if (step == Step.LOAD_INPUTS) {
-                rawEntryList.setAll(result.raw());
+                rawEntryList.setAll(pipeline.raw());
             }
             if (step.compareTo(Step.SORT) < 0) {
-                filteredEntryList.setAll(result.filtered());
+                filteredEntryList.setAll(pipeline.filtered());
             }
-            sortedEntryList.setAll(result.sorted());
+            sortedEntryList.setAll(pipeline.sorted());
+            pipelineResult.set(pipeline);
         } finally {
             applyingResults = false;
         }
@@ -347,11 +392,20 @@ public class DataModel {
      * Reads all given inputs. Inputs that cannot be read are skipped, their errors are added to {@code errors}.
      */
     List<Entry> loadEntries(List<Input> inputs, List<String> errors) {
+        return loadEntries(inputs, errors, new IdentityHashMap<>());
+    }
+
+    /**
+     * Reads all given inputs, remembering the input each entry has been read from in {@code sources}.
+     */
+    private List<Entry> loadEntries(List<Input> inputs, List<String> errors, Map<Entry, Input> sources) {
         List<Entry> loadedEntries = new ArrayList<>();
         for (Input currentInput : inputs) {
             log.debug("reading from: {}", currentInput.getName());
             try {
-                loadedEntries.addAll(currentInput.read());
+                List<Entry> entries = currentInput.read();
+                loadedEntries.addAll(entries);
+                entries.forEach(entry -> sources.putIfAbsent(entry, currentInput));
             } catch (Exception e) {
                 log.error("Error reading input {} ({})", currentInput.getName(), currentInput.getSource(), e);
                 errors.add("%s (%s): %s".formatted(currentInput.getName(), currentInput.getSource(),
@@ -415,18 +469,29 @@ public class DataModel {
         return saving.get();
     }
 
-    private static List<Entry> filterEntries(List<Filter> filters, List<Entry> entries) {
+    private static List<Entry> filterEntries(List<Filter> filters, List<Entry> entries,
+                                             Map<Plugin, StepResult> steps, Map<Entry, Filter> removedBy) {
         List<Entry> filteredEntries = new ArrayList<>(entries);
         for (Filter filter : filters) {
-            filteredEntries = filter.filter(filteredEntries);
+            List<Entry> input = filteredEntries;
+            filteredEntries = filter.filter(input);
+            StepResult stepResult = StepResult.of(input, filteredEntries);
+            steps.put(filter, stepResult);
+            if (stepResult.removedCount() > 0) {
+                Set<Entry> kept = Collections.newSetFromMap(new IdentityHashMap<>());
+                kept.addAll(filteredEntries);
+                input.stream().filter(entry -> !kept.contains(entry)).forEach(entry -> removedBy.putIfAbsent(entry, filter));
+            }
         }
         return filteredEntries;
     }
 
-    private static List<Entry> sortEntries(List<Sorter> sorters, List<Entry> entries) {
+    private static List<Entry> sortEntries(List<Sorter> sorters, List<Entry> entries, Map<Plugin, StepResult> steps) {
         List<Entry> sortedEntries = new ArrayList<>(entries);
         for (Sorter sorter : sorters) {
-            sortedEntries = sorter.sort(sortedEntries);
+            List<Entry> input = sortedEntries;
+            sortedEntries = sorter.sort(input);
+            steps.put(sorter, StepResult.of(input, sortedEntries));
         }
         return sortedEntries;
     }

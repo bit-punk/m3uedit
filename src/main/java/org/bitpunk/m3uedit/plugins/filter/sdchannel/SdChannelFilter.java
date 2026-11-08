@@ -30,4 +30,15 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
                 .toList();
     }
 
+    @Override
+    public String describeRemoval(Entry removed, List<Entry> input) {
+        String removedName = removed.getName();
+        return input.stream()
+                .map(Entry::getName)
+                .filter(name -> !removedName.equals(name) && name.startsWith(removedName))
+                .findFirst()
+                .map("\"%s\" exists"::formatted)
+                .orElse(null);
+    }
+
 }

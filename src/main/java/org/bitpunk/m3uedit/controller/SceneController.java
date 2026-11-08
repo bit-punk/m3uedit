@@ -238,6 +238,7 @@ public class SceneController implements Initializable {
             errorReporter.accept("Project-file '%s' could not be opened, see the log for details.".formatted(projectFile));
             return;
         }
+        DataModelFactory.completePlugins(dataModel);    // each filter and sorter is shown exactly once
         dataModel.setChanged(false);    // clear dirty-flag
         addNewProjectTab(dataModel);
         dataModel.reloadInputs();       // entries are not persisted, so they are loaded from the inputs

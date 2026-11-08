@@ -10,7 +10,11 @@ M3UEditor is a small editor written in Java based on JavaFX for managing m3u-pla
   duplicate names, duplicate URLs and unreachable URLs
 * sort the entries of your playlist alphabetically or by a preferred channel order (custom profiles can be created
   from existing playlists)
-* edit, add, remove and reorder single entries and play them in an external player (vlc by default)
+* see the whole pipeline at a glance: inputs, filters, sorters and outputs, each with the number of entries it
+  removed or moved; filters and sorters are enabled and reordered right there
+* compare the entries before and after each step in a side-by-side diff, including the reason why a filter removed
+  an entry (e.g. `"ZDF HD" exists` or `same URL as "Das Erste HD"`)
+* edit, add, remove and reorder single entries of the playlist and play them in an external player (vlc by default)
 * save the resulting playlist to a local file or an SFTP server
 * save your inputs, filters, sorters and outputs as project (`*.m3uproj`) to re-create the playlist later on
 

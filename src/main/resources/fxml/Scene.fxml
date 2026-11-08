@@ -8,7 +8,7 @@
 <Scene xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
        fx:controller="org.bitpunk.m3uedit.controller.SceneController"
        stylesheets="@css/scene.css">
-    <BorderPane prefWidth="800" prefHeight="640">
+    <BorderPane prefWidth="1200" prefHeight="800">
         <top>
             <MenuBar>
                 <Menu text="File">
