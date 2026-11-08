@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,15 +9,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class RawEntriesController extends AbstractController  implements Initializable, ModelAware {
     public static final String FXML_ENTRY_LIST = "fxml/RawEntriesList.fxml";
-    private static final Logger log = LoggerFactory.getLogger(RawEntriesController.class);
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Entry, String> indexColumn;

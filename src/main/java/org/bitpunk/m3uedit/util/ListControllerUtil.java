@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
+import lombok.extern.slf4j.Slf4j;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -10,15 +12,14 @@ import org.bitpunk.m3uedit.NamedItem;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.player.ExternalPlayer;
 import org.bitpunk.m3uedit.plugins.Plugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+@Slf4j
 public class ListControllerUtil {
-    private static final Logger log = LoggerFactory.getLogger(ListControllerUtil.class);
     private static final double ICON_COLUMN_WIDTH = 32;
     private static final String PENCIL_ICON_RESOURCE = "/icons/pencil.svg";
     private static final String PENCIL_ICON = SvgUtil.loadSvgPath(PENCIL_ICON_RESOURCE);
@@ -166,6 +167,15 @@ public class ListControllerUtil {
         if (deleteNamedItemsDialog(deletePlugins)) {
             tableView.getItems().removeAll(deletePlugins);
         }
+    }
+
+    /**
+     * Asks whether the given items shall be deleted.
+     *
+     * @return true if the user confirmed
+     */
+    public static boolean confirmDeletion(List<? extends NamedItem> items) {
+        return deleteNamedItemsDialog(FXCollections.observableArrayList(items));
     }
 
     private static boolean deleteNamedItemsDialog(ObservableList<NamedItem> deleteItems) {

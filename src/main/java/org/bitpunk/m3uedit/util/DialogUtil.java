@@ -1,11 +1,10 @@
 package org.bitpunk.m3uedit.util;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -15,9 +14,8 @@ import java.util.Optional;
 /**
  * Utility class for displaying dialog boxes and file choosers.
  */
+@Slf4j
 public class DialogUtil {
-    private static final Logger log = LoggerFactory.getLogger(DialogUtil.class);
-
     private DialogUtil() {
     }
 
@@ -66,6 +64,35 @@ public class DialogUtil {
         alert.setTitle("Close Project");
         alert.setHeaderText("Project '" + projectName + "' contains unsaved data!");
         alert.setContentText("Do you want to close the project without saving the changed data?");
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    /**
+     * Asks whether an existing file may be overwritten.
+     *
+     * @return true if the user confirmed
+     */
+    public static boolean canFileBeOverwritten(Path file) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Save Project");
+        alert.setHeaderText("The file '" + file.getFileName() + "' already exists!");
+        alert.setContentText("Do you want to replace it?%n%n%s".formatted(file.toAbsolutePath()));
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    /**
+     * Asks whether the changes the user made to the playlist shall be discarded.
+     *
+     * @return true if the user confirmed
+     */
+    public static boolean canManualChangesBeReset(int numberOfChanges) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Reset Changes");
+        alert.setHeaderText("Discard %d manual change(s) of the playlist?".formatted(numberOfChanges));
+        alert.setContentText("Entries removed, added, edited or moved manually are restored as computed "
+                + "from the inputs, filters and sorters.");
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }

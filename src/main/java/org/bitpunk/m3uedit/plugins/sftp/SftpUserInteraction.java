@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.sftp;
 
+import lombok.extern.slf4j.Slf4j;
 import com.jcraft.jsch.UserInfo;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -12,8 +13,6 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -25,9 +24,8 @@ import java.util.function.Supplier;
  * confirmation of unknown host keys (via JSch {@link UserInfo}) and the password prompt.
  * All dialogs are shown on the JavaFX application thread, regardless of the calling thread.
  */
+@Slf4j
 public class SftpUserInteraction implements UserInfo {
-    private static final Logger log = LoggerFactory.getLogger(SftpUserInteraction.class);
-
     public enum OverwriteDecision {
         CANCEL, OVERWRITE, OVERWRITE_ALWAYS
     }

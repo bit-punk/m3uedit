@@ -6,13 +6,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.util.Callback;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.util.PojoValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.List;
@@ -20,10 +19,10 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+@Slf4j
 public class FritzboxInputDialogController extends AbstractDialogController<FritzBoxConnection> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_FRITZBOX = "plugin/input/fritzbox/FritzboxInputDialog.fxml";
     public static final String FRITZBOX_DIALOG_TITLE = "Enter FritzBox-Inputs data";
-    private static final Logger log = LoggerFactory.getLogger(FritzboxInputDialogController.class);
     @Getter
     private final FritzBoxConnection fritzBoxConnection = new FritzBoxConnection();
     @FXML
@@ -86,7 +85,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
         FritzBoxConnection fritzBoxConnection = createFritzboxConnectionFromInput();
         Set<ConstraintViolation<FritzBoxConnection>> errors = validator.validate(fritzBoxConnection);
         displayValidationErrors(errors);
-        log.debug("Validation-errors found: {}", errors);
+        log.trace("Validation-errors found: {}", errors);
         return errors.isEmpty();
     }
 
@@ -100,7 +99,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
         for (ConstraintViolation<FritzBoxConnection> error : errors) {
             String errorMessage = error.getMessage();
             String fieldName = error.getPropertyPath().toString();
-            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            log.trace("Field: {} Message: {}", fieldName, errorMessage);
             if (fieldName.equals("baseUrl")) {
                 markFieldInvalid(baseUrlTextField, errorMessage);
             }

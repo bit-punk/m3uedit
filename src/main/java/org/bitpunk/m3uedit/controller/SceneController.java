@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -18,8 +19,6 @@ import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.bitpunk.m3uedit.util.SvgUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -33,8 +32,8 @@ import java.util.function.Predicate;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
+@Slf4j
 public class SceneController implements Initializable {
-    private static final Logger log = LoggerFactory.getLogger(SceneController.class);
     private static final String NEW_PROJECT_ICON_RESOURCE = "/icons/new_project.svg";
     private static final String OPEN_PROJECT_ICON_RESOURCE = "/icons/open_project.svg";
     private static final String ABOUT_ICON_RESOURCE = "/icons/about.svg";

@@ -1,11 +1,10 @@
 package org.bitpunk.m3uedit.player;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.model.Entry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,8 +16,8 @@ import java.util.Map;
  * Starts an external player (vlc by default) to view the stream of an {@link Entry}.
  * The player is configured in {@code ~/.m3uedit/external_player.yaml}.
  */
+@Slf4j
 public class ExternalPlayer {
-    private static final Logger log = LoggerFactory.getLogger(ExternalPlayer.class);
     private static final String CONFIG_FILE_NAME = "external_player.yaml";
     private static final String CONFIG_RESOURCE = "player/external_player.yaml";
 
