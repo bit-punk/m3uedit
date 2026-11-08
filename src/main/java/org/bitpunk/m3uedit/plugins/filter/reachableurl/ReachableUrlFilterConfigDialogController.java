@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 
 /**
- * Dialog to configure the connect-timeout of the {@link ReachableUrlFilter}.
+ * Dialog to configure the timeout of the {@link ReachableUrlFilter}.
  * The configuration is persisted to the filter's configuration-file when the dialog is confirmed.
  */
 @Slf4j

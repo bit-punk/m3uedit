@@ -1,2 +1,2 @@
-# connect-timeout in milliseconds used to check whether the host of an entry is reachable
-timeoutMillis: 2000
+# timeout in milliseconds for connecting and for waiting on data of every request used to check a stream
+timeoutMillis: 5000

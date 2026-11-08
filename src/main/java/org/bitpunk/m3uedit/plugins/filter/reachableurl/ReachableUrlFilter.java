@@ -11,15 +11,8 @@ import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -34,19 +27,14 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/reachableurl/reachable_url_filter.yaml";
     public static final String CONFIG_FILE_NAME = "reachable_url_filter.yaml";
     /**
-     * Maximum number of hosts checked concurrently.
+     * Maximum number of streams checked concurrently.
      */
     private static final int MAX_CONCURRENT_CHECKS = 64;
-    private static final Map<String, Integer> DEFAULT_PORTS = Map.of(
-            "http", 80,
-            "https", 443,
-            "rtsp", 554,
-            "ftp", 21);
 
     @JsonIgnore
     private final String name = "Reachable URL Filter";
     @JsonIgnore
-    private final String description = "Filters for entries with an unreachable URL";
+    private final String description = "Filters for entries whose stream cannot be played";
 
     private transient YamlConfigManager<ReachableUrlFilterConfig> configManager;
 
@@ -71,7 +59,7 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     }
 
     /**
-     * Returns the configured connect-timeout. The configuration is re-read on every call,
+     * Returns the configured timeout. The configuration is re-read on every call,
      * so changes to the configuration-file take effect without restarting the application.
      *
      * @return the configured timeout in milliseconds, or the default if the configured value is not positive
@@ -93,13 +81,13 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     @Override
     public String describeRemoval(Entry removed, List<Entry> input) {
         // the check is not repeated here, it would block the user interface
-        return "no connection to %s".formatted(removed.getChannelUri());
+        return "stream not playable: %s".formatted(removed.getChannelUri());
     }
 
     @Override
     public List<Entry> filter(List<Entry> list) {
         int timeoutMillis = getTimeoutMillis();
-        log.debug("checking reachability of {} entries using a timeout of {} ms", list.size(), timeoutMillis);
+        log.debug("checking playability of {} entries using a timeout of {} ms", list.size(), timeoutMillis);
         Semaphore permits = new Semaphore(MAX_CONCURRENT_CHECKS);
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<Boolean>> reachable = new ArrayList<>(list.size());
@@ -107,7 +95,7 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
                 reachable.add(executor.submit(() -> {
                     permits.acquire();
                     try {
-                        return isUrlReachable(entry.getChannelUri(), timeoutMillis);
+                        return isUrlReachable(entry.getChannelUri(), entry.getVlcOpts(), timeoutMillis);
                     } finally {
                         permits.release();
                     }
@@ -137,54 +125,21 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     }
 
     /**
-     * Checks whether the given url can be reached.
-     * Network urls are checked by opening a tcp-connection to host and port, file-urls by checking the file exists.
+     * Checks whether the stream of the given url can be played, see {@link StreamProbe}.
      *
      * @param urlString     the url to check
-     * @param timeoutMillis connect-timeout in milliseconds
+     * @param timeoutMillis connect- and read-timeout of every request in milliseconds
      * @return true if the url is reachable, false otherwise (also for malformed urls)
      */
     boolean isUrlReachable(String urlString, int timeoutMillis) {
-        if (urlString == null || urlString.isBlank()) {
-            return false;
-        }
-        URI uri;
-        try {
-            uri = new URI(urlString.strip());
-        } catch (URISyntaxException e) {
-            log.warn("Malformed URL '{}': {}", urlString, e.getMessage());
-            return false;
-        }
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
-        if ("file".equals(scheme)) {
-            return isFileReachable(uri);
-        }
-        String host = uri.getHost();
-        int port = uri.getPort() != -1 ? uri.getPort() : DEFAULT_PORTS.getOrDefault(scheme, -1);
-        if (host == null || port == -1) {
-            log.debug("Cannot determine host and port of url '{}'", urlString);
-            return false;
-        }
-        return isHostReachable(host, port, timeoutMillis);
+        return isUrlReachable(urlString, null, timeoutMillis);
     }
 
-    private boolean isFileReachable(URI uri) {
-        try {
-            return Files.exists(Path.of(uri));
-        } catch (IllegalArgumentException e) {
-            log.debug("Invalid file url '{}': {}", uri, e.getMessage());
-            return false;
-        }
-    }
-
-    boolean isHostReachable(String hostName, int port, int timeoutMillis) {
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(hostName, port), timeoutMillis);
-            return true;
-        } catch (Exception e) {
-            log.debug("Host {}:{} is not reachable: {}", hostName, port, e.getMessage());
-            return false;
-        }
+    /**
+     * @param vlcOpts the #EXTVLCOPT options of the entry, used for user-agent and referrer, may be null
+     */
+    boolean isUrlReachable(String urlString, Map<String, String> vlcOpts, int timeoutMillis) {
+        return new StreamProbe(timeoutMillis, vlcOpts).isPlayable(urlString);
     }
 
     @Override

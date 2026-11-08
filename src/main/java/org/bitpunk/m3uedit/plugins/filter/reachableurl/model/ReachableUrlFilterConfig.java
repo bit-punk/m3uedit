@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReachableUrlFilterConfig {
-    public static final int DEFAULT_TIMEOUT_MILLIS = 2000;
+    public static final int DEFAULT_TIMEOUT_MILLIS = 5000;
 
-    /** connect-timeout in milliseconds used to check whether the host of an entry is reachable */
+    /** timeout in milliseconds for connecting and for waiting on data of every request used to check a stream */
     @Builder.Default
     private int timeoutMillis = DEFAULT_TIMEOUT_MILLIS;
 }
