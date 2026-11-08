@@ -11,7 +11,6 @@ import javafx.scene.shape.SVGPath;
 import org.bitpunk.m3uedit.NamedItem;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.player.ExternalPlayer;
-import org.bitpunk.m3uedit.plugins.Plugin;
 
 import java.io.IOException;
 import java.util.List;
@@ -21,8 +20,6 @@ import java.util.function.Consumer;
 @Slf4j
 public class ListControllerUtil {
     private static final double ICON_COLUMN_WIDTH = 32;
-    private static final String PENCIL_ICON_RESOURCE = "/icons/pencil.svg";
-    private static final String PENCIL_ICON = SvgUtil.loadSvgPath(PENCIL_ICON_RESOURCE);
     private static final String PLAY_ICON_RESOURCE = "/icons/play.svg";
     private static final String PLAY_ICON = SvgUtil.loadSvgPath(PLAY_ICON_RESOURCE);
     private static final ExternalPlayer EXTERNAL_PLAYER = new ExternalPlayer();
@@ -42,42 +39,6 @@ public class ListControllerUtil {
             });
             return row;
         });
-    }
-
-    public static <T extends Plugin> void configureOnRowDoubleClick(TableView<T> tableView) {
-        configureOnRowDoubleClick(tableView, null);
-    }
-
-    public static <T extends Plugin> void configureOnRowDoubleClick(TableView<T> tableView, Runnable onAfterConfigured) {
-        setOnRowDoubleClick(tableView, item -> configurePlugin(tableView, item, onAfterConfigured));
-    }
-
-    public static <T extends Plugin> void addConfigureColumn(TableView<T> tableView) {
-        addConfigureColumn(tableView, null);
-    }
-
-    public static <T extends Plugin> void addConfigureColumn(TableView<T> tableView, Runnable onAfterConfigured) {
-        TableColumn<T, Void> configureColumn = createIconColumn();
-        configureColumn.setCellFactory(column -> new TableCell<>() {
-            private final Button configureButton = createIconButton(PENCIL_ICON, "Configure");
-
-            {
-                configureButton.setOnAction(event -> {
-                    T item = getTableRow() != null ? getTableRow().getItem() : null;
-                    if (item != null) {
-                        configurePlugin(getTableView(), item, onAfterConfigured);
-                    }
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                T plugin = getTableRow() != null ? getTableRow().getItem() : null;
-                setGraphic(!empty && plugin != null && plugin.isConfigurable() ? configureButton : null);
-            }
-        });
-        tableView.getColumns().add(configureColumn);
     }
 
     /**
@@ -142,14 +103,6 @@ public class ListControllerUtil {
         button.setFocusTraversable(false);
         button.setStyle("-fx-background-color: transparent; -fx-padding: 2; -fx-cursor: hand;");
         return button;
-    }
-
-    private static <T extends Plugin> void configurePlugin(TableView<T> tableView, T item, Runnable onAfterConfigured) {
-        item.configure();
-        tableView.refresh();
-        if (onAfterConfigured != null) {
-            onAfterConfigured.run();
-        }
     }
 
     @FXML

@@ -6,49 +6,44 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.output.Output;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * A project: the pipeline on the left, the resulting playlist and the diff of the selected step on the right.
+ */
 public class ProjectController extends AbstractController implements Initializable, ModelAware {
     static final String LOADING_MESSAGE = "Loading entries ...";
     static final String SAVING_MESSAGE = "Writing playlist to the outputs ...";
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     @FXML
-    public Tab inputTab;
+    public SplitPane splitPane;
     @FXML
-    public Tab rawEntriesTab;
+    public ScrollPane pipelineScrollPane;
     @FXML
-    public Tab filterTab;
+    public PipelineController pipelineController;
     @FXML
-    public Tab filteredEntriesTab;
+    public PipelineSummaryView summaryView;
     @FXML
-    public Tab sorterTab;
+    public TabPane resultTabPane;
     @FXML
-    public Tab entryTab;
+    public Tab playlistTab;
     @FXML
-    public Tab outputTab;
-    @FXML
-    public InputController inputController;
-    @FXML
-    public RawEntriesController rawEntriesController;
-    @FXML
-    public FilterController filterController;
-    @FXML
-    private TabPane projectTabPane;
-    @FXML
-    public FilteredEntriesController filteredEntriesController;
-    @FXML
-    public SorterController sorterController;
+    public Tab diffTab;
     @FXML
     public EntryListController entryListController;
     @FXML
-    public OutputController outputController;
+    public DiffController diffController;
     @Getter
     private Label statusLabel;
     @Getter
@@ -62,9 +57,8 @@ public class ProjectController extends AbstractController implements Initializab
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        projectTabPane.getSelectionModel()
-                .selectedItemProperty()
-                .addListener((observable, oldTab, newTab) -> updateStatusLabel());
+        // the pipeline keeps its width when the window is resized
+        SplitPane.setResizableWithParent(pipelineScrollPane, false);
     }
 
     public void setStatusLabel(Label statusLabel) {
@@ -73,12 +67,23 @@ public class ProjectController extends AbstractController implements Initializab
     }
 
     private void initModelListeners() {
-        dataModel.getRawEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
-        dataModel.getFilteredEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
         dataModel.getSortedEntryList().addListener((ListChangeListener<? super Entry>) listChangeListener -> updateStatusLabel());
         dataModel.busyProperty().addListener((observable, wasBusy, isBusy) -> updateStatusLabel());
         dataModel.savingProperty().addListener((observable, wasSaving, isSaving) -> updateStatusLabel());
         dataModel.setErrorHandler(ProjectController::showError);
+    }
+
+    /**
+     * Selecting a step shows its effect in the diff, selecting an output shows the playlist it receives.
+     */
+    private void initSelectionListener() {
+        pipelineController.getSelectedStep().addListener((observable, oldStep, newStep) -> {
+            if (newStep instanceof Output) {
+                resultTabPane.getSelectionModel().select(playlistTab);
+            } else if (newStep != null) {
+                resultTabPane.getSelectionModel().select(diffTab);
+            }
+        });
     }
 
     private static void showError(String message) {
@@ -103,9 +108,7 @@ public class ProjectController extends AbstractController implements Initializab
             return;
         }
         statusLabel.setGraphic(null);
-        int entryCount = getSelectedEntryCount();
-        String statusMessage = "%s entries loaded".formatted(entryCount);
-        statusLabel.setText(statusMessage);
+        statusLabel.setText("%d entries in the playlist".formatted(dataModel.getSortedEntryList().size()));
     }
 
     /**
@@ -132,29 +135,21 @@ public class ProjectController extends AbstractController implements Initializab
         return loadingIndicator;
     }
 
-    private int getSelectedEntryCount() {
-        Tab selectedTab = projectTabPane.getSelectionModel().getSelectedItem();
-
-        if (selectedTab == rawEntriesTab) {
-            return dataModel.getRawEntryList().size();
-        }
-        if (selectedTab == filteredEntriesTab) {
-            return dataModel.getFilteredEntryList().size();
-        }
-
-        return dataModel.getSortedEntryList().size();
+    /**
+     * @return the step selected in the pipeline, null if none
+     */
+    public Plugin getSelectedStep() {
+        return pipelineController.getSelectedStep().get();
     }
 
     @Override
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
-        inputController.initModel(dataModel);
-        rawEntriesController.initModel(dataModel);
-        filterController.initModel(dataModel);
-        filteredEntriesController.initModel(dataModel);
-        sorterController.initModel(dataModel);
-        outputController.initModel(dataModel);
+        pipelineController.initModel(dataModel);
+        summaryView.initModel(dataModel, pipelineController.getSelectedStep());
+        diffController.initModel(dataModel, pipelineController.getSelectedStep());
         entryListController.initModel(dataModel);
         initModelListeners();
+        initSelectionListener();
     }
 }

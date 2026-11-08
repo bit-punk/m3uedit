@@ -24,4 +24,9 @@ public class UniqueUriFilter extends AbstractUniqueFilter implements Filter {
                 .toList();
     }
 
+    @Override
+    public String describeRemoval(Entry removed, List<Entry> input) {
+        return describeDuplicate(removed, input, Entry::getChannelUri, "URL");
+    }
+
 }

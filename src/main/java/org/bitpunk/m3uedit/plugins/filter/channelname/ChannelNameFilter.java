@@ -87,6 +87,15 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
     }
 
     @Override
+    public String describeRemoval(Entry removed, List<Entry> input) {
+        return getExcludeRegexes().stream()
+                .filter(regex -> Pattern.matches(regex, removed.getName()))
+                .findFirst()
+                .map("matches %s"::formatted)
+                .orElse(null);
+    }
+
+    @Override
     public void configure() {
         log.debug("Opening configuration dialog for ChannelNameFilter");
         ChannelNameFilterConfigDialogController dialog = new ChannelNameFilterConfigDialogController(this);

@@ -500,6 +500,63 @@ class DataModelTest {
     }
 
     @Test
+    void testPipelineResultContainsTheResultOfEachEnabledStep() {
+        uniqueNameFilter.getEnabled().set(true);
+        channelNameSorter.getEnabled().set(true);
+        Entry b = entry("b");
+        Entry a = entry("a");
+        Entry duplicate = entry("b");
+        TestInput input = new TestInput("in", List.of(b, a, duplicate));
+        dataModel.getInputs().add(input);
+        runAll();
+
+        PipelineResult result = dataModel.getPipelineResult();
+        assertThat(result.raw()).containsExactly(b, a, duplicate);
+        assertThat(result.sources()).containsEntry(a, input).containsEntry(duplicate, input);
+        assertThat(result.entriesOf(input)).containsExactly(b, a, duplicate);
+
+        StepResult filterStep = result.step(uniqueNameFilter).orElseThrow();
+        assertThat(filterStep.input()).containsExactly(b, a, duplicate);
+        assertThat(filterStep.output()).containsExactly(b, a);
+        assertThat(filterStep.removedCount()).isEqualTo(1);
+        assertThat(result.removedBy()).containsOnlyKeys(duplicate).containsEntry(duplicate, uniqueNameFilter);
+        assertThat(result.removalReason(duplicate)).isEqualTo("Unique Name Filter: same name as \"b\" (#1)");
+        assertThat(result.removalReason(a)).isNull();
+
+        StepResult sorterStep = result.step(channelNameSorter).orElseThrow();
+        assertThat(sorterStep.output()).containsExactly(a, b);
+        assertThat(sorterStep.movedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void testDisabledStepsHaveNoResult() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+
+        assertThat(dataModel.getPipelineResult().step(uniqueNameFilter)).isEmpty();
+        assertThat(dataModel.getPipelineResult().step(channelNameSorter)).isEmpty();
+    }
+
+    @Test
+    void testSortingKeepsTheFilterResults() {
+        uniqueNameFilter.getEnabled().set(true);
+        Entry duplicate = entry("b");
+        TestInput input = new TestInput("in", List.of(entry("b"), entry("a"), duplicate));
+        dataModel.getInputs().add(input);
+        runAll();
+
+        channelNameSorter.getEnabled().set(true);
+        dataModel.sortFilteredEntries();
+        runAll();
+
+        PipelineResult result = dataModel.getPipelineResult();
+        assertThat(result.step(uniqueNameFilter)).isPresent();
+        assertThat(result.removedBy()).containsKey(duplicate);
+        assertThat(result.sources()).containsEntry(duplicate, input);
+        assertThat(names(result.sorted())).containsExactly("a", "b");
+    }
+
+    @Test
     void testManualChangesAreKeptWhenThePlaylistIsRecomputed() {
         dataModel.getInputs().add(new TestInput("in", List.of(entry("b"), entry("a"), entry("c"))));
         runAll();
@@ -583,5 +640,20 @@ class DataModelTest {
         assertThat(names(dataModel.getSortedEntryList())).containsExactly("a", "b");
         assertThat(dataModel.getManualChanges()).isEmpty();
         assertThat(dataModel.isChanged()).isTrue();
+    }
+
+    @Test
+    void testManualChangesApplyToThePlaylistButNotToThePipelineResult() {
+        channelNameSorter.getEnabled().set(true);
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("b"), entry("a"), entry("c"))));
+        runAll();
+
+        dataModel.removeEntries(List.of(dataModel.getSortedEntryList().getFirst()));
+        dataModel.sortFilteredEntries();
+        runAll();
+
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("b", "c");
+        assertThat(names(dataModel.getPipelineResult().sorted())).containsExactly("a", "b", "c");
+        assertThat(dataModel.getPipelineResult().step(channelNameSorter).orElseThrow().output()).hasSize(3);
     }
 }
