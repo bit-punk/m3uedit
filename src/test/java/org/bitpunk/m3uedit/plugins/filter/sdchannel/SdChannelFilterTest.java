@@ -23,4 +23,39 @@ class SdChannelFilterTest extends AbstractFilterTest {
                 .contains("Das Erste HD", "ZDF HD", "3sat HD", "arte HD", "Bingo-TV ᴴᴰ");
     }
 
+    private static Entry entry(String name) {
+        Entry entry = new Entry();
+        entry.setName(name);
+        return entry;
+    }
+
+    private static List<String> filteredNames(String... names) {
+        List<Entry> entries = java.util.Arrays.stream(names).map(SdChannelFilterTest::entry).toList();
+        return new SdChannelFilter().filter(entries).stream().map(Entry::getName).toList();
+    }
+
+    @Test
+    void channelsStartingWithTheSameNameAreKept() {
+        assertThat(filteredNames("RTL", "RTL ZWEI", "SAT.1", "SAT.1 Gold", "ProSieben", "ProSieben MAXX", "ZDF", "ZDFneo HD"))
+                .containsExactly("RTL", "RTL ZWEI", "SAT.1", "SAT.1 Gold", "ProSieben", "ProSieben MAXX", "ZDF", "ZDFneo HD");
+    }
+
+    @Test
+    void hdSuffixVariantsAreRecognized() {
+        assertThat(filteredNames("ZDF", "ZDFHD", "arte", "arte (HD)", "phoenix", "Phoenix hd", "KiKA ", "KiKA HD"))
+                .containsExactly("ZDFHD", "arte (HD)", "Phoenix hd", "KiKA HD");
+    }
+
+    @Test
+    void hdChannelsWithoutSdVariantAndNamesOnlyConsistingOfHdAreKept() {
+        assertThat(filteredNames("HD", "ONE HD", "tagesschau24 HD")).containsExactly("HD", "ONE HD", "tagesschau24 HD");
+    }
+
+    @Test
+    void removalNamesTheHdChannel() {
+        Entry sd = entry("RTL");
+        List<Entry> input = List.of(sd, entry("RTL ZWEI"), entry("RTL HD"));
+
+        assertThat(new SdChannelFilter().describeRemoval(sd, input)).isEqualTo("\"RTL HD\" exists");
+    }
 }
