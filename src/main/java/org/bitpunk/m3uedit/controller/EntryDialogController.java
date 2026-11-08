@@ -182,7 +182,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
         PojoValidator<Entry> validator = new PojoValidator<>();
         Set<ConstraintViolation<Entry>> errors = validator.validate(entry);
         displayValidationErrors(errors);
-        log.debug("Validation-errors found: {}", errors);
+        log.trace("Validation-errors found: {}", errors);
         return errors.isEmpty();
     }
 
@@ -191,7 +191,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
         for (ConstraintViolation<Entry> error : errors) {
             String fieldName = error.getPropertyPath().toString();
             String errorMessage = error.getMessage();
-            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            log.trace("Field: {} Message: {}", fieldName, errorMessage);
             switch (fieldName) {
                 case "duration" -> markFieldInvalid(durationTextField, errorMessage);
                 case "groupTitle" -> markFieldInvalid(groupTitleTextField, errorMessage);

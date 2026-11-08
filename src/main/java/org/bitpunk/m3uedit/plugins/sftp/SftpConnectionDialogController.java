@@ -318,7 +318,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         SftpConnection sftpConnectionFromInput = createSftpConnectionFromInput();
         Set<ConstraintViolation<SftpConnection>> errors = validator.validate(sftpConnectionFromInput);
         displayValidationErrors(errors);
-        log.debug("Validation-errors found: {}", errors);
+        log.trace("Validation-errors found: {}", errors);
         boolean fileNameMissing = isFileNameRequired() && isBlank(sftpConnectionFromInput.getFileName());
         if (fileNameMissing) {
             markFieldInvalid(fileNameTextField, "Filename must not be empty");
@@ -331,7 +331,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         for (ConstraintViolation<SftpConnection> error : errors) {
             String errorMessage = error.getMessage();
             String fieldName = error.getPropertyPath().toString();
-            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            log.trace("Field: {} Message: {}", fieldName, errorMessage);
             switch (fieldName) {
                 case "hostName" -> markFieldInvalid(hostnameTextField, errorMessage);
                 case "port" -> markFieldInvalid(hostPortTextField, errorMessage);

@@ -85,7 +85,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
         FritzBoxConnection fritzBoxConnection = createFritzboxConnectionFromInput();
         Set<ConstraintViolation<FritzBoxConnection>> errors = validator.validate(fritzBoxConnection);
         displayValidationErrors(errors);
-        log.debug("Validation-errors found: {}", errors);
+        log.trace("Validation-errors found: {}", errors);
         return errors.isEmpty();
     }
 
@@ -99,7 +99,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
         for (ConstraintViolation<FritzBoxConnection> error : errors) {
             String errorMessage = error.getMessage();
             String fieldName = error.getPropertyPath().toString();
-            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            log.trace("Field: {} Message: {}", fieldName, errorMessage);
             if (fieldName.equals("baseUrl")) {
                 markFieldInvalid(baseUrlTextField, errorMessage);
             }
