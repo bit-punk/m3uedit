@@ -34,6 +34,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
@@ -456,5 +457,78 @@ class ProjectPersisterUtilTest {
         JsonNode project = ProjectPersisterUtil.getMapper().readTree(projectFile.toFile());
         modification.accept(project);
         Files.writeString(projectFile, ProjectPersisterUtil.getMapper().writeValueAsString(project));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "/tmp/project, /tmp/project.m3uproj",
+            "/tmp/project.m3uproj, /tmp/project.m3uproj",
+            "/tmp/project.M3UPROJ, /tmp/project.M3UPROJ",
+            "/tmp/project.m3u, /tmp/project.m3u.m3uproj",
+            "/tmp/my.project, /tmp/my.project.m3uproj",
+            "project, project.m3uproj"
+    })
+    void testProjectFileSuffixIsAppendedIfMissing(String selected, String expected) {
+        assertThat(ProjectPersisterUtil.withProjectFileSuffix(Path.of(selected))).isEqualTo(Path.of(expected));
+    }
+
+    @Test
+    void testSaveAsAppendsSuffix(@TempDir Path tempDir) {
+        DataModel dataModel = getDataModel();
+        List<Path> confirmations = new ArrayList<>();
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(dataModel, tempDir.resolve("project"),
+                file -> confirmations.add(file));
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(tempDir.resolve("project.m3uproj")).exists();
+        assertThat(tempDir.resolve("project")).doesNotExist();
+        assertThat(dataModel.getProjectFile()).isEqualTo(tempDir.resolve("project.m3uproj").toAbsolutePath());
+        // nothing to replace, so no need to ask
+        assertThat(confirmations).isEmpty();
+    }
+
+    @Test
+    void testSaveAsReplacesExistingFileWithSuffixIfConfirmed(@TempDir Path tempDir) throws Exception {
+        Path existing = Files.writeString(tempDir.resolve("project.m3uproj"), "existing project");
+        List<Path> confirmations = new ArrayList<>();
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(getDataModel(), tempDir.resolve("project"),
+                file -> confirmations.add(file));
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(confirmations).containsExactly(existing);
+        assertThat(Files.readString(existing)).contains("name: test");
+    }
+
+    @Test
+    void testSaveAsKeepsExistingFileWithSuffixIfNotConfirmed(@TempDir Path tempDir) throws Exception {
+        Path existing = Files.writeString(tempDir.resolve("project.m3uproj"), "existing project");
+        DataModel dataModel = getDataModel();
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(dataModel, tempDir.resolve("project"),
+                file -> false);
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.CANCELLED);
+        assertThat(existing).hasContent("existing project");
+        assertThat(dataModel.getProjectFile()).isNull();
+    }
+
+    @Test
+    void testSaveAsDoesNotAskAgainForFileSelectedWithSuffix(@TempDir Path tempDir) throws Exception {
+        // the save-dialog itself already asked before replacing the file selected
+        Path existing = Files.writeString(tempDir.resolve("project.m3uproj"), "existing project");
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(getDataModel(), existing,
+                file -> { throw new AssertionError("must not ask"); });
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(Files.readString(existing)).contains("name: test");
+    }
+
+    @Test
+    void testSaveAsWithCancelledDialog() {
+        assertThat(ProjectPersisterUtil.saveProjectAs(getDataModel(), null, file -> true))
+                .isEqualTo(ProjectPersisterUtil.SaveResult.CANCELLED);
     }
 }

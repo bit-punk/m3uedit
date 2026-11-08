@@ -69,6 +69,20 @@ public class DialogUtil {
     }
 
     /**
+     * Asks whether an existing file may be overwritten.
+     *
+     * @return true if the user confirmed
+     */
+    public static boolean canFileBeOverwritten(Path file) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Save Project");
+        alert.setHeaderText("The file '" + file.getFileName() + "' already exists!");
+        alert.setContentText("Do you want to replace it?%n%n%s".formatted(file.toAbsolutePath()));
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    /**
      * Asks whether the application may be closed although the given projects contain unsaved changes.
      *
      * @return true if the user confirmed

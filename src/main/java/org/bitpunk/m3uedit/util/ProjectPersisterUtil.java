@@ -22,6 +22,8 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Locale;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -29,7 +31,8 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 @Slf4j
 public class ProjectPersisterUtil {
     public static final String M3U_PROJECTFILE_DESCRIPTION = "M3UProjectfile (*.m3uproj)";
-    public static final String M3U_PROJECT_EXTENSION = "*.m3uproj";
+    public static final String M3U_PROJECT_FILE_SUFFIX = ".m3uproj";
+    public static final String M3U_PROJECT_EXTENSION = "*" + M3U_PROJECT_FILE_SUFFIX;
 
     private ProjectPersisterUtil() {
     }
@@ -184,10 +187,40 @@ public class ProjectPersisterUtil {
     public static SaveResult openSaveDialogAndSaveProject(DataModel dataModel) {
         log.debug("Saving the Project");
         Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
-        if (saveFilePath == null) {
+        return saveProjectAs(dataModel, saveFilePath, DialogUtil::canFileBeOverwritten);
+    }
+
+    /**
+     * Saves the project to the file selected in the save-dialog, appending the suffix of project-files if missing.
+     * <p>
+     * The save-dialog only asks before replacing the file with the name entered. If the suffix is appended,
+     * an existing file with that name is only replaced if confirmed.
+     *
+     * @param selectedFile          the file selected in the save-dialog, null if cancelled
+     * @param overwriteConfirmation asks whether an existing file may be replaced
+     */
+    static SaveResult saveProjectAs(DataModel dataModel, Path selectedFile, Predicate<Path> overwriteConfirmation) {
+        if (selectedFile == null) {
             return SaveResult.CANCELLED;
         }
-        return saveProjectTo(saveFilePath, dataModel);
+        Path projectFile = withProjectFileSuffix(selectedFile);
+        if (!projectFile.equals(selectedFile) && Files.exists(projectFile) && !overwriteConfirmation.test(projectFile)) {
+            log.debug("Replacing existing project-file {} not confirmed", projectFile);
+            return SaveResult.CANCELLED;
+        }
+        return saveProjectTo(projectFile, dataModel);
+    }
+
+    /**
+     * Appends the suffix of project-files ({@value #M3U_PROJECT_FILE_SUFFIX}) to the file-name, if it is missing.
+     * The save-dialog does not add it on all platforms.
+     */
+    static Path withProjectFileSuffix(Path projectFile) {
+        String fileName = projectFile.getFileName().toString();
+        if (fileName.toLowerCase(Locale.ROOT).endsWith(M3U_PROJECT_FILE_SUFFIX)) {
+            return projectFile;
+        }
+        return projectFile.resolveSibling(fileName + M3U_PROJECT_FILE_SUFFIX);
     }
 
     private static SaveResult saveProjectTo(Path projectFile, DataModel dataModel) {
