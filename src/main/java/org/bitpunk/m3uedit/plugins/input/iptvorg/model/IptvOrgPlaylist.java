@@ -1,7 +1,8 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Locale;
 
@@ -10,12 +11,19 @@ import java.util.Locale;
  * channel (e.g. "3sat.de") whose streams are read from the playlist containing all streams.
  */
 @Data
-@RequiredArgsConstructor
 public class IptvOrgPlaylist {
     public static final String ALL_STREAMS_PATH = "index.m3u";
     private final PlaylistGrouping grouping;
     private final String id;
     private final String name;
+
+    @JsonCreator
+    public IptvOrgPlaylist(@JsonProperty("grouping") PlaylistGrouping grouping, @JsonProperty("id") String id,
+                           @JsonProperty("name") String name) {
+        this.grouping = grouping;
+        this.id = id;
+        this.name = name;
+    }
 
     public String getPath() {
         if (grouping.isChannel()) {

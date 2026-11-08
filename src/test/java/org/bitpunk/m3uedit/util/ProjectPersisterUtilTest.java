@@ -3,7 +3,6 @@ package org.bitpunk.m3uedit.util;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import com.thoughtworks.xstream.security.ForbiddenClassException;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Parser;
@@ -30,17 +29,20 @@ import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.PreferredChannelOrderSorter;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,7 +62,20 @@ class ProjectPersisterUtilTest {
         String projectFileName = "src/test/resources/project/testproject.m3uproj";
         DataModel dataModel = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
         assertThat(dataModel).isNotNull();
-        assertThat(dataModel.getSorters()).hasSize(1);
+        assertThat(dataModel.getName()).isEqualTo("Kurt");
+        assertThat(dataModel.getInputs()).hasExactlyElementsOfTypes(FileInput.class, FritzBoxInput.class);
+        assertThat(dataModel.getInputs()).extracting(input -> input.getEnabled().get()).containsExactly(true, false);
+        FritzBoxInput fritzBoxInput = (FritzBoxInput) dataModel.getInputs().get(1);
+        assertThat(fritzBoxInput.getSelectedStreamSources()).containsExactly(
+                new StreamSource("tvsd.m3u", "SD streams"), new StreamSource("tvhd.m3u", "HD streams"));
+        assertThat(fritzBoxInput.getFritzBoxConnection().getBaseUrl()).isEqualTo("http://fritz.box/dvb/m3u/");
+        assertThat(dataModel.getFilters())
+                .hasExactlyElementsOfTypes(ChannelNameFilter.class, UniqueNameFilter.class, SdChannelFilter.class);
+        assertThat(dataModel.getFilters()).extracting(filter -> filter.getEnabled().get())
+                .containsExactly(false, true, false);
+        assertThat(dataModel.getSorters()).hasExactlyElementsOfTypes(ChannelNameSorter.class);
+        assertThat(((FileOutput) dataModel.getOutputs().getFirst()).getOutput())
+                .isEqualTo(URI.create("file:///tmp/playlist.m3u"));
     }
 
     @Test
@@ -94,21 +109,24 @@ class ProjectPersisterUtilTest {
 
         ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
 
-        String xml = Files.readString(Path.of(projectFileName));
-        assertThat(xml).doesNotContain("EntryList").doesNotContain("<Entry>").contains("<inputs");
+        String yaml = Files.readString(Path.of(projectFileName));
+        assertThat(yaml).doesNotContain("EntryList").doesNotContain("tvgName").contains("inputs:");
     }
 
     @Test
-    void testLegacyProjectFileWithEntriesCanBeLoaded() throws Exception {
-        String xml = Files.readString(Path.of("src/test/resources/project/testproject.m3uproj"));
-        assertThat(xml).contains("<rawEntryList").contains("<Entry>");
+    void testOnlyTheProjectConfigurationIsPersisted() throws Exception {
+        DataModel dataModel = getDataModel();
+        Path projectFile = Path.of("target/testproject-content.m3uproj");
 
-        DataModel loaded = ProjectPersisterUtil.loadProject(Path.of("src/test/resources/project/testproject.m3uproj"));
+        ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
 
-        assertThat(loaded).isNotNull();
-        assertThat(loaded.getInputs()).isNotEmpty();
-        assertThat(loaded.getRawEntryList()).isEmpty();
-        assertThat(loaded.getSortedEntryList()).isEmpty();
+        String yaml = Files.readString(projectFile);
+        // plugins are stored by their simple class-name, without package
+        assertThat(yaml).contains("type: FileInput").contains("type: ChannelNameSorter")
+                .doesNotContain("org.bitpunk");
+        // neither the constant name and description of the plugins, nor the state of the editor
+        assertThat(yaml).doesNotContain("File Input").doesNotContain("description")
+                .doesNotContain("changed").doesNotContain("busy");
     }
 
     @Test
@@ -128,18 +146,17 @@ class ProjectPersisterUtilTest {
     }
 
     @Test
-    void testLegacyProjectFileWithSftpPasswordCanBeLoaded() throws Exception {
+    void testSftpPasswordInProjectFileIsIgnored() throws Exception {
         DataModel dataModel = getDataModel();
         ((SftpOutput) dataModel.getOutputs().get(1)).setSftpConnection(createSftpConnection("ignored"));
-        Path legacyFile = Path.of("target/legacy-sftp.m3uproj");
-        ProjectPersisterUtil.saveProjectFile(legacyFile.toString(), dataModel);
-        // simulate a project file written by an older version, which still contained the password
-        String xml = Files.readString(legacyFile);
-        assertThat(xml).contains("<userName>user</userName>");
-        Files.writeString(legacyFile, xml.replace("<userName>user</userName>",
-                "<userName>user</userName><password>oldSecret</password>"));
+        Path projectFile = Path.of("target/testproject-sftp-password.m3uproj");
+        ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
+        // a password added to the project-file manually is not used
+        modifyProjectFile(projectFile, project ->
+                ((ObjectNode) project.findParent("userName")).put("password", "oldSecret"));
+        assertThat(Files.readString(projectFile)).contains("oldSecret");
 
-        SftpConnection connection = ((SftpOutput) ProjectPersisterUtil.loadProject(legacyFile)
+        SftpConnection connection = ((SftpOutput) ProjectPersisterUtil.loadProject(projectFile)
                 .getOutputs().get(1)).getSftpConnection();
         assertThat(connection.getHostName()).isEqualTo("example.com");
         assertThat(connection.getPassword()).isNull();
@@ -172,7 +189,7 @@ class ProjectPersisterUtilTest {
 
         String projectFileName = "target/testproject-sftp-input.m3uproj";
         ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
-        assertThat(Files.readString(Path.of(projectFileName))).contains("<SftpInput>").doesNotContain("topSecret42");
+        assertThat(Files.readString(Path.of(projectFileName))).contains("type: SftpInput").doesNotContain("topSecret42");
 
         DataModel loaded = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
         SftpInput loadedInput = (SftpInput) loaded.getInputs().get(3);
@@ -252,8 +269,8 @@ class ProjectPersisterUtilTest {
 
         ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
 
-        String xml = Files.readString(projectFile);
-        assertThat(xml).contains("<enabled>true</enabled>").contains("<enabled>false</enabled>")
+        String yaml = Files.readString(projectFile);
+        assertThat(yaml).contains("enabled: true").contains("enabled: false")
                 .doesNotContain("SimpleBooleanProperty").doesNotContain("WeakReference");
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
         assertThat(loaded).isNotNull();
@@ -265,34 +282,13 @@ class ProjectPersisterUtilTest {
     }
 
     @Test
-    void testLegacyEnabledPropertyFormatCanBeLoaded() throws Exception {
-        DataModel dataModel = getDataModel();
-        Path projectFile = Path.of("target/testproject-legacy-enabled.m3uproj");
-        ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
-        String xml = Files.readString(projectFile);
-        assertThat(xml).contains("<enabled>false</enabled>");
-        // older versions serialized the complete SimpleBooleanProperty object
-        String legacyEnabled = """
-                <enabled class="javafx.beans.property.SimpleBooleanProperty">
-                    <value>true</value>
-                    <valid>false</valid>
-                    <name></name>
-                  </enabled>""";
-        Files.writeString(projectFile, xml.replace("<enabled>false</enabled>", legacyEnabled));
-
-        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
-
-        assertThat(loaded).isNotNull();
-        assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(filter.getEnabled().get()).isTrue());
-        assertThat(loaded.getInputs()).allSatisfy(input -> assertThat(input.getEnabled().get()).isTrue());
-    }
-
-    @Test
-    void testMissingEnabledElementDefaultsToDisabled() throws Exception {
+    void testMissingEnabledPropertyDefaultsToDisabled() throws Exception {
         DataModel dataModel = getDataModel();
         Path projectFile = Path.of("target/testproject-without-enabled.m3uproj");
         ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
-        Files.writeString(projectFile, Files.readString(projectFile).replace("<enabled>false</enabled>", ""));
+        modifyProjectFile(projectFile, project -> project.findParents("enabled")
+                .forEach(plugin -> ((ObjectNode) plugin).remove("enabled")));
+        assertThat(Files.readString(projectFile)).doesNotContain("enabled");
 
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
 
@@ -318,10 +314,10 @@ class ProjectPersisterUtilTest {
         Path projectFile = tempDir.resolve("project.m3uproj");
         Files.writeString(projectFile, "existing project");
         DataModel dataModel = getDataModel();
-        // a weak reference cannot be serialized on java 17+, like the bindings of the UI
+        // a cyclic reference cannot be serialized
         dataModel.getFilters().add(new UniqueNameFilter() {
             @SuppressWarnings("unused")
-            private final Object reference = new WeakReference<>(new Object());
+            private final Object self = this;
         });
 
         assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isFalse();
@@ -334,7 +330,7 @@ class ProjectPersisterUtilTest {
 
     @Test
     void testLoadingCorruptProjectFileReturnsNull(@TempDir Path tempDir) throws Exception {
-        Path projectFile = Files.writeString(tempDir.resolve("corrupt.m3uproj"), "<Project><name>x</name><inputs");
+        Path projectFile = Files.writeString(tempDir.resolve("corrupt.m3uproj"), "name: x\ninputs: [");
         assertThat(ProjectPersisterUtil.loadProject(projectFile)).isNull();
     }
 
@@ -389,43 +385,48 @@ class ProjectPersisterUtilTest {
         assertThat(((SftpOutput) loaded.getOutputs().get(1)).getSftpConnection().getHostName()).isEqualTo("example.com");
     }
 
-    private static final String OBSERVABLE_LIST = "class=\"com.sun.javafx.collections.ObservableListWrapper\"";
-
     @ParameterizedTest
     @ValueSource(strings = {
-            // arbitrary classes as list-items
-            "<inputs %1$s><java.lang.ProcessBuilder><command><string>touch</string></command></java.lang.ProcessBuilder></inputs>",
-            "<inputs %1$s><javax.naming.InitialContext/></inputs>",
-            // collections which are part of known gadget-chains or trigger DNS-lookups for URL-keys
-            "<inputs class=\"java.util.PriorityQueue\"/>",
-            "<inputs %1$s><java.util.HashSet><url>http://attacker.example/</url></java.util.HashSet></inputs>",
-            "<inputs %1$s><java.util.HashMap/></inputs>",
-            "<inputs %1$s><java.util.TreeMap/></inputs>",
+            // arbitrary classes as plugins
+            "inputs: [{type: java.lang.ProcessBuilder, command: [touch]}]",
+            "inputs: [{type: ProcessBuilder, command: [touch]}]",
+            "inputs: [!<java.lang.ProcessBuilder> {command: [touch]}]",
+            // plugins of another kind, or without type
+            "inputs: [{type: UniqueNameFilter}]",
+            "outputs: [{type: FileInput}]",
+            "inputs: [{source: /tmp/a.m3u}]",
             // arbitrary classes as field-values
-            "<inputs %1$s><FileInput><source class=\"java.lang.Runtime\"/></FileInput></inputs>",
-            "<inputs %1$s><FileInput><enabled class=\"javafx.beans.property.SimpleObjectProperty\"/></FileInput></inputs>"
+            "inputs: [{type: FileInput, source: {type: java.lang.Runtime}}]",
+            "inputs: [{type: FileInput, enabled: {type: javafx.beans.property.SimpleObjectProperty}}]"
     })
-    void testProjectFilesWithForbiddenTypesAreRejected(String content, @TempDir Path tempDir) throws Exception {
-        String xml = "<Project><name>crafted</name>" + content.formatted(OBSERVABLE_LIST) + "</Project>";
+    void testProjectFilesWithUnknownTypesAreRejected(String content, @TempDir Path tempDir) throws Exception {
+        String yaml = "name: crafted\n" + content + "\n";
 
-        // rejected because of the type permissions, not because of malformed xml
-        assertThatThrownBy(() -> ProjectPersisterUtil.getXStream().fromXML(xml))
-                .isInstanceOf(ForbiddenClassException.class);
-        Path projectFile = Files.writeString(tempDir.resolve("crafted.m3uproj"), xml);
+        // rejected because of the types, not because of malformed yaml
+        assertThatThrownBy(() -> ProjectPersisterUtil.getMapper().readValue(yaml, DataModel.class))
+                .isInstanceOf(JacksonException.class)
+                .hasMessageNotContaining("Unexpected end-of-input");
+        Path projectFile = Files.writeString(tempDir.resolve("crafted.m3uproj"), yaml);
         assertThat(ProjectPersisterUtil.loadProject(projectFile)).isNull();
     }
 
     @Test
     void testValidMinimalProjectFileIsAccepted(@TempDir Path tempDir) throws Exception {
-        Path projectFile = Files.writeString(tempDir.resolve("minimal.m3uproj"),
-                "<Project><name>minimal</name><inputs %s><FileInput><source>/tmp/a.m3u</source><enabled>true</enabled>"
-                        .formatted(OBSERVABLE_LIST) + "</FileInput></inputs></Project>");
+        Path projectFile = Files.writeString(tempDir.resolve("minimal.m3uproj"), """
+                name: minimal
+                inputs:
+                  - type: FileInput
+                    enabled: true
+                    source: /tmp/a.m3u
+                """);
 
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
 
         assertThat(loaded).isNotNull();
         assertThat(((FileInput) loaded.getInputs().getFirst()).getSource()).isEqualTo("/tmp/a.m3u");
         assertThat(loaded.getInputs().getFirst().getEnabled().get()).isTrue();
+        assertThat(loaded.getFilters()).isEmpty();
+        assertThat(loaded.getOutputs()).isEmpty();
     }
 
     @Test
@@ -438,8 +439,8 @@ class ProjectPersisterUtilTest {
 
         loaded.setName("renamed");
         assertThat(ProjectPersisterUtil.saveProject(loaded)).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
-        assertThat(Files.readString(projectFile)).contains("<name>renamed</name>");
-        // the project-file itself is not part of the xml
+        assertThat(Files.readString(projectFile)).contains("name: renamed");
+        // the project-file itself is not part of its content
         assertThat(Files.readString(projectFile)).doesNotContain("projectFile");
     }
 
@@ -449,5 +450,11 @@ class ProjectPersisterUtilTest {
         dataModel.setProjectFile(tempDir.resolve("missing-directory").resolve("project.m3uproj"));
 
         assertThat(ProjectPersisterUtil.saveProject(dataModel)).isEqualTo(ProjectPersisterUtil.SaveResult.FAILED);
+    }
+
+    private static void modifyProjectFile(Path projectFile, Consumer<JsonNode> modification) throws Exception {
+        JsonNode project = ProjectPersisterUtil.getMapper().readTree(projectFile.toFile());
+        modification.accept(project);
+        Files.writeString(projectFile, ProjectPersisterUtil.getMapper().writeValueAsString(project));
     }
 }

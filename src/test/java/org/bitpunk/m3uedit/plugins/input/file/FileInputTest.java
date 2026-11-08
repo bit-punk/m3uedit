@@ -3,6 +3,9 @@ package org.bitpunk.m3uedit.plugins.input.file;
 import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -72,13 +75,14 @@ class FileInputTest {
                 .isInstanceOf(FileNotFoundException.class);
     }
 
-    @Test
-    void testReadNullSourceThrowsNullPointerException() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"  "})
+    void testReadWithoutSourceReturnsNoEntries(String source) throws IOException {
         FileInput fileInput = new FileInput();
-        fileInput.setSource(null);
+        fileInput.setSource(source);
 
-        assertThatThrownBy(fileInput::read)
-                .isInstanceOf(NullPointerException.class);
+        assertThat(fileInput.read()).isEmpty();
     }
 
     @Test

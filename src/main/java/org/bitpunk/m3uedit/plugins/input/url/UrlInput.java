@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.url;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
@@ -27,9 +27,9 @@ public class UrlInput extends AbstractInput implements Input {
     private List<URL> selectedInputUrls;
     private List<URL> urlList = null;
 
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "Url Input";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Reads a playlist from a given Url.";
 
     @Override

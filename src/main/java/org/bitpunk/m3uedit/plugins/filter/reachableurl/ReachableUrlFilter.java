@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
@@ -44,12 +44,11 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
             "rtsp", 554,
             "ftp", 21);
 
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "Reachable URL Filter";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Filters for entries with an unreachable URL";
 
-    @XStreamOmitField
     private transient YamlConfigManager<ReachableUrlFilterConfig> configManager;
 
     public ReachableUrlFilter() {
@@ -64,7 +63,7 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     }
 
     public YamlConfigManager<ReachableUrlFilterConfig> getConfigManager() {
-        // lazily created, as XStream does not invoke the constructor when loading a project
+        // lazily created, if none has been passed to the constructor
         if (configManager == null) {
             configManager = new YamlConfigManager<>(AppConfigPaths.getPluginConfigPath(CONFIG_FILE_NAME), RESOURCE_PATH,
                     ReachableUrlFilterConfig.class, ReachableUrlFilterConfig::new);

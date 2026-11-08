@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.sftp.model;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -49,7 +49,7 @@ public class SftpConnection {
      * Kept in memory only: never persisted to the project file and never logged.
      * Optional: if empty (e.g. after loading a project) the user is asked for it on the first write.
      */
-    @XStreamOmitField
+    @JsonIgnore
     @ToString.Exclude
     private String password;
 

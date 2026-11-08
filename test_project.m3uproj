@@ -1,0 +1,42 @@
+---
+name: eins
+inputs:
+  - type: FritzBoxInput
+    enabled: false
+    selectedStreamSources:
+      - name: tvsd.m3u
+        description: SD streams
+      - name: tvsd.m3u
+        description: SD streams
+      - name: tvhd.m3u
+        description: HD streams
+    fritzBoxConnection:
+      baseUrl: http://fritz.box/dvb/m3u/
+      selectedStreamSources:
+        - name: tvsd.m3u
+          description: SD streams
+        - name: tvsd.m3u
+          description: SD streams
+        - name: tvhd.m3u
+          description: HD streams
+filters:
+  - type: ChannelNameFilter
+    enabled: true
+  - type: SdChannelFilter
+    enabled: true
+  - type: UniqueNameFilter
+    enabled: true
+  - type: UniqueUriFilter
+    enabled: true
+  - type: ReachableUrlFilter
+    enabled: true
+sorters:
+  - type: ChannelNameSorter
+    enabled: false
+  - type: PreferredChannelOrderSorter
+    enabled: true
+    selectedProfileId: libreelec
+outputs:
+  - type: FileOutput
+    enabled: false
+    output: file:/home/jochen/projekte/m3uedit/target/test.m3u

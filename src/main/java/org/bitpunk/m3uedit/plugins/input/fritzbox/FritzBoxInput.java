@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
@@ -27,9 +27,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Setter
 @Slf4j
 public class FritzBoxInput extends AbstractInput implements Input {
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "FritzBox Input";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Downloads a playlist from a FritzBox.";
     private List<StreamSource> selectedStreamSources;
     private FritzBoxConnection fritzBoxConnection = null;

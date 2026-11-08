@@ -45,4 +45,17 @@ public abstract class AbstractPluginService<T extends Plugin> implements PluginS
                 .map(serviceProvider -> serviceProvider.get().getName())
                 .toList();
     }
+
+    /**
+     * Returns the classes of all plugins loaded by this service, without instantiating them.
+     *
+     * @return A list containing the classes of all loaded plugins.
+     */
+    @Override
+    public List<Class<? extends T>> getAllPluginTypes() {
+        return loader
+                .stream()
+                .<Class<? extends T>>map(ServiceLoader.Provider::type)
+                .toList();
+    }
 }

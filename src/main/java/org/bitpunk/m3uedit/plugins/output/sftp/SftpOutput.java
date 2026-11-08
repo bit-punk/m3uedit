@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import com.jcraft.jsch.*;
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,9 +34,9 @@ import java.util.Optional;
 public class SftpOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
     public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "SFTP Output";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "writes a playlist to a SFTP server.";
     private SftpConnection sftpConnection = null;
 
@@ -184,7 +184,6 @@ public class SftpOutput extends AbstractPlugin implements Output {
     protected SftpUserInteraction createUserInteraction() {
         return new SftpUserInteraction();
     }
-
 
     protected String buildSftpContextDetails(ChannelSftp channelSftp, String targetPath, int playlistSize, int payloadBytes) {
         StringBuilder sb = new StringBuilder();

@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,15 +23,13 @@ public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorte
     public static final String RESOURCE_PATH = "plugin/sorter/preferredchannelorder/preferred_channel_order.yaml";
     public static final String CONFIG_FILE_NAME = "preferred_channel_order.yaml";
 
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "Preferred Channel Order Sorter";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Sorts list according to the preferred channel order";
 
-    @XStreamOmitField
     private transient YamlConfigManager<PreferredChannelOrderConfig> configManager;
 
-    @XStreamOmitField
     private transient PreferredChannelOrderConfig config;
 
     private String selectedProfileId = "deutschland_standard";
@@ -55,16 +53,6 @@ public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorte
     private static YamlConfigManager<PreferredChannelOrderConfig> createDefaultConfigManager(Path userConfigPath) {
         Path path = userConfigPath != null ? userConfigPath : AppConfigPaths.getPluginConfigPath(CONFIG_FILE_NAME);
         return new YamlConfigManager<>(path, RESOURCE_PATH, PreferredChannelOrderConfig.class, PreferredChannelOrderConfig::new);
-    }
-
-    private Object readResolve() {
-        if (configManager == null) {
-            configManager = createDefaultConfigManager(null);
-        }
-        if (config == null) {
-            config = configManager.loadConfig();
-        }
-        return this;
     }
 
     public YamlConfigManager<PreferredChannelOrderConfig> getConfigManager() {

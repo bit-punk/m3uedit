@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.filter.channelname;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,15 +22,13 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/channelname/channel_name_filter.yaml";
     public static final String CONFIG_FILE_NAME = "channel_name_filter.yaml";
 
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "ChannelName Filter";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Filters entries based on the channelName using a List of regular expressions";
 
-    @XStreamOmitField
     private transient YamlConfigManager<ChannelNameFilterConfig> configManager;
 
-    @XStreamOmitField
     private transient ChannelNameFilterConfig config;
 
     public ChannelNameFilter() {

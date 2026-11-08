@@ -2,7 +2,7 @@ package org.bitpunk.m3uedit.plugins.input.sftp;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
@@ -31,9 +31,9 @@ import java.util.List;
 @Setter
 public class SftpInput extends AbstractInput implements Input {
 
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "SFTP Input";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Reads a playlist from a SFTP server.";
     private SftpConnection sftpConnection;
 

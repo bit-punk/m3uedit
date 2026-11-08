@@ -23,7 +23,6 @@
         <commons-lang3.version>3.21.0</commons-lang3.version>
         <hibernate-validator.version>9.1.5.Final</hibernate-validator.version>
         <expressly.version>6.0.0</expressly.version>
-        <xstream.version>1.4.21</xstream.version>
         <jsch.version>2.28.8</jsch.version>
         <assertj-core.version>3.27.7</assertj-core.version>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
@@ -65,11 +64,6 @@
                 <groupId>com.github.mwiede</groupId>
                 <artifactId>jsch</artifactId>
                 <version>${jsch.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.thoughtworks.xstream</groupId>
-                <artifactId>xstream</artifactId>
-                <version>${xstream.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -140,10 +134,6 @@
         <dependency>
             <groupId>com.github.mwiede</groupId>
             <artifactId>jsch</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

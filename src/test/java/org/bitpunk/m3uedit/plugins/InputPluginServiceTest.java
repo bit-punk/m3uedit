@@ -1,5 +1,11 @@
 package org.bitpunk.m3uedit.plugins;
 
+import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.file.FileInput;
+import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.IptvOrgInput;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
+import org.bitpunk.m3uedit.plugins.input.url.UrlInput;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -26,5 +32,12 @@ class InputPluginServiceTest {
         assertThat(allPluginNames)
                 .hasSize(5)
                 .contains(INPUT_NAMES);
+    }
+
+    @Test
+    void getAllPluginTypes() {
+        List<Class<? extends Input>> allPluginTypes = InputPluginService.getInstance().getAllPluginTypes();
+        assertThat(allPluginTypes).containsExactlyInAnyOrder(
+                FileInput.class, FritzBoxInput.class, UrlInput.class, IptvOrgInput.class, SftpInput.class);
     }
 }

@@ -1,5 +1,9 @@
 package org.bitpunk.m3uedit.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.validation.constraints.NotNull;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -11,18 +15,18 @@ import javafx.collections.ObservableList;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.plugins.Plugin;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,10 +42,11 @@ import java.util.function.Consumer;
  * <p>
  * The methods triggering a re-computation must be called on the JavaFX application thread.
  */
+@Slf4j
 @Getter
 @Setter
+@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "outputs"})
 public class DataModel {
-    private static final Logger log = LoggerFactory.getLogger(DataModel.class);
     private static final ExecutorService DEFAULT_BACKGROUND_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "datamodel-worker");
         thread.setDaemon(true);
@@ -61,19 +66,23 @@ public class DataModel {
     @NotNull
     private String name;
 
+    /**
+     * The 'dirty'-flag: the state of the editor, not of the project.
+     */
+    @JsonIgnore
     private boolean changed = true;
 
-    // initialize Observable Lists; the setters are implemented explicitly to move the listeners to a new list
+    // the setters are implemented explicitly to move the listeners to a new list
     @Setter(AccessLevel.NONE)
-    private ObservableList<Input> inputs = FXCollections.observableArrayList();
+    private ObservableList<Input> inputs;
     @Setter(AccessLevel.NONE)
-    private ObservableList<Filter> filters = FXCollections.observableArrayList();
+    private ObservableList<Filter> filters;
     @Setter(AccessLevel.NONE)
-    private ObservableList<Sorter> sorters = FXCollections.observableArrayList();
+    private ObservableList<Sorter> sorters;
     @Setter(AccessLevel.NONE)
-    private ObservableList<Output> outputs = FXCollections.observableArrayList();
+    private ObservableList<Output> outputs;
 
-    // derived data: transient fields are neither persisted by XStream nor part of equals/hashCode
+    // derived data: transient fields are not persisted
     private transient ObservableList<Entry> rawEntryList;
     private transient ObservableList<Entry> filteredEntryList;
     private transient ObservableList<Entry> sortedEntryList;
@@ -123,29 +132,34 @@ public class DataModel {
     private transient ListChangeListener<Input> inputsRecomputeListener;
 
     public DataModel(String name) {
-        this.name = name;
-        initTransientState();
+        this(name, null, null, null, null);
     }
 
     /**
-     * Using XStream for deserialization will not invoke the constructor (nor field initializers),
-     * however, it will invoke this method to resolve the read object.
-     * It initializes the derived entry-lists and the listeners and returns the deserialized object.
-     *
-     * @return The deserialized object with initialized listeners.
+     * Creates a project loaded from a project-file. Lists missing in the project-file are created empty.
      */
-    @SuppressWarnings("unused")
-    private Object readResolve() {
+    @JsonCreator
+    DataModel(@JsonProperty("name") String name,
+              @JsonProperty("inputs") List<Input> inputs,
+              @JsonProperty("filters") List<Filter> filters,
+              @JsonProperty("sorters") List<Sorter> sorters,
+              @JsonProperty("outputs") List<Output> outputs) {
+        this.name = name;
+        this.inputs = observableListOf(inputs);
+        this.filters = observableListOf(filters);
+        this.sorters = observableListOf(sorters);
+        this.outputs = observableListOf(outputs);
         initTransientState();
-        return this;
+    }
+
+    private static <T> ObservableList<T> observableListOf(List<T> list) {
+        if (list == null) {
+            return FXCollections.observableArrayList();
+        }
+        return FXCollections.observableArrayList(list.stream().filter(Objects::nonNull).toList());
     }
 
     private void initTransientState() {
-        // lists missing in a project-file are null after deserialization
-        inputs = inputs != null ? inputs : FXCollections.observableArrayList();
-        filters = filters != null ? filters : FXCollections.observableArrayList();
-        sorters = sorters != null ? sorters : FXCollections.observableArrayList();
-        outputs = outputs != null ? outputs : FXCollections.observableArrayList();
         rawEntryList = FXCollections.observableArrayList();
         filteredEntryList = FXCollections.observableArrayList();
         sortedEntryList = FXCollections.observableArrayList();

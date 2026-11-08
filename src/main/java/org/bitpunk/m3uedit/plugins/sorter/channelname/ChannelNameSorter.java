@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.sorter.channelname;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
@@ -13,9 +13,9 @@ import java.util.List;
 @Getter
 @Setter
 public class ChannelNameSorter extends AbstractPlugin implements Sorter {
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "ChannelName Sorter";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "sorts list alphabetically";
 
     @Override
