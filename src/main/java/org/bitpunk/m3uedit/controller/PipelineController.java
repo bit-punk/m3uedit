@@ -14,6 +14,7 @@ import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.model.EntryDiff;
 import org.bitpunk.m3uedit.model.PipelineResult;
 import org.bitpunk.m3uedit.model.StepResult;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -137,11 +139,33 @@ public class PipelineController extends VBox implements ModelAware {
                 : new Badge("±0", "badge-zero", "nothing removed")));
         sorterStage.setBadgeProvider(stepBadge(result, step -> new Badge("⇅ " + step.movedCount(),
                 step.movedCount() > 0 ? "badge-moved" : "badge-zero", "%d entries moved".formatted(step.movedCount()))));
+        int loaded = result.raw().size();
+        inputStage.setStatusProvider(() -> "%s, %s".formatted(count(dataModel.getInputs().size(), "input"),
+                count(loaded, "entry", "entries")));
+        filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
+                dataModel.getFilters().size(), count(loaded - result.filtered().size(), "entry", "entries")));
+        int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
+        sorterStage.setStatusProvider(() -> "%d of %d enabled, ⇅ %s".formatted(enabledCount(dataModel.getSorters()),
+                dataModel.getSorters().size(), count(reordered, "entry", "entries")));
+        outputStage.setStatusProvider(() -> dataModel.getOutputs().isEmpty() ? "no output"
+                : count(dataModel.getOutputs().size(), "output"));
         inputStage.refresh();
         filterStage.refresh();
         sorterStage.refresh();
         outputStage.refresh();
         updateFlowLabels();
+    }
+
+    private static long enabledCount(List<? extends Plugin> plugins) {
+        return plugins.stream().filter(plugin -> plugin.getEnabled().get()).count();
+    }
+
+    private static String count(int count, String singular) {
+        return count(count, singular, singular + "s");
+    }
+
+    private static String count(int count, String singular, String plural) {
+        return "%d %s".formatted(count, count == 1 ? singular : plural);
     }
 
     private static <T extends Plugin> Function<T, Badge> stepBadge(PipelineResult result, Function<StepResult, Badge> badge) {

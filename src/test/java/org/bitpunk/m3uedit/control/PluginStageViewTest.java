@@ -216,4 +216,48 @@ class PluginStageViewTest {
         assertThat(badge.get().getStyleClass()).contains("badge-removed");
         assertThat(badge.get().isVisible()).isTrue();
     }
+
+    @Test
+    void collapsedStageShowsOnlyTheHeaderWithItsStatus() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        stage.setStatusProvider(() -> "1 of 3 enabled");
+        assertThat(stage.getHeaderText()).isEqualTo("hint");
+
+        stage.getCollapseButton().fire();
+
+        assertThat(stage.isCollapsed()).isTrue();
+        assertThat(stage.getHeaderText()).isEqualTo("1 of 3 enabled");
+        assertThat(row(stage, first).getParent().isVisible()).isFalse();
+        assertThat(row(stage, first).getParent().isManaged()).isFalse();
+        assertThat(stage.getCollapseButton().getAccessibleText()).isEqualTo("Expand Filters");
+
+        stage.getCollapseButton().fire();
+
+        assertThat(stage.isCollapsed()).isFalse();
+        assertThat(stage.getHeaderText()).isEqualTo("hint");
+        assertThat(row(stage, first).getParent().isVisible()).isTrue();
+    }
+
+    @Test
+    void clickingTheHeaderTogglesTheStage() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        Node header = stage.getChildren().getFirst();
+
+        Event.fireEvent(header, click(1));
+        assertThat(stage.isCollapsed()).isTrue();
+
+        Event.fireEvent(header, click(1));
+        assertThat(stage.isCollapsed()).isFalse();
+    }
+
+    @Test
+    void statusIsUpdatedWhenPluginsChange() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        stage.setStatusProvider(() -> plugins.size() + " plugins");
+        stage.setCollapsed(true);
+
+        plugins.remove(third);
+
+        assertThat(stage.getHeaderText()).isEqualTo("2 plugins");
+    }
 }

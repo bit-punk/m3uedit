@@ -129,4 +129,23 @@ class PipelineControllerTest {
         background.forEach(Runnable::run);
         assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
     }
+
+    @Test
+    void collapsedStagesShowTheirStatus() {
+        hdFilter.getEnabled().set(true);
+        sorter.getEnabled().set(true);
+        List.of(pipeline.getInputStage(), pipeline.getFilterStage(), pipeline.getSorterStage(), pipeline.getOutputStage())
+                .forEach(stage -> stage.setCollapsed(true));
+
+        assertThat(pipeline.getInputStage().getHeaderText()).isEqualTo("1 input, 4 entries");
+        assertThat(pipeline.getFilterStage().getHeaderText()).isEqualTo("1 of 2 enabled, −2 entries");
+        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("1 of 1 enabled, ⇅ 1 entry");
+        assertThat(pipeline.getOutputStage().getHeaderText()).isEqualTo("no output");
+
+        // the status follows the enabled filters
+        shopFilter.getEnabled().set(true);
+        hdFilter.getEnabled().set(false);
+
+        assertThat(pipeline.getFilterStage().getHeaderText()).isEqualTo("1 of 2 enabled, −1 entry");
+    }
 }

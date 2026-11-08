@@ -1,6 +1,8 @@
 package org.bitpunk.m3uedit.control;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * One stage of the pipeline of a project (inputs, filters, sorters or outputs): a header and a row per plugin.
@@ -52,6 +55,8 @@ public class PluginStageView<T extends Plugin> extends VBox {
     private static final PseudoClass DISABLED_PLUGIN = PseudoClass.getPseudoClass("plugin-disabled");
     private static final PseudoClass DROP_BEFORE = PseudoClass.getPseudoClass("drop-before");
     private static final PseudoClass DROP_AFTER = PseudoClass.getPseudoClass("drop-after");
+    private static final PseudoClass COLLAPSED = PseudoClass.getPseudoClass("collapsed");
+    private static final String ICON_CHEVRON = "M4.4 5.6L8 9.2l3.6-3.6L13 7l-5 5-5-5z";
     private static final String ICON_PLUS = "M7 2h2v5h5v2H9v5H7V9H2V7h5z";
     private static final String ICON_UP = "M8 4l5 5-1.4 1.4L8 6.8l-3.6 3.6L3 9z";
     private static final String ICON_DOWN = "M8 12L3 7l1.4-1.4L8 9.2l3.6-3.6L13 7z";
@@ -72,7 +77,18 @@ public class PluginStageView<T extends Plugin> extends VBox {
     private final VBox rowBox = new VBox();
     private final Label emptyLabel = new Label();
     private final HBox header;
+    private final Label hintLabel;
+    private final String title;
+    private final String hint;
+    @Getter
+    private final Button collapseButton;
+    private final BooleanProperty collapsed = new SimpleBooleanProperty(this, "collapsed", false);
     private final Map<T, PluginRow> rows = new IdentityHashMap<>();
+    /**
+     * Returns the status shown in the header while the stage is collapsed, e.g. the number of enabled plugins.
+     */
+    @Setter
+    private Supplier<String> statusProvider = () -> null;
     /**
      * Returns the badge of a plugin, null for none.
      */
@@ -108,16 +124,28 @@ public class PluginStageView<T extends Plugin> extends VBox {
         this.detailText = detail;
         getStyleClass().add("pipeline-stage");
 
+        this.title = title;
+        this.hint = hint;
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("stage-title");
-        Label hintLabel = new Label(hint);
+        hintLabel = new Label(hint);
         hintLabel.getStyleClass().add("stage-hint");
         hintLabel.setMinWidth(0);
         HBox.setHgrow(hintLabel, Priority.ALWAYS);
         hintLabel.setMaxWidth(Double.MAX_VALUE);
-        header = new HBox(8, titleLabel, hintLabel);
+        collapseButton = iconButton(ICON_CHEVRON, "Collapse " + title);
+        collapseButton.getStyleClass().add("stage-collapse");
+        collapseButton.setOnAction(event -> collapsed.set(!collapsed.get()));
+        header = new HBox(6, collapseButton, titleLabel, hintLabel);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("stage-header");
+        // clicking the header (not one of its buttons) collapses or expands the stage
+        header.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && !isOnControl(event, header)) {
+                collapsed.set(!collapsed.get());
+            }
+        });
+        collapsed.addListener((observable, wasCollapsed, isCollapsed) -> updateCollapsed());
 
         rowBox.getStyleClass().add("stage-rows");
         emptyLabel.setText("No %s yet, use + to add one.".formatted(title.toLowerCase()));
@@ -127,6 +155,47 @@ public class PluginStageView<T extends Plugin> extends VBox {
         plugins.addListener((ListChangeListener<T>) change -> rebuildRows());
         selection.addListener((observable, oldValue, newValue) -> rows.values().forEach(PluginRow::updateSelected));
         rebuildRows();
+        updateCollapsed();
+    }
+
+    /**
+     * While collapsed, only the header is shown, with the status of the stage instead of its hint.
+     */
+    public BooleanProperty collapsedProperty() {
+        return collapsed;
+    }
+
+    public boolean isCollapsed() {
+        return collapsed.get();
+    }
+
+    public void setCollapsed(boolean collapsed) {
+        this.collapsed.set(collapsed);
+    }
+
+    /**
+     * @return the text shown next to the title: the status while collapsed, the hint otherwise
+     */
+    public String getHeaderText() {
+        return hintLabel.getText();
+    }
+
+    private void updateCollapsed() {
+        boolean isCollapsed = collapsed.get();
+        rowBox.setVisible(!isCollapsed);
+        rowBox.setManaged(!isCollapsed);
+        pseudoClassStateChanged(COLLAPSED, isCollapsed);
+        collapseButton.setRotate(isCollapsed ? -90 : 0);
+        String action = isCollapsed ? "Expand " : "Collapse ";
+        collapseButton.setAccessibleText(action + title);
+        collapseButton.getTooltip().setText(action + title);
+        updateStatus();
+    }
+
+    private void updateStatus() {
+        String status = collapsed.get() ? statusProvider.get() : null;
+        hintLabel.setText(status != null ? status : hint);
+        hintLabel.pseudoClassStateChanged(COLLAPSED, status != null);
     }
 
     /**
@@ -151,6 +220,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
      */
     public void refresh() {
         rows.values().forEach(PluginRow::update);
+        updateStatus();
     }
 
     /**
@@ -182,6 +252,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
             children.add(emptyLabel);
         }
         rowBox.getChildren().setAll(children);
+        updateStatus();
     }
 
     private void select(T plugin) {

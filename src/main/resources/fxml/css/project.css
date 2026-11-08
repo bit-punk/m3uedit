@@ -36,6 +36,22 @@
     -fx-min-height: 34;
 }
 
+.stage-header {
+    -fx-cursor: hand;
+}
+
+.pipeline-stage:collapsed .stage-header {
+    -fx-border-color: transparent;
+}
+
+.stage-hint:collapsed {
+    -fx-text-fill: -fx-text-base-color;
+}
+
+.stage-collapse {
+    -fx-padding: 2;
+}
+
 .stage-title {
     -fx-font-weight: bold;
     -fx-font-size: 0.85em;
