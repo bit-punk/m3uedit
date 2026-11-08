@@ -117,10 +117,10 @@ class ReachableUrlFilterConfigDialogControllerTest {
     void testSpinnerIncrementIsPersisted() throws Exception {
         runOnFxThread(() -> {
             var dialog = new ReachableUrlFilterConfigDialogController(filter);
-            dialog.getTimeoutSpinner().increment(5);   // 2000 + 5 * 100
+            dialog.getTimeoutSpinner().increment(5);   // default + 5 * 100
             dialog.applyAndPersistConfig();
         });
-        assertThat(filter.getTimeoutMillis()).isEqualTo(2500);
+        assertThat(filter.getTimeoutMillis()).isEqualTo(ReachableUrlFilterConfig.DEFAULT_TIMEOUT_MILLIS + 500);
     }
 
     @ParameterizedTest

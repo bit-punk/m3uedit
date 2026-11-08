@@ -82,6 +82,6 @@ class FilterRemovalReasonTest {
         Entry entry = entry("TV Berlin", "https://tvberlin.example/live.m3u8");
 
         assertThat(new ReachableUrlFilter().describeRemoval(entry, List.of(entry)))
-                .isEqualTo("no connection to https://tvberlin.example/live.m3u8");
+                .isEqualTo("stream not playable: https://tvberlin.example/live.m3u8");
     }
 }
