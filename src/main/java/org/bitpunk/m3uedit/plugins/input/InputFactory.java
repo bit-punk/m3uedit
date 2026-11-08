@@ -1,16 +1,14 @@
 package org.bitpunk.m3uedit.plugins.input;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.plugins.input.file.FileInput;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.IptvOrgInput;
 import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.bitpunk.m3uedit.plugins.input.url.UrlInput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class InputFactory {
-    private static final Logger log = LoggerFactory.getLogger(InputFactory.class);
-
     private InputFactory() {
     }
 

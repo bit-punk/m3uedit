@@ -1,11 +1,10 @@
 package org.bitpunk.m3uedit.util;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -15,9 +14,8 @@ import java.util.Optional;
 /**
  * Utility class for displaying dialog boxes and file choosers.
  */
+@Slf4j
 public class DialogUtil {
-    private static final Logger log = LoggerFactory.getLogger(DialogUtil.class);
-
     private DialogUtil() {
     }
 

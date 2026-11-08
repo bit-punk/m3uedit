@@ -1,20 +1,19 @@
 package org.bitpunk.m3uedit.control;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.StringBinding;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Predicate;
 
+@Slf4j
 public class ValidatingEditingCell<T> extends TableCell<T, String> {
 
     public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
-    private static final Logger log = LoggerFactory.getLogger(ValidatingEditingCell.class);
     private final TextField textField = new TextField();
     private StringBinding isInputValid;
 

@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -13,17 +14,15 @@ import javafx.scene.layout.HBox;
 import javafx.util.converter.IntegerStringConverter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.PojoValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+@Slf4j
 public class EntryDialogController<T> extends AbstractDialogController<T> {
     public static final String FXML_ENTRY_DIALOG = "fxml/EntryDialog.fxml";
-    private static final Logger log = LoggerFactory.getLogger(EntryDialogController.class);
 
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})

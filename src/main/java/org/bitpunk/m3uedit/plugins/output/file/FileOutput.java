@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.plugins.output.file;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import lombok.extern.slf4j.Slf4j;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,8 +12,6 @@ import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,8 +22,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 @Getter
+@Slf4j
 public class FileOutput extends AbstractPlugin implements Output {
-    private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
     @JsonIgnore
     private final String name = "File Output";
     @JsonIgnore

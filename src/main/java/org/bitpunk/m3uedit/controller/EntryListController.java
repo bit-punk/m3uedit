@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -11,17 +12,15 @@ import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.EntryMapper;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class EntryListController extends AbstractController  implements Initializable, ModelAware {
     public static final String FXML_ENTRY_LIST = "fxml/EntryList.fxml";
-    private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})

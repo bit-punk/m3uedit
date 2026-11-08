@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,8 +11,6 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.control.ValidatingEditingCell;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -21,9 +20,9 @@ import java.util.ResourceBundle;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
+@Slf4j
 public class MapEditorController extends AbstractController implements Initializable {
     public static final String FXML_MAP_EDITOR = "fxml/MapEditor.fxml";
-    private static final Logger log = LoggerFactory.getLogger(MapEditorController.class);
     @FXML
     private TableView<NamedEntry> vlcOptionsTableView;
     @FXML

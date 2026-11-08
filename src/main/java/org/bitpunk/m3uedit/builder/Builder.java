@@ -1,15 +1,13 @@
 package org.bitpunk.m3uedit.builder;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class Builder {
-    private static final Logger log = LoggerFactory.getLogger(Builder.class);
-
     private String duration;
     private String groupTitle;
     private String tvgId;

@@ -1,12 +1,11 @@
 package org.bitpunk.m3uedit.util;
 
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.bitpunk.m3uedit.jackson.JavaFxModule;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
@@ -27,10 +26,10 @@ import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
+@Slf4j
 public class ProjectPersisterUtil {
     public static final String M3U_PROJECTFILE_DESCRIPTION = "M3UProjectfile (*.m3uproj)";
     public static final String M3U_PROJECT_EXTENSION = "*.m3uproj";
-    private static final Logger log = LoggerFactory.getLogger(ProjectPersisterUtil.class);
 
     private ProjectPersisterUtil() {
     }

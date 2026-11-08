@@ -1,14 +1,13 @@
 package org.bitpunk.m3uedit.plugins.input.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.util.DialogUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,9 +20,8 @@ import java.util.List;
 
 @Getter
 @Setter
+@Slf4j
 public class FileInput extends AbstractInput implements Input {
-    private static final Logger log = LoggerFactory.getLogger(FileInput.class);
-
     @JsonIgnore
     private final String name = "File Input";
     @JsonIgnore

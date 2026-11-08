@@ -6,13 +6,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.util.Callback;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.util.PojoValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.List;
@@ -20,10 +19,10 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+@Slf4j
 public class FritzboxInputDialogController extends AbstractDialogController<FritzBoxConnection> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_FRITZBOX = "plugin/input/fritzbox/FritzboxInputDialog.fxml";
     public static final String FRITZBOX_DIALOG_TITLE = "Enter FritzBox-Inputs data";
-    private static final Logger log = LoggerFactory.getLogger(FritzboxInputDialogController.class);
     @Getter
     private final FritzBoxConnection fritzBoxConnection = new FritzBoxConnection();
     @FXML

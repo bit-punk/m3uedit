@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.plugins.output.sftp;
 import com.jcraft.jsch.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.model.Entry;
@@ -15,8 +16,6 @@ import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
 import org.bitpunk.m3uedit.plugins.sftp.SftpConnectionDialogController;
 import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,8 +30,8 @@ import java.util.Optional;
 
 @Getter
 @Setter
+@Slf4j
 public class SftpOutput extends AbstractPlugin implements Output {
-    private static final Logger log = LoggerFactory.getLogger(SftpOutput.class);
     public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
     @JsonIgnore
     private final String name = "SFTP Output";

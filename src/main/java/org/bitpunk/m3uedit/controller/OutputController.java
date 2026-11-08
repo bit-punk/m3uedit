@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -12,15 +13,13 @@ import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class OutputController extends AbstractController implements Initializable, ModelAware {
-    private static final Logger log = LoggerFactory.getLogger(OutputController.class);
     public static final String FXML_OUTPUT = "fxml/Output.fxml";
     public static final String ADD_OUTPUT = "add Output";
 

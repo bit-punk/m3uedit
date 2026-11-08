@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.sftp;
 
+import lombok.extern.slf4j.Slf4j;
 import com.jcraft.jsch.SftpException;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -23,8 +24,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient.RemoteEntry;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +37,8 @@ import java.util.concurrent.Executors;
  * Connecting and listing run in a background thread; a single thread is used so the SFTP channel
  * (which is not thread-safe) is only ever accessed sequentially.
  */
+@Slf4j
 public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
-    private static final Logger log = LoggerFactory.getLogger(SftpBrowserDialog.class);
     static final RemoteEntry PARENT_ENTRY = new RemoteEntry("..", true);
 
     /**

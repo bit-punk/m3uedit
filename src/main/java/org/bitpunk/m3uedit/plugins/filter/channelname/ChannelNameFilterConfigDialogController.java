@@ -9,21 +9,20 @@ import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.filter.channelname.model.ChannelNameFilterConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class ChannelNameFilterConfigDialogController extends AbstractDialogController<ChannelNameFilterConfig> implements Initializable {
     public static final String FXML_PLUGIN_FILTER_CONFIG = "plugin/filter/channelname/ChannelNameFilterConfigDialog.fxml";
     public static final String DIALOG_TITLE = "Configure ChannelName Filter";
-    private static final Logger log = LoggerFactory.getLogger(ChannelNameFilterConfigDialogController.class);
 
     @FXML
     @Getter
