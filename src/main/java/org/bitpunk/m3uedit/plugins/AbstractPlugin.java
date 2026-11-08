@@ -1,26 +1,20 @@
 package org.bitpunk.m3uedit.plugins;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import lombok.Setter;
-import lombok.AccessLevel;
 import lombok.Getter;
 
 @Getter
 @Setter
 public abstract class AbstractPlugin {
+    // name and description are constants of each plugin, they are not part of a project-file
+    @JsonIgnore
     private String name;
+    @JsonIgnore
     private String description;
-    @Getter(AccessLevel.NONE)
     private BooleanProperty enabled = new SimpleBooleanProperty();
-
-    public BooleanProperty getEnabled() {
-        // XStream does not run field initializers, so 'enabled' is null for project-files without this element
-        if (enabled == null) {
-            enabled = new SimpleBooleanProperty();
-        }
-        return enabled;
-    }
 
     /**
      * Plugins are compared by identity: their fields are mutable (configuration) and there may be several

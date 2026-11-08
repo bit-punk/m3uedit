@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.filter.uniqueuri;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
@@ -12,9 +12,9 @@ import java.util.List;
 @Getter
 @Setter
 public class UniqueUriFilter extends AbstractUniqueFilter implements Filter {
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "Unique URI Filter";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Filters for unique entries (criteria: channelUri)";
 
     @Override

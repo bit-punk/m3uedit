@@ -16,4 +16,11 @@ public interface PluginService<T> {
      * @return a List of plugin names.
      */
     List<String> getAllPluginNames();
+
+    /**
+     * Retrieves the classes of all the plugins, without instantiating them.
+     *
+     * @return a List of plugin classes.
+     */
+    List<Class<? extends T>> getAllPluginTypes();
 }

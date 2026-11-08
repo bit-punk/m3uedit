@@ -1,13 +1,15 @@
 package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
-import com.thoughtworks.xstream.XStream;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
+import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -81,29 +83,26 @@ class PreferredChannelOrderSorterTest {
     }
 
     @Test
-    void testXStreamSerializationAndDeserialization() {
+    void testSaveAndLoadInProjectFile(@TempDir Path tempDir) throws Exception {
         PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter();
         sorter.setSelectedProfileId("sport_favoriten");
+        DataModel dataModel = new DataModel("sorter");
+        dataModel.getSorters().add(sorter);
+        Path projectFile = tempDir.resolve("sorter.m3uproj");
 
-        XStream xstream = new XStream();
-        xstream.autodetectAnnotations(true);
-        xstream.alias("PreferredChannelOrderSorter", PreferredChannelOrderSorter.class);
-        xstream.allowTypesByWildcard(new String[]{
-                "javafx.beans.property.*",
-                "org.bitpunk.m3uedit.plugins.sorter.**"
-        });
+        assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isTrue();
 
-        String xml = xstream.toXML(sorter);
+        // configManager and config are not part of the project-file
+        String yaml = Files.readString(projectFile);
+        assertThat(yaml).doesNotContain("configManager");
+        assertThat(yaml).doesNotContain("config");
+        assertThat(yaml).contains("selectedProfileId: sport_favoriten");
 
-        // Verify configManager and config are omitted from XML
-        assertThat(xml).doesNotContain("configManager");
-        assertThat(xml).doesNotContain("config");
-        assertThat(xml).contains("<selectedProfileId>sport_favoriten</selectedProfileId>");
-
-        PreferredChannelOrderSorter deserialized = (PreferredChannelOrderSorter) xstream.fromXML(xml);
-        assertThat(deserialized.getSelectedProfileId()).isEqualTo("sport_favoriten");
-        assertThat(deserialized.getConfig()).isNotNull();
-        assertThat(deserialized.getSelectedProfile()).isPresent();
-        assertThat(deserialized.getSelectedProfile().get().getId()).isEqualTo("sport_favoriten");
+        PreferredChannelOrderSorter loaded = (PreferredChannelOrderSorter) ProjectPersisterUtil.loadProject(projectFile)
+                .getSorters().getFirst();
+        assertThat(loaded.getSelectedProfileId()).isEqualTo("sport_favoriten");
+        assertThat(loaded.getConfig()).isNotNull();
+        assertThat(loaded.getSelectedProfile()).isPresent();
+        assertThat(loaded.getSelectedProfile().get().getId()).isEqualTo("sport_favoriten");
     }
 }

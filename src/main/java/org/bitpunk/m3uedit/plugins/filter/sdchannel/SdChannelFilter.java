@@ -1,23 +1,22 @@
 package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+@Slf4j
 @Getter
 @Setter
 public class SdChannelFilter extends AbstractPlugin implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(SdChannelFilter.class);
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "SD Channel Filter";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Filters for SD channels (criteria: the same channelName exists with a 'HD' suffix)";
 
     @Override

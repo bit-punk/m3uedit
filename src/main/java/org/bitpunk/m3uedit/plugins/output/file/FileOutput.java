@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.output.file;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.AccessLevel;
@@ -25,9 +25,9 @@ import java.util.List;
 @Getter
 public class FileOutput extends AbstractPlugin implements Output {
     private static final Logger log = LoggerFactory.getLogger(FileOutput.class);
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "File Output";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Writes a playlist to a local file.";
     @Setter(AccessLevel.PACKAGE)
     private URI output = null;

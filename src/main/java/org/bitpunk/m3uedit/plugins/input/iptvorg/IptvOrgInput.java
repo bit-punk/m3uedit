@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
@@ -32,12 +31,12 @@ public class IptvOrgInput extends AbstractInput implements Input {
     public static final String IPTV_ORG_PLAYLIST_BASE_URL = "https://iptv-org.github.io/iptv/";
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
-    @XStreamOmitField
+    @JsonIgnore
     private final String name = "IPTV-org Input";
-    @XStreamOmitField
+    @JsonIgnore
     private final String description = "Reads playlists by country, category, language, region or channel from https://github.com/iptv-org/iptv.";
     private List<IptvOrgPlaylist> selectedPlaylists = new ArrayList<>();
-    @XStreamOmitField
+    @JsonIgnore
     private String playlistBaseUrl = IPTV_ORG_PLAYLIST_BASE_URL;
 
     @Override
@@ -75,8 +74,7 @@ public class IptvOrgInput extends AbstractInput implements Input {
     }
 
     private List<Entry> readEntriesFromPlaylist(HttpClient client, String playlistPath) {
-        // playlistBaseUrl is null after loading a project, as omitted fields are not initialized by XStream
-        URI uri = URI.create(Objects.requireNonNullElse(playlistBaseUrl, IPTV_ORG_PLAYLIST_BASE_URL) + playlistPath);
+        URI uri = URI.create(playlistBaseUrl + playlistPath);
         log.debug("reading playlist from {}", uri);
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build();
         try {
