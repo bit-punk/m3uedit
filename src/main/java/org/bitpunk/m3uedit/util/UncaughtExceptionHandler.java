@@ -1,8 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.application.Platform;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
@@ -14,9 +13,8 @@ import java.util.function.Consumer;
  * <p>
  * Only one error dialog is shown at a time, so a repeating error does not flood the screen with dialogs.
  */
+@Slf4j
 public class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
-    private static final Logger log = LoggerFactory.getLogger(UncaughtExceptionHandler.class);
-
     private final Consumer<String> errorReporter;
     private final Consumer<Runnable> fxExecutor;
     private final AtomicBoolean reporting = new AtomicBoolean();

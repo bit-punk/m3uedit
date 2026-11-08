@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.model.Entry;
@@ -16,8 +17,6 @@ import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 import org.bitpunk.m3uedit.util.DialogUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,10 +25,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+@Slf4j
 public class PreferredChannelOrderConfigDialogController extends AbstractDialogController<PreferredChannelOrderConfig> {
     public static final String FXML_PLUGIN_SORTER_CONFIG = "plugin/sorter/preferredchannelorder/PreferredChannelOrderConfigDialog.fxml";
     public static final String DIALOG_TITLE = "Configure Preferred Channel Order";
-    private static final Logger log = LoggerFactory.getLogger(PreferredChannelOrderConfigDialogController.class);
 
     @FXML
     @Getter

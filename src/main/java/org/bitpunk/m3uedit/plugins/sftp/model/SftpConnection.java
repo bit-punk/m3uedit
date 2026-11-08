@@ -5,21 +5,20 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Data;
 import lombok.ToString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
 @Data
+@Slf4j
 public class SftpConnection {
     public static final String SFTP_SCHEMA = "sftp";
     public static final String REGEX_PATH = "^/.*$";
     public static final String REGEX_FILE_NAME = "^[^/]*$";
     public static final String DEFAULT_FILE_NAME = "playlist.m3u";
-    private static final Logger log = LoggerFactory.getLogger(SftpConnection.class);
     private String schema = SFTP_SCHEMA;
     @NotEmpty(message = "Hostname must not be empty")
     private String hostName;

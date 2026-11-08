@@ -196,7 +196,7 @@ public class DiffController extends VBox {
         List<Entry> playlist = List.copyOf(dataModel.getSortedEntryList());
         Function<Entry, String> globalReason = entry -> {
             String reason = result.removalReason(entry);
-            return reason != null ? reason : "removed from the playlist";
+            return reason != null ? reason : "removed or edited manually";
         };
         if (step instanceof Input input) {
             List<Entry> fromInput = result.entriesOf(input);
@@ -419,7 +419,7 @@ public class DiffController extends VBox {
                 case ADDED -> {
                     getStyleClass().add("added");
                     gutterText = "+";
-                    noteText = "added to the playlist";
+                    noteText = "added or edited manually";
                 }
                 case UNCHANGED -> {
                     // no marker

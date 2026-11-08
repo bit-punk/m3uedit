@@ -10,6 +10,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -26,8 +27,6 @@ import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.IdentityHashMap;
@@ -40,8 +39,8 @@ import java.util.function.Function;
  * Between the stages, the number of entries passed on is shown. Each plugin shows its effect, e.g. the number of
  * entries removed by a filter. The plugin selected here is shown in detail by the {@link DiffController}.
  */
+@Slf4j
 public class PipelineController extends VBox implements ModelAware {
-    private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
     private static final String ICON_WRITE = "M7 2h2v6.2l2.3-2.3 1.4 1.4L8 12 3.3 7.3l1.4-1.4L7 8.2zM2 13h12v1.5H2z";
     private static final String ICON_FLOW = "M7 1h2v10.2l2.3-2.3 1.4 1.4L8 15 3.3 10.3l1.4-1.4L7 11.2z";
 

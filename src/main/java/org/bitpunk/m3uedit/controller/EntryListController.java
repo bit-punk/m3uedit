@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -9,19 +10,17 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.util.EntryMapper;
+import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+@Slf4j
 public class EntryListController extends AbstractController  implements Initializable, ModelAware {
     public static final String FXML_ENTRY_LIST = "fxml/EntryList.fxml";
-    private static final Logger log = LoggerFactory.getLogger(EntryListController.class);
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
@@ -38,6 +37,9 @@ public class EntryListController extends AbstractController  implements Initiali
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private Button addNewEntryButton;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private Button resetManualChangesButton;
     private DataModel dataModel;
 
     public EntryListController() {
@@ -48,6 +50,7 @@ public class EntryListController extends AbstractController  implements Initiali
     public void initialize(URL location, ResourceBundle resources) {
         initEntryTableView();
         addNewEntryButton.setOnAction(actionEvent -> addNewEntry());
+        resetManualChangesButton.setOnAction(actionEvent -> resetManualChanges());
     }
 
     private void initEntryTableView() {
@@ -78,10 +81,10 @@ public class EntryListController extends AbstractController  implements Initiali
                 int index = row.getIndex() + 1;
                 entry.setIndex(index);
                 log.debug("double-clicked on: {}", entry);
-                editEntry(entry);
-                if(index != entry.getIndex()) {
-                    log.debug("index changed from {} to {}", index, entry.getIndex());
-                    moveEntryToNewPosition(entry);
+                Entry edited = editEntry(entry);
+                if (index != edited.getIndex()) {
+                    log.debug("index changed from {} to {}", index, edited.getIndex());
+                    moveEntryToNewPosition(edited);
                 }
                 entryTableView.refresh();
             }
@@ -95,9 +98,7 @@ public class EntryListController extends AbstractController  implements Initiali
 
     // package-private for tests
     void moveEntryToNewPosition(Entry entry) {
-        ObservableList<Entry> items = entryTableView.getItems();
-        items.remove(entry);
-        items.add(entry.getIndex() - 1, entry);
+        dataModel.moveEntries(List.of(entry), entry.getIndex() - 1);
     }
 
     private void setOnDragDroppedEventHandler(TableRow<Entry> row) {
@@ -125,18 +126,13 @@ public class EntryListController extends AbstractController  implements Initiali
                 .map(items::get)
                 .toList();
 
-        items.removeAll(itemsToMove);
-
         // Adjust drop index for removed items
         long itemsBeforeDrop = draggedIndices.stream()
                 .filter(i -> i < dropIndex)
                 .count();
 
         int finalDropIndex = Math.max(0, dropIndex - (int) itemsBeforeDrop);
-        // Ensure the index is within bounds of the list after removal
-        finalDropIndex = Math.min(finalDropIndex, items.size());
-
-        items.addAll(finalDropIndex, itemsToMove);
+        dataModel.moveEntries(itemsToMove, finalDropIndex);
 
         entryTableView.getSelectionModel().clearSelection();
         itemsToMove.forEach(entryTableView.getSelectionModel()::select);
@@ -200,13 +196,18 @@ public class EntryListController extends AbstractController  implements Initiali
         });
     }
 
-    private void editEntry(Entry entry) {
+    /**
+     * @return the entry with the edited values, or the given entry if editing was cancelled
+     */
+    private Entry editEntry(Entry entry) {
         int entryListSize = dataModel.getSortedEntryList().size();
         EntryDialogController<Entry> entryDialogController = new EntryDialogController<>(entry, entryListSize);
-        entryDialogController.showAndWait().ifPresent(entryEdited -> {
-            log.debug("edited Entry: {}", entryEdited);
-            EntryMapper.mapEntry(entryEdited, entry);
-        });
+        return entryDialogController.showAndWait()
+                .map(entryEdited -> {
+                    log.debug("edited Entry: {}", entryEdited);
+                    return dataModel.editEntry(entry, entryEdited);
+                })
+                .orElse(entry);
     }
 
     @FXML
@@ -214,16 +215,26 @@ public class EntryListController extends AbstractController  implements Initiali
         EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
         entryDialogController.showAndWait().ifPresent(entry -> {
             log.debug("adding new Entry: {}", entry);
-            dataModel.getSortedEntryList().add(entry);
+            dataModel.addEntry(entry);
             entryTableView.refresh();
         });
     }
 
+    private void resetManualChanges() {
+        if (DialogUtil.canManualChangesBeReset(dataModel.getManualChanges().size())) {
+            dataModel.resetManualChanges();
+        }
+    }
+
     @FXML
     public void deleteKeyListenerTableView(KeyEvent keyEvent) {
-        int oldSize = entryTableView.getItems().size();
-        ListControllerUtil.deleteKeyListenerTableView(keyEvent);
-        if (entryTableView.getItems().size() != oldSize) {
+        if (keyEvent.getCode() != KeyCode.DELETE) {
+            return;
+        }
+        keyEvent.consume();
+        List<Entry> selected = List.copyOf(entryTableView.getSelectionModel().getSelectedItems());
+        if (!selected.isEmpty() && ListControllerUtil.confirmDeletion(selected)) {
+            dataModel.removeEntries(selected);
             entryTableView.getSelectionModel().clearSelection();
         }
     }
@@ -232,6 +243,7 @@ public class EntryListController extends AbstractController  implements Initiali
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
         entryTableView.setItems(this.dataModel.getSortedEntryList());
+        resetManualChangesButton.disableProperty().bind(Bindings.isEmpty(this.dataModel.getManualChanges()));
     }
 
     private static class IndicesList extends ArrayList<Integer> {

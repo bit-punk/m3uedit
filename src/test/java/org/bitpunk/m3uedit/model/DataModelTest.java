@@ -555,4 +555,105 @@ class DataModelTest {
         assertThat(result.sources()).containsEntry(duplicate, input);
         assertThat(names(result.sorted())).containsExactly("a", "b");
     }
+
+    @Test
+    void testManualChangesAreKeptWhenThePlaylistIsRecomputed() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("b"), entry("a"), entry("c"))));
+        runAll();
+        List<Entry> playlist = dataModel.getSortedEntryList();
+        Entry edited = entry("b");
+        edited.setGroupTitle("Favorites");
+
+        dataModel.removeEntries(List.of(playlist.get(1)));
+        dataModel.addEntry(entry("x"));
+        dataModel.editEntry(playlist.getFirst(), edited);
+        dataModel.moveEntries(List.of(playlist.get(1)), 0);
+        assertThat(names(playlist)).containsExactly("c", "b", "x");
+
+        // filtering, sorting and reloading re-compute the playlist
+        uniqueNameFilter.getEnabled().set(true);
+        dataModel.filterRawEntries();
+        runAll();
+        assertThat(names(playlist)).containsExactly("c", "b", "x");
+        channelNameSorter.getEnabled().set(true);
+        dataModel.sortFilteredEntries();
+        runAll();
+        assertThat(names(playlist)).containsExactly("c", "b", "x");
+        dataModel.reloadInputs();
+        runAll();
+        assertThat(names(playlist)).containsExactly("c", "b", "x");
+        assertThat(playlist.get(1).getGroupTitle()).isEqualTo("Favorites");
+        assertThat(dataModel.getManualChanges()).hasSize(4);
+    }
+
+    @Test
+    void testManualChangesMadeWhileComputingAreNotLost() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"), entry("b"))));
+        runAll();
+
+        dataModel.reloadInputs();
+        // the user removes an entry before the computation started above has finished
+        dataModel.removeEntries(List.of(dataModel.getSortedEntryList().getFirst()));
+        runAll();
+
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("b");
+    }
+
+    @Test
+    void testManualChangesMarkTheProjectAsChanged() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"), entry("b"))));
+        runAll();
+        dataModel.setChanged(false);
+
+        dataModel.moveEntries(List.of(dataModel.getSortedEntryList().getLast()), 0);
+
+        assertThat(dataModel.isChanged()).isTrue();
+    }
+
+    @Test
+    void testEntriesNotInThePlaylistAreNotRecorded() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+        dataModel.setChanged(false);
+        Entry unknown = entry("a");
+
+        dataModel.removeEntries(List.of(unknown));
+        dataModel.moveEntries(List.of(unknown), 0);
+
+        assertThat(dataModel.editEntry(unknown, entry("b"))).isSameAs(unknown);
+        assertThat(dataModel.getManualChanges()).isEmpty();
+        assertThat(dataModel.isChanged()).isFalse();
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("a");
+    }
+
+    @Test
+    void testResetManualChangesRestoresTheComputedPlaylist() {
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"), entry("b"))));
+        runAll();
+        dataModel.removeEntries(List.of(dataModel.getSortedEntryList().getFirst()));
+        dataModel.addEntry(entry("x"));
+        dataModel.setChanged(false);
+
+        dataModel.resetManualChanges();
+        runAll();
+
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("a", "b");
+        assertThat(dataModel.getManualChanges()).isEmpty();
+        assertThat(dataModel.isChanged()).isTrue();
+    }
+
+    @Test
+    void testManualChangesApplyToThePlaylistButNotToThePipelineResult() {
+        channelNameSorter.getEnabled().set(true);
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("b"), entry("a"), entry("c"))));
+        runAll();
+
+        dataModel.removeEntries(List.of(dataModel.getSortedEntryList().getFirst()));
+        dataModel.sortFilteredEntries();
+        runAll();
+
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("b", "c");
+        assertThat(names(dataModel.getPipelineResult().sorted())).containsExactly("a", "b", "c");
+        assertThat(dataModel.getPipelineResult().step(channelNameSorter).orElseThrow().output()).hasSize(3);
+    }
 }

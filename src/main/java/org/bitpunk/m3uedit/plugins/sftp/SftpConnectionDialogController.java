@@ -15,13 +15,12 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.Objects;
@@ -29,8 +28,8 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+@Slf4j
 public class SftpConnectionDialogController extends AbstractDialogController<SftpConnection> implements Initializable {
-    private static final Logger log = LoggerFactory.getLogger(SftpConnectionDialogController.class);
     public static final String FXML_PLUGIN_SFTP = "plugin/sftp/SftpConnectionDialog.fxml";
 
     /**
@@ -319,7 +318,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         SftpConnection sftpConnectionFromInput = createSftpConnectionFromInput();
         Set<ConstraintViolation<SftpConnection>> errors = validator.validate(sftpConnectionFromInput);
         displayValidationErrors(errors);
-        log.debug("Validation-errors found: {}", errors);
+        log.trace("Validation-errors found: {}", errors);
         boolean fileNameMissing = isFileNameRequired() && isBlank(sftpConnectionFromInput.getFileName());
         if (fileNameMissing) {
             markFieldInvalid(fileNameTextField, "Filename must not be empty");
@@ -332,7 +331,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         for (ConstraintViolation<SftpConnection> error : errors) {
             String errorMessage = error.getMessage();
             String fieldName = error.getPropertyPath().toString();
-            log.debug("Field: {} Message: {}", fieldName, errorMessage);
+            log.trace("Field: {} Message: {}", fieldName, errorMessage);
             switch (fieldName) {
                 case "hostName" -> markFieldInvalid(hostnameTextField, errorMessage);
                 case "port" -> markFieldInvalid(hostPortTextField, errorMessage);

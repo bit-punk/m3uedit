@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
@@ -9,8 +10,6 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -30,8 +29,8 @@ import java.util.concurrent.Semaphore;
 
 @Getter
 @Setter
+@Slf4j
 public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(ReachableUrlFilter.class);
     public static final String RESOURCE_PATH = "plugin/filter/reachableurl/reachable_url_filter.yaml";
     public static final String CONFIG_FILE_NAME = "reachable_url_filter.yaml";
     /**

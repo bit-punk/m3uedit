@@ -14,6 +14,9 @@
             <TableColumn fx:id="channelUriColumn" maxWidth="700" minWidth="50" prefWidth="300" text="Channel URI"/>
         </columns>
     </TableView>
-    <Button fx:id="addNewEntryButton" mnemonicParsing="false" text="Add new Entry"/>
+    <HBox spacing="8">
+        <Button fx:id="addNewEntryButton" mnemonicParsing="false" text="Add new Entry"/>
+        <Button fx:id="resetManualChangesButton" mnemonicParsing="false" text="Reset manual Changes"/>
+    </HBox>
 
 </fx:root>

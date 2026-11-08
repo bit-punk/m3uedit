@@ -23,6 +23,7 @@ import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.EntryMapper;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
 import java.nio.file.Path;
@@ -51,7 +52,7 @@ import java.util.function.Consumer;
 @Slf4j
 @Getter
 @Setter
-@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "outputs"})
+@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "outputs", "manualChanges"})
 public class DataModel {
     private static final ExecutorService DEFAULT_BACKGROUND_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "datamodel-worker");
@@ -66,7 +67,12 @@ public class DataModel {
         LOAD_INPUTS, FILTER, SORT
     }
 
-    private record Result(PipelineResult pipeline, List<String> inputErrors) {
+    /**
+     * @param pipeline       the intermediate results of the steps
+     * @param playlist       the sorted entries with the manual changes applied
+     * @param appliedChanges the number of manual changes applied to the playlist
+     */
+    private record Result(PipelineResult pipeline, List<Entry> playlist, int appliedChanges, List<String> inputErrors) {
     }
 
     @NotNull
@@ -87,6 +93,14 @@ public class DataModel {
     private ObservableList<Sorter> sorters;
     @Setter(AccessLevel.NONE)
     private ObservableList<Output> outputs;
+
+    /**
+     * The changes the user made to the playlist (the sorted entries), in the order they have been made.
+     * They are re-applied whenever the playlist is re-computed.
+     */
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private ObservableList<ManualChange> manualChanges;
 
     // derived data: transient fields are not persisted
     private transient ObservableList<Entry> rawEntryList;
@@ -141,7 +155,7 @@ public class DataModel {
     private transient ListChangeListener<Input> inputsRecomputeListener;
 
     public DataModel(String name) {
-        this(name, null, null, null, null);
+        this(name, null, null, null, null, null);
     }
 
     /**
@@ -152,12 +166,14 @@ public class DataModel {
               @JsonProperty("inputs") List<Input> inputs,
               @JsonProperty("filters") List<Filter> filters,
               @JsonProperty("sorters") List<Sorter> sorters,
-              @JsonProperty("outputs") List<Output> outputs) {
+              @JsonProperty("outputs") List<Output> outputs,
+              @JsonProperty("manualChanges") List<ManualChange> manualChanges) {
         this.name = name;
         this.inputs = observableListOf(inputs);
         this.filters = observableListOf(filters);
         this.sorters = observableListOf(sorters);
         this.outputs = observableListOf(outputs);
+        this.manualChanges = observableListOf(manualChanges);
         initTransientState();
     }
 
@@ -308,6 +324,7 @@ public class DataModel {
         List<Entry> filteredSnapshot = new ArrayList<>(filteredEntryList);
         // the results of the steps not re-computed are taken over from the previous computation (immutable)
         PipelineResult previous = pipelineResult.get();
+        List<ManualChange> changesSnapshot = List.copyOf(manualChanges);
         log.debug("re-computing entries of project '{}' starting with step {}", name, step);
 
         getBackgroundExecutorOrDefault().execute(() -> {
@@ -336,7 +353,9 @@ public class DataModel {
                     removedBy.putAll(previous.removedBy());
                 }
                 List<Entry> sorted = sortEntries(enabledSorters, filtered, steps);
-                Result result = new Result(new PipelineResult(raw, filtered, sorted, sources, steps, removedBy), inputErrors);
+                List<Entry> playlist = ManualChange.applyAll(sorted, changesSnapshot);
+                Result result = new Result(new PipelineResult(raw, filtered, sorted, sources, steps, removedBy),
+                        playlist, changesSnapshot.size(), inputErrors);
                 getFxExecutorOrDefault().execute(() -> applyResult(currentGeneration, step, result));
             } catch (RuntimeException e) {
                 log.error("Error re-computing the entries of project '{}'", name, e);
@@ -359,7 +378,7 @@ public class DataModel {
             if (step.compareTo(Step.SORT) < 0) {
                 filteredEntryList.setAll(pipeline.filtered());
             }
-            sortedEntryList.setAll(pipeline.sorted());
+            sortedEntryList.setAll(withChangesMadeMeanwhile(result));
             pipelineResult.set(pipeline);
         } finally {
             applyingResults = false;
@@ -369,6 +388,114 @@ public class DataModel {
         if (!result.inputErrors().isEmpty()) {
             reportError("Some inputs could not be read:\n" + String.join("\n", result.inputErrors()));
         }
+    }
+
+    /**
+     * The user may have changed the playlist while it was computed in the background: these changes are applied
+     * as well, so they are not lost.
+     */
+    private List<Entry> withChangesMadeMeanwhile(Result result) {
+        if (manualChanges.size() <= result.appliedChanges()) {
+            return result.playlist();
+        }
+        return ManualChange.applyAll(result.playlist(), manualChanges.subList(result.appliedChanges(), manualChanges.size()));
+    }
+
+    /**
+     * @return the changes the user made to the playlist, in the order they have been made (unmodifiable)
+     */
+    public ObservableList<ManualChange> getManualChanges() {
+        return FXCollections.unmodifiableObservableList(manualChanges);
+    }
+
+    /**
+     * Removes the given entries from the playlist (the sorted entries).
+     * Must be called on the JavaFX application thread.
+     */
+    public void removeEntries(List<Entry> entries) {
+        for (Entry entry : List.copyOf(entries)) {
+            int index = indexOfSortedEntry(entry);
+            if (index >= 0) {
+                sortedEntryList.remove(index);
+                recordManualChange(ManualChange.remove(entry));
+            }
+        }
+    }
+
+    /**
+     * Adds the entry to the end of the playlist (the sorted entries).
+     * Must be called on the JavaFX application thread.
+     */
+    public void addEntry(Entry entry) {
+        sortedEntryList.add(entry);
+        recordManualChange(ManualChange.add(entry));
+    }
+
+    /**
+     * Replaces an entry of the playlist (the sorted entries) by the edited values.
+     * Must be called on the JavaFX application thread.
+     *
+     * @return the entry now contained in the playlist, or the given entry if it is not part of the playlist
+     */
+    public Entry editEntry(Entry entry, Entry edited) {
+        int index = indexOfSortedEntry(entry);
+        if (index < 0) {
+            return entry;
+        }
+        Entry updated = new Entry();
+        EntryMapper.mapEntry(edited, updated);
+        recordManualChange(ManualChange.edit(EntryKey.of(entry), updated));
+        sortedEntryList.set(index, updated);
+        return updated;
+    }
+
+    /**
+     * Moves the given entries of the playlist (the sorted entries), keeping their order.
+     * Must be called on the JavaFX application thread.
+     *
+     * @param targetIndex the index of the first entry moved, within the playlist without the moved entries
+     */
+    public void moveEntries(List<Entry> entries, int targetIndex) {
+        List<Entry> moved = List.copyOf(entries).stream().filter(entry -> indexOfSortedEntry(entry) >= 0).toList();
+        if (moved.isEmpty()) {
+            return;
+        }
+        moved.forEach(entry -> sortedEntryList.remove(indexOfSortedEntry(entry)));
+        int index = Math.clamp(targetIndex, 0, sortedEntryList.size());
+        sortedEntryList.addAll(index, moved);
+        for (int i = index; i < index + moved.size(); i++) {
+            recordManualChange(ManualChange.move(sortedEntryList.get(i), i == 0 ? null : sortedEntryList.get(i - 1)));
+        }
+    }
+
+    /**
+     * Discards all changes the user made to the playlist and re-computes it.
+     * Must be called on the JavaFX application thread.
+     */
+    public void resetManualChanges() {
+        if (manualChanges.isEmpty()) {
+            return;
+        }
+        manualChanges.clear();
+        changed = true;
+        sortFilteredEntries();
+    }
+
+    private void recordManualChange(ManualChange change) {
+        manualChanges.add(change);
+        changed = true;
+    }
+
+    /**
+     * Entries are compared by identity, there may be several entries with the same values.
+     */
+    private int indexOfSortedEntry(Entry entry) {
+        for (int i = 0; i < sortedEntryList.size(); i++) {
+            if (sortedEntryList.get(i) == entry) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void applyFailure(long resultGeneration, RuntimeException e) {

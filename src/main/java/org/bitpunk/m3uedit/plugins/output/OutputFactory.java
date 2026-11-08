@@ -1,16 +1,15 @@
 package org.bitpunk.m3uedit.plugins.output;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+@Slf4j
 public class OutputFactory {
-    private static final Logger log = LoggerFactory.getLogger(OutputFactory.class);
     private static final Map<String, Supplier<Output>> outputMap = new HashMap<>();
 
     static {

@@ -14,20 +14,19 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Callback;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.*;
 
+@Slf4j
 public class IptvOrgInputDialogController extends AbstractDialogController<List<IptvOrgPlaylist>> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_IPTV_ORG = "plugin/input/iptvorg/IptvOrgInputDialog.fxml";
     public static final String IPTV_ORG_DIALOG_TITLE = "Select iptv-org playlist(s) or channel(s) to read entries from";
-    private static final Logger log = LoggerFactory.getLogger(IptvOrgInputDialogController.class);
     private final IptvOrgApiClient apiClient;
     private final ObservableList<IptvOrgPlaylist> availablePlaylists = FXCollections.observableArrayList();
     private final FilteredList<IptvOrgPlaylist> filteredPlaylists = new FilteredList<>(availablePlaylists);

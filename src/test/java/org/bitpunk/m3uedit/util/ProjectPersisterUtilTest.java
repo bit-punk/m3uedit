@@ -5,6 +5,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.model.ManualChange;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.filter.channelname.ChannelNameFilter;
@@ -34,6 +35,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
@@ -46,6 +48,7 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 class ProjectPersisterUtilTest {
 
@@ -456,5 +459,120 @@ class ProjectPersisterUtilTest {
         JsonNode project = ProjectPersisterUtil.getMapper().readTree(projectFile.toFile());
         modification.accept(project);
         Files.writeString(projectFile, ProjectPersisterUtil.getMapper().writeValueAsString(project));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "/tmp/project, /tmp/project.m3uproj",
+            "/tmp/project.m3uproj, /tmp/project.m3uproj",
+            "/tmp/project.M3UPROJ, /tmp/project.M3UPROJ",
+            "/tmp/project.m3u, /tmp/project.m3u.m3uproj",
+            "/tmp/my.project, /tmp/my.project.m3uproj",
+            "project, project.m3uproj"
+    })
+    void testProjectFileSuffixIsAppendedIfMissing(String selected, String expected) {
+        assertThat(ProjectPersisterUtil.withProjectFileSuffix(Path.of(selected))).isEqualTo(Path.of(expected));
+    }
+
+    @Test
+    void testSaveAsAppendsSuffix(@TempDir Path tempDir) {
+        DataModel dataModel = getDataModel();
+        List<Path> confirmations = new ArrayList<>();
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(dataModel, tempDir.resolve("project"),
+                file -> confirmations.add(file));
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(tempDir.resolve("project.m3uproj")).exists();
+        assertThat(tempDir.resolve("project")).doesNotExist();
+        assertThat(dataModel.getProjectFile()).isEqualTo(tempDir.resolve("project.m3uproj").toAbsolutePath());
+        // nothing to replace, so no need to ask
+        assertThat(confirmations).isEmpty();
+    }
+
+    @Test
+    void testSaveAsReplacesExistingFileWithSuffixIfConfirmed(@TempDir Path tempDir) throws Exception {
+        Path existing = Files.writeString(tempDir.resolve("project.m3uproj"), "existing project");
+        List<Path> confirmations = new ArrayList<>();
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(getDataModel(), tempDir.resolve("project"),
+                file -> confirmations.add(file));
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(confirmations).containsExactly(existing);
+        assertThat(Files.readString(existing)).contains("name: test");
+    }
+
+    @Test
+    void testSaveAsKeepsExistingFileWithSuffixIfNotConfirmed(@TempDir Path tempDir) throws Exception {
+        Path existing = Files.writeString(tempDir.resolve("project.m3uproj"), "existing project");
+        DataModel dataModel = getDataModel();
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(dataModel, tempDir.resolve("project"),
+                file -> false);
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.CANCELLED);
+        assertThat(existing).hasContent("existing project");
+        assertThat(dataModel.getProjectFile()).isNull();
+    }
+
+    @Test
+    void testSaveAsDoesNotAskAgainForFileSelectedWithSuffix(@TempDir Path tempDir) throws Exception {
+        // the save-dialog itself already asked before replacing the file selected
+        Path existing = Files.writeString(tempDir.resolve("project.m3uproj"), "existing project");
+
+        ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(getDataModel(), existing,
+                file -> { throw new AssertionError("must not ask"); });
+
+        assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
+        assertThat(Files.readString(existing)).contains("name: test");
+    }
+
+    @Test
+    void testSaveAsWithCancelledDialog() {
+        assertThat(ProjectPersisterUtil.saveProjectAs(getDataModel(), null, file -> true))
+                .isEqualTo(ProjectPersisterUtil.SaveResult.CANCELLED);
+    }
+
+    @Test
+    void testManualChangesArePersisted(@TempDir Path tempDir) throws Exception {
+        DataModel dataModel = new DataModel("manual");
+        Entry a = new Entry();
+        a.setName("a");
+        a.setChannelUri("http://example.com/a");
+        Entry b = new Entry();
+        b.setName("b");
+        b.setChannelUri("http://example.com/b");
+        dataModel.getSortedEntryList().setAll(a, b);
+        Entry added = new Entry();
+        added.setName("added");
+        added.setChannelUri("http://example.com/added");
+        added.setGroupTitle("Favorites");
+        added.setIndex(7);
+        dataModel.addEntry(added);
+        dataModel.moveEntries(List.of(b), 0);
+        dataModel.removeEntries(List.of(a));
+        Path projectFile = tempDir.resolve("manual.m3uproj");
+
+        assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isTrue();
+
+        String yaml = Files.readString(projectFile);
+        assertThat(yaml).contains("manualChanges:").contains("action: ADD").contains("action: MOVE")
+                .contains("action: REMOVE")
+                // the position shown in the playlist is not persisted
+                .doesNotContain("index");
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+        // entries are compared by identity, so the other values are compared
+        assertThat(loaded.getManualChanges())
+                .extracting(ManualChange::action, ManualChange::target, ManualChange::after)
+                .containsExactlyElementsOf(dataModel.getManualChanges().stream()
+                        .map(change -> tuple(change.action(), change.target(), change.after()))
+                        .toList());
+        Entry loadedAdded = loaded.getManualChanges().getFirst().entry();
+        assertThat(loadedAdded.getName()).isEqualTo("added");
+        assertThat(loadedAdded.getGroupTitle()).isEqualTo("Favorites");
+        // re-applied to the playlist computed from the inputs
+        assertThat(ManualChange.applyAll(List.of(a, b), loaded.getManualChanges()))
+                .extracting(Entry::getName).containsExactly("b", "added");
     }
 }
