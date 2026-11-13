@@ -18,6 +18,7 @@
     <HBox spacing="8">
         <Button fx:id="addNewEntryButton" mnemonicParsing="false" text="Add new Entry"/>
         <Button fx:id="resetManualChangesButton" mnemonicParsing="false" text="Reset manual Changes"/>
+        <Button fx:id="epgButton" mnemonicParsing="false" text="EPG"/>
     </HBox>
 
 </fx:root>

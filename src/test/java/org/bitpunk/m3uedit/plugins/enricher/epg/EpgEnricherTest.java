@@ -223,4 +223,20 @@ class EpgEnricherTest {
         assertThat(compile(laterEnrichment, laterEnrichment.entries())).as("ended 1:45 hours ago")
                 .doesNotContain("Tagesschau").contains("<channel id=\"DasErste.de\">");
     }
+
+    @Test
+    void testProgrammesOfThePlaylistAreProvided() throws IOException {
+        Entry erste = entry("Das Erste HD", "daserste.de", "http://e/1");
+        Entry zdf = entry("ZDF HD", "ZDF.de", "http://e/2");
+        Entry unknown = entry("Unknown", null, "http://e/3");
+
+        List<org.bitpunk.m3uedit.plugins.enricher.Programme> programmes = enricher.readProgrammes(List.of(erste, zdf, unknown));
+
+        assertThat(programmes).singleElement().satisfies(programme -> {
+            assertThat(programme.channelId()).as("as used by the playlist").isEqualTo("daserste.de");
+            assertThat(programme.channelName()).isEqualTo("Das Erste HD");
+            assertThat(programme.title()).isEqualTo("Tagesschau");
+            assertThat(programme.description()).isEqualTo("Nachrichten & Wetter");
+        });
+    }
 }

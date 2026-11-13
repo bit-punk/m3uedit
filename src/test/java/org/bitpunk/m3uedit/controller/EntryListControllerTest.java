@@ -125,4 +125,14 @@ class EntryListControllerTest {
             assertThat(tvgIdColumn.getCellData(plain)).isNull();
         });
     }
+
+    @Test
+    void testEpgButtonIsEnabledWithAnEnabledEpgEnricher() throws Exception {
+        EntryListController controller = controllerWith(entry("ZDF"));
+
+        runOnFxThread(() -> {
+            assertThat(controller.epgButton().isDisable()).isTrue();
+            assertThat(controller.programmeGuideProviders()).isEmpty();
+        });
+    }
 }

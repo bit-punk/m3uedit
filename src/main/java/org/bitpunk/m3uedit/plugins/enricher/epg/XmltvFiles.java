@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
+import org.bitpunk.m3uedit.plugins.enricher.Programme;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -9,8 +11,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -93,6 +100,88 @@ final class XmltvFiles {
             throw new IOException("No valid XMLTV file: " + e.getMessage(), e);
         }
         return channels;
+    }
+
+    /**
+     * Reads the programmes of the given channels of an XMLTV file.
+     *
+     * @param channels the ids of the channels in the file, mapped to the channel id of the programmes read
+     * @param names    the name of each channel, by the channel id of the programmes read
+     */
+    static List<Programme> readProgrammes(Path file, Map<String, String> channels, Map<String, String> names,
+                                          ZoneId defaultZone) throws IOException {
+        List<Programme> programmes = new ArrayList<>();
+        try (InputStream inputStream = open(file)) {
+            XMLStreamReader reader = createReader(inputStream);
+            try {
+                while (reader.hasNext()) {
+                    if (reader.next() != XMLStreamConstants.START_ELEMENT || !"programme".equals(reader.getLocalName())) {
+                        continue;
+                    }
+                    String channelId = channels.get(reader.getAttributeValue(null, "channel"));
+                    if (channelId == null) {
+                        skipElement(reader);
+                    } else {
+                        programmes.add(readProgramme(reader, channelId, names.get(channelId), defaultZone));
+                    }
+                }
+            } finally {
+                reader.close();
+            }
+        } catch (XMLStreamException e) {
+            throw new IOException("No valid XMLTV file: " + e.getMessage(), e);
+        }
+        return programmes;
+    }
+
+    /**
+     * Reads the programme the reader is positioned at; only the first title, sub-title, description and category
+     * are taken.
+     */
+    private static Programme readProgramme(XMLStreamReader reader, String channelId, String channelName,
+                                           ZoneId defaultZone) throws XMLStreamException {
+        Instant start = XmltvTimes.parse(reader.getAttributeValue(null, "start"), defaultZone);
+        Instant stop = XmltvTimes.parse(reader.getAttributeValue(null, "stop"), defaultZone);
+        Map<String, String> texts = new HashMap<>();
+        int depth = 1;
+        while (depth > 0 && reader.hasNext()) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String element = reader.getLocalName();
+                if (depth == 1 && Set.of("title", "sub-title", "desc", "category").contains(element)) {
+                    String text = readText(reader);
+                    if (!text.isEmpty()) {
+                        texts.putIfAbsent(element, text);
+                    }
+                } else {
+                    depth++;
+                }
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                depth--;
+            }
+        }
+        return new Programme(channelId, channelName, start, stop, texts.get("title"), texts.get("sub-title"),
+                texts.get("desc"), texts.get("category"));
+    }
+
+    /**
+     * @return the text of the element the reader is positioned at, including the text of nested elements
+     */
+    private static String readText(XMLStreamReader reader) throws XMLStreamException {
+        StringBuilder text = new StringBuilder();
+        int depth = 1;
+        while (depth > 0 && reader.hasNext()) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                depth++;
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                depth--;
+            } else if (event == XMLStreamConstants.CHARACTERS || event == XMLStreamConstants.CDATA) {
+                text.append(reader.getText());
+            }
+        }
+        // some sources contain line breaks written as "\n" (backslash, n) instead of real ones
+        return text.toString().replace("\\r\\n", "\n").replace("\\n", "\n").strip();
     }
 
     private static void skipElement(XMLStreamReader reader) throws XMLStreamException {

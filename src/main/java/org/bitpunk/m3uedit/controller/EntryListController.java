@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -10,6 +11,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.enricher.Enricher;
+import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 
@@ -43,6 +46,9 @@ public class EntryListController extends AbstractController  implements Initiali
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private Button resetManualChangesButton;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private Button epgButton;
     private DataModel dataModel;
 
     public EntryListController() {
@@ -54,6 +60,7 @@ public class EntryListController extends AbstractController  implements Initiali
         initEntryTableView();
         addNewEntryButton.setOnAction(actionEvent -> addNewEntry());
         resetManualChangesButton.setOnAction(actionEvent -> resetManualChanges());
+        epgButton.setOnAction(actionEvent -> showEpg());
     }
 
     private void initEntryTableView() {
@@ -244,11 +251,55 @@ public class EntryListController extends AbstractController  implements Initiali
         }
     }
 
+    /**
+     * @return the enabled enrichers providing programmes, e.g. the EPG enricher
+     */
+    List<ProgrammeGuideProvider> programmeGuideProviders() {
+        return dataModel.getEnrichers().stream()
+                .filter(enricher -> enricher.getEnabled().get())
+                .filter(ProgrammeGuideProvider.class::isInstance)
+                .map(ProgrammeGuideProvider.class::cast)
+                .toList();
+    }
+
+    private void updateEpgButton() {
+        boolean available = !programmeGuideProviders().isEmpty();
+        epgButton.setDisable(!available);
+        epgButton.setTooltip(new Tooltip(available ? "Show the programmes of the channels of the playlist"
+                : "Enable the EPG Enricher to see the programmes of the channels"));
+    }
+
+    /**
+     * Opens a window with the programmes of the playlist, read in the background.
+     */
+    void showEpg() {
+        List<ProgrammeGuideProvider> providers = programmeGuideProviders();
+        if (providers.isEmpty()) {
+            return;
+        }
+        EpgWindow window = createEpgWindow(providers);
+        window.show();
+        window.load();
+    }
+
+    EpgWindow createEpgWindow(List<ProgrammeGuideProvider> providers) {
+        return new EpgWindow(getScene() == null ? null : getScene().getWindow(), dataModel.getName(),
+                dataModel.getSortedEntryList(), providers);
+    }
+
+    Button epgButton() {
+        return epgButton;
+    }
+
     @Override
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
         entryTableView.setItems(this.dataModel.getSortedEntryList());
         resetManualChangesButton.disableProperty().bind(Bindings.isEmpty(this.dataModel.getManualChanges()));
+        // enabling an enricher re-computes the pipeline
+        this.dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> updateEpgButton());
+        this.dataModel.getEnrichers().addListener((ListChangeListener<Enricher>) change -> updateEpgButton());
+        updateEpgButton();
     }
 
     private static class IndicesList extends ArrayList<Integer> {

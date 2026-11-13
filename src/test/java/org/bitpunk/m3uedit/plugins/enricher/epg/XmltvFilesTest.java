@@ -58,4 +58,32 @@ class XmltvFilesTest {
             assertThat(e).hasMessageContaining("No valid XMLTV file");
         }
     }
+
+    @Test
+    void testProgrammesOfTheSelectedChannelsAreRead() throws IOException {
+        Path file = XmltvTestFiles.write(tempDir.resolve("programmes.xml"), """
+                <tv>
+                  <channel id="A"><display-name>A</display-name></channel>
+                  <programme start="20261113200000 +0100" stop="20261113201500 +0100" channel="A">
+                    <title lang="de">Tagesschau</title><title lang="en">News</title>
+                    <sub-title>20 Uhr</sub-title>
+                    <desc>Nachrichten &amp; <b>Wetter</b></desc>
+                    <credits><actor>Somebody</actor></credits>
+                    <category>News</category><category>Info</category>
+                  </programme>
+                  <programme start="20261113201500 +0100" channel="A"><title>Tatort</title><desc>Teil 1.\\n\\nTeil 2.</desc></programme>
+                  <programme start="20261113200000 +0100" channel="B"><title>Other</title></programme>
+                </tv>
+                """);
+
+        List<org.bitpunk.m3uedit.plugins.enricher.Programme> programmes = XmltvFiles.readProgrammes(file,
+                java.util.Map.of("A", "a.de"), java.util.Map.of("a.de", "Channel A"), java.time.ZoneOffset.UTC);
+
+        assertThat(programmes).containsExactly(
+                new org.bitpunk.m3uedit.plugins.enricher.Programme("a.de", "Channel A",
+                        java.time.Instant.parse("2026-11-13T19:00:00Z"), java.time.Instant.parse("2026-11-13T19:15:00Z"),
+                        "Tagesschau", "20 Uhr", "Nachrichten & Wetter", "News"),
+                new org.bitpunk.m3uedit.plugins.enricher.Programme("a.de", "Channel A",
+                        java.time.Instant.parse("2026-11-13T19:15:00Z"), null, "Tatort", null, "Teil 1.\n\nTeil 2.", null));
+    }
 }

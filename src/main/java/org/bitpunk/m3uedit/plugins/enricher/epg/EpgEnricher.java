@@ -9,6 +9,8 @@ import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.enricher.Attachment;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
+import org.bitpunk.m3uedit.plugins.enricher.Programme;
+import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
 import org.bitpunk.m3uedit.util.EntryMapper;
 
 import java.io.IOException;
@@ -19,6 +21,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,7 +43,7 @@ import java.util.zip.GZIPOutputStream;
 @Getter
 @Setter
 @Slf4j
-public class EpgEnricher extends AbstractPlugin implements Enricher {
+public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGuideProvider {
     static final int DEFAULT_CACHE_HOURS = 12;
     static final int DEFAULT_GUIDE_DAYS_AHEAD = 7;
     static final int DEFAULT_GUIDE_HOURS_PAST = 6;
@@ -121,8 +125,7 @@ public class EpgEnricher extends AbstractPlugin implements Enricher {
 
     @Override
     public Enrichment enrich(List<Entry> entries) {
-        List<String> urls = sources == null ? List.of()
-                : sources.stream().filter(Objects::nonNull).map(String::strip).filter(url -> !url.isEmpty()).distinct().toList();
+        List<String> urls = configuredSources();
         if (urls.isEmpty()) {
             return new Enrichment(entries, List.of(), null, "No EPG sources configured.", null, null);
         }
@@ -208,6 +211,29 @@ public class EpgEnricher extends AbstractPlugin implements Enricher {
                         compiler.write(selections, outputStream);
                     }
                 });
+    }
+
+    @Override
+    public List<Programme> readProgrammes(List<Entry> playlist) throws IOException {
+        LoadedSources loaded = loadSources(configuredSources());
+        Map<String, String> names = new HashMap<>();
+        for (Entry entry : playlist) {
+            if (entry.getTvgId() != null && !entry.getTvgId().isBlank()) {
+                names.putIfAbsent(entry.getTvgId().strip(), entry.getName());
+            }
+        }
+        List<Programme> programmes = new ArrayList<>();
+        for (GuideCompiler.SourceSelection selection : selectChannels(playlist, loaded)) {
+            programmes.addAll(XmltvFiles.readProgrammes(selection.file(), selection.channels(), names,
+                    getClock().getZone()));
+        }
+        programmes.sort(Comparator.comparing(Programme::start, Comparator.nullsLast(Comparator.naturalOrder())));
+        return programmes;
+    }
+
+    private List<String> configuredSources() {
+        return sources == null ? List.of()
+                : sources.stream().filter(Objects::nonNull).map(String::strip).filter(url -> !url.isEmpty()).distinct().toList();
     }
 
     /**
