@@ -171,4 +171,15 @@ class EpgWindowTest {
         // the second channel is played as the first entry with its tvg-id
         assertThat(played).containsExactly("ZDF", "ARD", "ZDF");
     }
+
+    @Test
+    void testTheScrollPaneDoesNotKeepTheFocus() throws Exception {
+        // clicking a programme focuses the scroll pane first; its focus ring shifted the guide for a moment
+        Object focusOwner = onFxThread(window -> {
+            window.getGuide().getScrollPane().requestFocus();
+            return window.getScene().getFocusOwner();
+        });
+
+        assertThat(focusOwner).isInstanceOf(ProgrammeGuideView.class);
+    }
 }

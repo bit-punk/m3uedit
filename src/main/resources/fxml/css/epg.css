@@ -87,9 +87,11 @@
 }
 
 .guide-scroll,
+.guide-scroll:focused,
 .guide-scroll > .viewport {
     -fx-background-color: -fx-background;
     -fx-background-insets: 0;
+    -fx-background-radius: 0;
     -fx-padding: 0;
 }
 

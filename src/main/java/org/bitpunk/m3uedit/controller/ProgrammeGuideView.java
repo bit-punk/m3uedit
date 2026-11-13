@@ -139,6 +139,21 @@ public class ProgrammeGuideView extends VBox {
         grid.getStyleClass().add("guide-grid");
         scrollPane.getStyleClass().add("guide-scroll");
         scrollPane.setFocusTraversable(false);
+        // the scroll pane takes the focus when it is clicked: it is passed on to the guide in the same pulse, so the
+        // focus ring of the scroll pane is never drawn (it shifted the programmes for a moment)
+        javafx.beans.value.ChangeListener<Node> focusRedirect = (observable, oldOwner, owner) -> {
+            if (owner == scrollPane) {
+                requestFocus();
+            }
+        };
+        sceneProperty().addListener((observable, oldScene, scene) -> {
+            if (oldScene != null) {
+                oldScene.focusOwnerProperty().removeListener(focusRedirect);
+            }
+            if (scene != null) {
+                scene.focusOwnerProperty().addListener(focusRedirect);
+            }
+        });
         // the keys are used to move the selection, not to scroll
         scrollPane.addEventFilter(KeyEvent.ANY, event -> {
             if (event.getCode().isArrowKey() || event.getCode().isNavigationKey() || event.getCode() == KeyCode.ENTER) {
