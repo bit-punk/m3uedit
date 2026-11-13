@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.model.EntryList;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
@@ -33,28 +34,30 @@ public class UrlInput extends AbstractInput implements Input {
 
     @Override
     public List<Entry> read() {
-        List<Entry> entriesRead = new ArrayList<>();
+        EntryList entriesRead = new EntryList();
+        List<String> epgUrls = new ArrayList<>();
         if (selectedInputUrls != null) {
             for (URL url : selectedInputUrls) {
-                List<Entry> entries = readEntriesFromUrl(url);
-                if (entries != null) {
-                    entriesRead.addAll(entries);
-                }
+                EntryList entries = readEntriesFromUrl(url);
+                entriesRead.addAll(entries);
+                epgUrls.addAll(entries.getEpgUrls());
             }
         }
+        entriesRead.setEpgUrls(epgUrls);
         return entriesRead;
     }
 
-    private List<Entry> readEntriesFromUrl(URL url) {
-        List<Entry> entries = new ArrayList<>();
+    private EntryList readEntriesFromUrl(URL url) {
+        EntryList entries = new EntryList();
         try {
             URLConnection connection = url.openConnection();
             connection.setConnectTimeout(TIMEOUT_MILLIS);
             connection.setReadTimeout(TIMEOUT_MILLIS);
             try (InputStream inputStream = connection.getInputStream()) {
-                List<Entry> parsed = new Parser().parse(inputStream);
+                EntryList parsed = new Parser().parse(inputStream);
                 if (parsed != null) {
                     entries.addAll(parsed);
+                    entries.setEpgUrls(parsed.getEpgUrls());
                 }
             }
         } catch (IOException e) {

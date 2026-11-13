@@ -75,7 +75,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     }
 
     @Override
-    public void write(List<Entry> playlist) {
+    public void write(List<Entry> playlist, List<String> epgUrls) {
         log.debug("write()");
         if (playlist != null && !playlist.isEmpty() && sftpConnection != null) {
             SftpUserInteraction userInteraction = createUserInteraction();
@@ -91,7 +91,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 channelSftp = client.channel();
                 Writer writer = new Writer();
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                writer.write(playlist, outputStream);
+                writer.write(playlist, epgUrls, outputStream);
                 byte[] bytes = outputStream.toByteArray();
                 payloadBytes = bytes.length;
 

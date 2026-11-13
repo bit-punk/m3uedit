@@ -104,6 +104,18 @@ class ProjectPersisterUtilTest {
     }
 
     @Test
+    void testEpgUrlsArePersisted() {
+        DataModel original = getDataModel();
+        original.getEpgUrls().setAll("https://epg.example.org/de.xml.gz", "https://epg.example.org/at.xml");
+        String projectFileName = "target/testproject-epg.m3uproj";
+
+        ProjectPersisterUtil.saveProjectFile(projectFileName, original);
+        DataModel loaded = ProjectPersisterUtil.loadProject(Path.of(projectFileName));
+
+        assertThat(loaded.getEpgUrls()).containsExactly("https://epg.example.org/de.xml.gz", "https://epg.example.org/at.xml");
+    }
+
+    @Test
     void testEntriesAreNotPersisted() throws Exception {
         DataModel dataModel = getDataModel();
         dataModel.getRawEntryList().addAll(getEntries());

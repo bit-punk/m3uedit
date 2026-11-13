@@ -180,6 +180,14 @@
     -fx-fill: -m3u-line;
 }
 
+.epg-row {
+    -fx-padding: 6 4 8 12;
+}
+
+.epg-row .icon {
+    -fx-fill: -m3u-muted;
+}
+
 .write-button {
     -fx-base: -fx-accent;
     -fx-font-weight: bold;

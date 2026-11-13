@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Writes entries as extended m3u playlist (UTF-8 encoded).
@@ -23,8 +25,15 @@ public class Writer {
     static final String DEFAULT_DURATION = "-1";
 
     public void write(List<Entry> entries, OutputStream outputStream) {
+        write(entries, List.of(), outputStream);
+    }
+
+    /**
+     * @param epgUrls the urls of the EPG (XMLTV) files written to the header, none if empty
+     */
+    public void write(List<Entry> entries, List<String> epgUrls, OutputStream outputStream) {
         PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-        printWriter.print(M3U_START_MARKER);
+        printWriter.print(header(epgUrls));
         for (Entry entry : entries) {
             StringBuilder builder = new StringBuilder();
             builder.append(System.lineSeparator());
@@ -34,6 +43,24 @@ public class Writer {
             printWriter.print(builder);
         }
         printWriter.flush();
+    }
+
+    /**
+     * The EPG urls are written as {@code x-tvg-url} and {@code url-tvg}, as players support either of them.
+     */
+    static String header(List<String> epgUrls) {
+        StringBuilder builder = new StringBuilder(M3U_START_MARKER);
+        String urls = epgUrls == null ? "" : epgUrls.stream()
+                .filter(Objects::nonNull)
+                .map(String::strip)
+                .filter(url -> !url.isEmpty())
+                .distinct()
+                .collect(Collectors.joining(","));
+        if (!urls.isEmpty()) {
+            appendAttribute(builder, "x-tvg-url", urls);
+            appendAttribute(builder, "url-tvg", urls);
+        }
+        return builder.toString();
     }
 
     private void appendExtInfo(Entry entry, StringBuilder builder) {

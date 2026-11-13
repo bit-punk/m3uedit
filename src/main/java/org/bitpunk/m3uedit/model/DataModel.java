@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +53,7 @@ import java.util.function.Consumer;
 @Slf4j
 @Getter
 @Setter
-@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "outputs", "manualChanges"})
+@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "outputs", "epgUrls", "manualChanges"})
 public class DataModel {
     private static final ExecutorService DEFAULT_BACKGROUND_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "datamodel-worker");
@@ -72,7 +73,8 @@ public class DataModel {
      * @param playlist       the sorted entries with the manual changes applied
      * @param appliedChanges the number of manual changes applied to the playlist
      */
-    private record Result(PipelineResult pipeline, List<Entry> playlist, int appliedChanges, List<String> inputErrors) {
+    private record Result(PipelineResult pipeline, List<Entry> playlist, int appliedChanges, List<String> inputErrors,
+                          List<String> inputEpgUrls) {
     }
 
     @NotNull
@@ -93,6 +95,13 @@ public class DataModel {
     private ObservableList<Sorter> sorters;
     @Setter(AccessLevel.NONE)
     private ObservableList<Output> outputs;
+
+    /**
+     * The urls of the EPG (XMLTV) files written to the playlist header. If empty, the EPG urls found in the
+     * headers of the inputs are written instead, see {@link #getEffectiveEpgUrls()}.
+     */
+    @Setter(AccessLevel.NONE)
+    private ObservableList<String> epgUrls;
 
     /**
      * The changes the user made to the playlist (the sorted entries), in the order they have been made.
@@ -135,6 +144,9 @@ public class DataModel {
     private transient ReadOnlyObjectWrapper<PipelineResult> pipelineResult;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
+    private transient ReadOnlyObjectWrapper<List<String>> inputEpgUrls;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private transient long generation;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -155,7 +167,7 @@ public class DataModel {
     private transient ListChangeListener<Input> inputsRecomputeListener;
 
     public DataModel(String name) {
-        this(name, null, null, null, null, null);
+        this(name, null, null, null, null, null, null);
     }
 
     /**
@@ -167,12 +179,14 @@ public class DataModel {
               @JsonProperty("filters") List<Filter> filters,
               @JsonProperty("sorters") List<Sorter> sorters,
               @JsonProperty("outputs") List<Output> outputs,
+              @JsonProperty("epgUrls") List<String> epgUrls,
               @JsonProperty("manualChanges") List<ManualChange> manualChanges) {
         this.name = name;
         this.inputs = observableListOf(inputs);
         this.filters = observableListOf(filters);
         this.sorters = observableListOf(sorters);
         this.outputs = observableListOf(outputs);
+        this.epgUrls = observableListOf(epgUrls);
         this.manualChanges = observableListOf(manualChanges);
         initTransientState();
     }
@@ -191,6 +205,8 @@ public class DataModel {
         busy = new ReadOnlyBooleanWrapper(this, "busy", false);
         saving = new ReadOnlyBooleanWrapper(this, "saving", false);
         pipelineResult = new ReadOnlyObjectWrapper<>(this, "pipelineResult", PipelineResult.EMPTY);
+        inputEpgUrls = new ReadOnlyObjectWrapper<>(this, "inputEpgUrls", List.of());
+        epgUrls.addListener((ListChangeListener<String>) change -> changed = true);
         // the 'dirty'-flag is set with each change of a persisted list, or the enabled-state of one of its plugins
         pluginEnabledListener = (observable, oldValue, newValue) -> changed = true;
         pluginListListener = this::onPluginListChanged;
@@ -325,6 +341,7 @@ public class DataModel {
         // the results of the steps not re-computed are taken over from the previous computation (immutable)
         PipelineResult previous = pipelineResult.get();
         List<ManualChange> changesSnapshot = List.copyOf(manualChanges);
+        List<String> previousInputEpgUrls = inputEpgUrls.get();
         log.debug("re-computing entries of project '{}' starting with step {}", name, step);
 
         getBackgroundExecutorOrDefault().execute(() -> {
@@ -334,10 +351,14 @@ public class DataModel {
                 Map<Plugin, StepResult> steps = new IdentityHashMap<>();
                 Map<Entry, Filter> removedBy = new IdentityHashMap<>();
                 List<Entry> raw;
+                List<String> loadedEpgUrls;
                 if (step == Step.LOAD_INPUTS) {
-                    raw = loadEntries(inputsSnapshot, inputErrors, sources);
+                    Set<String> epgUrlsOfInputs = new LinkedHashSet<>();
+                    raw = loadEntries(inputsSnapshot, inputErrors, sources, epgUrlsOfInputs);
+                    loadedEpgUrls = List.copyOf(epgUrlsOfInputs);
                 } else {
                     raw = rawSnapshot;
+                    loadedEpgUrls = previousInputEpgUrls;
                     sources.putAll(previous.sources());
                 }
                 List<Entry> filtered;
@@ -355,7 +376,7 @@ public class DataModel {
                 List<Entry> sorted = sortEntries(enabledSorters, filtered, steps);
                 List<Entry> playlist = ManualChange.applyAll(sorted, changesSnapshot);
                 Result result = new Result(new PipelineResult(raw, filtered, sorted, sources, steps, removedBy),
-                        playlist, changesSnapshot.size(), inputErrors);
+                        playlist, changesSnapshot.size(), inputErrors, loadedEpgUrls);
                 getFxExecutorOrDefault().execute(() -> applyResult(currentGeneration, step, result));
             } catch (RuntimeException e) {
                 log.error("Error re-computing the entries of project '{}'", name, e);
@@ -374,6 +395,7 @@ public class DataModel {
             PipelineResult pipeline = result.pipeline();
             if (step == Step.LOAD_INPUTS) {
                 rawEntryList.setAll(pipeline.raw());
+                inputEpgUrls.set(result.inputEpgUrls());
             }
             if (step.compareTo(Step.SORT) < 0) {
                 filteredEntryList.setAll(pipeline.filtered());
@@ -519,19 +541,24 @@ public class DataModel {
      * Reads all given inputs. Inputs that cannot be read are skipped, their errors are added to {@code errors}.
      */
     List<Entry> loadEntries(List<Input> inputs, List<String> errors) {
-        return loadEntries(inputs, errors, new IdentityHashMap<>());
+        return loadEntries(inputs, errors, new IdentityHashMap<>(), new LinkedHashSet<>());
     }
 
     /**
-     * Reads all given inputs, remembering the input each entry has been read from in {@code sources}.
+     * Reads all given inputs, remembering the input each entry has been read from in {@code sources}
+     * and collecting the EPG urls found in the playlist headers in {@code epgUrls}.
      */
-    private List<Entry> loadEntries(List<Input> inputs, List<String> errors, Map<Entry, Input> sources) {
+    private List<Entry> loadEntries(List<Input> inputs, List<String> errors, Map<Entry, Input> sources,
+                                    Set<String> epgUrls) {
         List<Entry> loadedEntries = new ArrayList<>();
         for (Input currentInput : inputs) {
             log.debug("reading from: {}", currentInput.getName());
             try {
                 List<Entry> entries = currentInput.read();
                 loadedEntries.addAll(entries);
+                if (entries instanceof EntryList entryList) {
+                    epgUrls.addAll(entryList.getEpgUrls());
+                }
                 entries.forEach(entry -> sources.putIfAbsent(entry, currentInput));
             } catch (Exception e) {
                 log.error("Error reading input {} ({})", currentInput.getName(), currentInput.getSource(), e);
@@ -558,10 +585,11 @@ public class DataModel {
         // take snapshots on the calling (JavaFX) thread, the background thread must not access the observable lists
         List<Output> outputsSnapshot = new ArrayList<>(outputs);
         List<Entry> playlist = List.copyOf(sortedEntryList);
+        List<String> epgUrlsSnapshot = getEffectiveEpgUrls();
         getBackgroundExecutorOrDefault().execute(() -> {
             List<String> errors = new ArrayList<>();
             try {
-                writeToOutputs(outputsSnapshot, playlist, errors);
+                writeToOutputs(outputsSnapshot, playlist, epgUrlsSnapshot, errors);
             } finally {
                 getFxExecutorOrDefault().execute(() -> {
                     saving.set(false);
@@ -573,16 +601,35 @@ public class DataModel {
         });
     }
 
-    private void writeToOutputs(List<Output> outputs, List<Entry> playlist, List<String> errors) {
+    private void writeToOutputs(List<Output> outputs, List<Entry> playlist, List<String> epgUrls, List<String> errors) {
         for (Output output : outputs) {
             log.debug("saving {} entries to output {}", playlist.size(), output.getName());
             try {
-                output.write(playlist);
+                output.write(playlist, epgUrls);
             } catch (RuntimeException e) {
                 log.error("Error writing to output {} ({})", output.getName(), output.getOutput(), e);
                 errors.add("%s: %s".formatted(output.getName(), UncaughtExceptionHandler.describe(e)));
             }
         }
+    }
+
+    /**
+     * @return the EPG urls found in the headers of the inputs when they have been loaded last
+     */
+    public ReadOnlyObjectProperty<List<String>> inputEpgUrlsProperty() {
+        return inputEpgUrls.getReadOnlyProperty();
+    }
+
+    public List<String> getInputEpgUrls() {
+        return inputEpgUrls.get();
+    }
+
+    /**
+     * @return the EPG urls written to the playlist header: the ones set for the project, or those of the inputs
+     * if none are set
+     */
+    public List<String> getEffectiveEpgUrls() {
+        return epgUrls.isEmpty() ? getInputEpgUrls() : List.copyOf(epgUrls);
     }
 
     /**

@@ -7,7 +7,14 @@ import java.net.URI;
 import java.util.List;
 
 public interface Output extends Plugin {
-    void write(List<Entry> playlist);
+    /**
+     * @param epgUrls the urls of the EPG (XMLTV) files to reference in the playlist header, none if empty
+     */
+    void write(List<Entry> playlist, List<String> epgUrls);
+
+    default void write(List<Entry> playlist) {
+        write(playlist, List.of());
+    }
 
     void configure();
 

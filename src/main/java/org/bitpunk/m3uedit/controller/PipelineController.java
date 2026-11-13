@@ -6,10 +6,13 @@ import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
@@ -32,6 +35,8 @@ import java.net.URI;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -42,6 +47,7 @@ import java.util.function.Function;
 @Slf4j
 public class PipelineController extends VBox implements ModelAware {
     private static final String ICON_WRITE = "M7 2h2v6.2l2.3-2.3 1.4 1.4L8 12 3.3 7.3l1.4-1.4L7 8.2zM2 13h12v1.5H2z";
+    private static final String ICON_EPG = "M2 3h12v8H2zm1.5 1.5v5h9v-5zM5 12.5h6V14H5z";
     private static final String ICON_FLOW = "M7 1h2v10.2l2.3-2.3 1.4 1.4L8 15 3.3 10.3l1.4-1.4L7 11.2z";
 
     /**
@@ -62,6 +68,17 @@ public class PipelineController extends VBox implements ModelAware {
     private final Label loadedLabel = flowLabel();
     private final Label filteredLabel = flowLabel();
     private final Label playlistLabel = flowLabel();
+    @Getter
+    private final Label epgLabel = new Label();
+    @Getter
+    private final Button epgButton = new Button("Edit");
+    /**
+     * Asks the user for the EPG urls of the project, given the current ones and those of the inputs;
+     * empty if cancelled.
+     */
+    @Setter
+    private BiFunction<List<String>, List<String>, Optional<List<String>>> epgUrlEditor =
+            (epgUrls, inputEpgUrls) -> new EpgUrlDialog(epgUrls, inputEpgUrls).showAndWait();
     private DataModel dataModel;
 
     public PipelineController() {
@@ -102,12 +119,55 @@ public class PipelineController extends VBox implements ModelAware {
         writeButton.disableProperty().bind(dataModel.savingProperty());
 
         getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
-                sorterStage, connector(playlistLabel), outputStage, writeButton);
+                sorterStage, connector(playlistLabel), outputStage, epgRow(), writeButton);
 
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
         dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> updateFlowLabels());
+        dataModel.getEpgUrls().addListener((ListChangeListener<String>) change -> updateEpgLabel());
+        dataModel.inputEpgUrlsProperty().addListener((observable, oldUrls, newUrls) -> updateEpgLabel());
         refresh();
+        updateEpgLabel();
+    }
+
+    /**
+     * The EPG urls written to the header of the playlist, the same for all outputs.
+     */
+    private HBox epgRow() {
+        Label title = new Label("EPG");
+        title.getStyleClass().add("stage-title");
+        epgLabel.getStyleClass().add("plugin-detail");
+        epgLabel.setMinWidth(0);
+        epgLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(epgLabel, Priority.ALWAYS);
+        epgButton.setAccessibleText("Edit EPG URLs");
+        epgButton.setOnAction(event -> editEpgUrls());
+        HBox row = new HBox(6, icon(ICON_EPG), title, epgLabel, epgButton);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("epg-row");
+        return row;
+    }
+
+    private void editEpgUrls() {
+        epgUrlEditor.apply(List.copyOf(dataModel.getEpgUrls()), dataModel.getInputEpgUrls())
+                .filter(urls -> !urls.equals(dataModel.getEpgUrls()))
+                .ifPresent(urls -> dataModel.getEpgUrls().setAll(urls));
+    }
+
+    private void updateEpgLabel() {
+        List<String> urls = dataModel.getEffectiveEpgUrls();
+        String text;
+        if (urls.isEmpty()) {
+            text = "none";
+        } else if (dataModel.getEpgUrls().isEmpty()) {
+            text = "from inputs: " + String.join(", ", urls);
+        } else {
+            text = String.join(", ", urls);
+        }
+        epgLabel.setText(text);
+        epgLabel.setTooltip(new Tooltip(urls.isEmpty()
+                ? "No EPG URL is written to the playlist, players show no programme guide."
+                : "Written to the playlist header (x-tvg-url):\n" + String.join("\n", urls)));
     }
 
     private void initRecomputeListeners() {

@@ -32,13 +32,13 @@ public class FileOutput extends AbstractPlugin implements Output {
     private URI output = null;
 
     @Override
-    public void write(List<Entry> playlist) {
+    public void write(List<Entry> playlist, List<String> epgUrls) {
         log.debug("write()");
         if (playlist != null && !playlist.isEmpty() && output != null) {
             log.debug("writing playlist [{}] to file [{}]", playlist, output);
             Writer writer = new Writer();
             try (OutputStream outputStream = new FileOutputStream(Path.of(output).toFile())) {
-                writer.write(playlist, outputStream);
+                writer.write(playlist, epgUrls, outputStream);
             } catch (IOException e) {
                 throw new OutputException("The playlist could not be written to %s: %s".formatted(
                         Path.of(output), e.getMessage()), e);

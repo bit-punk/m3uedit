@@ -403,7 +403,7 @@ class DataModelTest {
         assertThat(created.isChanged()).isTrue();
     }
 
-    private static Output output(String name, List<List<Entry>> written, RuntimeException failure) {
+    private Output output(String name, List<List<Entry>> written, RuntimeException failure) {
         return new FileOutput() {
             @Override
             public String getName() {
@@ -411,13 +411,73 @@ class DataModelTest {
             }
 
             @Override
-            public void write(List<Entry> playlist) {
+            public void write(List<Entry> playlist, List<String> epgUrls) {
                 if (failure != null) {
                     throw failure;
                 }
                 written.add(List.copyOf(playlist));
+                writtenEpgUrls.add(epgUrls);
             }
         };
+    }
+
+    private final List<List<String>> writtenEpgUrls = new ArrayList<>();
+
+    private static EntryList entryList(List<String> epgUrls, Entry... entries) {
+        EntryList list = new EntryList();
+        list.addAll(List.of(entries));
+        list.setEpgUrls(epgUrls);
+        return list;
+    }
+
+    @Test
+    void testEpgUrlsOfTheInputsAreWrittenIfNoneAreSet() {
+        dataModel.getInputs().addAll(
+                new TestInput("first", entryList(List.of("http://epg/a.xml", "http://epg/b.xml"), entry("a"))),
+                new TestInput("second", entryList(List.of("http://epg/b.xml"), entry("b"))),
+                new TestInput("plain", List.of(entry("c"))));
+        runAll();
+        dataModel.getOutputs().add(output("out", new ArrayList<>(), null));
+
+        dataModel.saveEntries();
+        runAll();
+
+        assertThat(dataModel.getInputEpgUrls()).containsExactly("http://epg/a.xml", "http://epg/b.xml");
+        assertThat(writtenEpgUrls).containsExactly(List.of("http://epg/a.xml", "http://epg/b.xml"));
+    }
+
+    @Test
+    void testEpgUrlsOfTheProjectReplaceThoseOfTheInputs() {
+        dataModel.getInputs().add(new TestInput("in", entryList(List.of("http://epg/input.xml"), entry("a"))));
+        runAll();
+        dataModel.getEpgUrls().setAll("http://epg/own.xml.gz");
+        dataModel.getOutputs().add(output("out", new ArrayList<>(), null));
+
+        dataModel.saveEntries();
+        runAll();
+
+        assertThat(writtenEpgUrls).containsExactly(List.of("http://epg/own.xml.gz"));
+    }
+
+    @Test
+    void testFilteringKeepsTheEpgUrlsOfTheInputs() {
+        dataModel.getInputs().add(new TestInput("in", entryList(List.of("http://epg/input.xml"), entry("a"))));
+        runAll();
+
+        uniqueNameFilter.getEnabled().set(true);
+        dataModel.filterRawEntries();
+        runAll();
+
+        assertThat(dataModel.getEffectiveEpgUrls()).containsExactly("http://epg/input.xml");
+    }
+
+    @Test
+    void testChangingTheEpgUrlsMarksTheProjectAsChanged() {
+        dataModel.setChanged(false);
+
+        dataModel.getEpgUrls().add("http://epg/own.xml");
+
+        assertThat(dataModel.isChanged()).isTrue();
     }
 
     @Test

@@ -63,6 +63,39 @@ class PipelineControllerTest {
     }
 
     @Test
+    void epgRowShowsTheUrlsWrittenToThePlaylist() {
+        assertThat(pipeline.getEpgLabel().getText()).isEqualTo("none");
+
+        dataModel.getEpgUrls().setAll("http://epg/a.xml", "http://epg/b.xml");
+
+        assertThat(pipeline.getEpgLabel().getText()).isEqualTo("http://epg/a.xml, http://epg/b.xml");
+    }
+
+    @Test
+    void editingTheEpgUrlsUpdatesTheProject() {
+        List<List<String>> shown = new ArrayList<>();
+        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> {
+            shown.add(epgUrls);
+            return java.util.Optional.of(List.of("http://epg/new.xml"));
+        });
+
+        pipeline.getEpgButton().fire();
+
+        assertThat(shown).containsExactly(List.of());
+        assertThat(dataModel.getEpgUrls()).containsExactly("http://epg/new.xml");
+    }
+
+    @Test
+    void cancellingTheEpgDialogKeepsTheUrls() {
+        dataModel.getEpgUrls().setAll("http://epg/a.xml");
+        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> java.util.Optional.empty());
+
+        pipeline.getEpgButton().fire();
+
+        assertThat(dataModel.getEpgUrls()).containsExactly("http://epg/a.xml");
+    }
+
+    @Test
     void connectorsShowTheNumberOfEntriesPassedOn() {
         hdFilter.getEnabled().set(true);
 

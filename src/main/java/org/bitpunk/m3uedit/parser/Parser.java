@@ -8,8 +8,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +29,11 @@ public class Parser {
     private static final Pattern TVG_SHIFT_REGEX = Pattern.compile(".*tvg-shift=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern GROUP_TITLE_REGEX = Pattern.compile(".*group-title=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
     private static final Pattern RADIO_REGEX = Pattern.compile(".*radio=\"(.?|.+?)\".*", Pattern.CASE_INSENSITIVE);
+    /**
+     * The header attributes referencing EPG files; players support either of them, so both are read.
+     */
+    private static final Pattern EPG_URL_REGEX = Pattern.compile("(?:^|\\s)(?:x-tvg-url|url-tvg)=\"([^\"]*)\"",
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern VLC_OPTS = Pattern.compile(M3U_VLC_OPT_MARKER_REGEX + "(.*)=(.*)", Pattern.CASE_INSENSITIVE);
 
     private static void checkForValidBuilder(Builder builder, int lineNumber) {
@@ -55,6 +64,7 @@ public class Parser {
             lineNumber++;
             checkStart(line);
             String globalTvgShift = extract(line, TVG_SHIFT_REGEX);
+            entries.setEpgUrls(extractEpgUrls(line));
 
             Builder builder = null;
             while ((line = buffer.readLine()) != null) {
@@ -88,6 +98,23 @@ public class Parser {
         if (line != null && (!line.contains(M3U_START_MARKER))) {
             throw new ParsingException(1, "First line of the file should be " + M3U_START_MARKER);
         }
+    }
+
+    /**
+     * Returns the EPG urls of the {@code #EXTM3U} header line, in their order and without duplicates.
+     * Each attribute may contain several comma-separated urls.
+     */
+    static List<String> extractEpgUrls(String headerLine) {
+        Set<String> urls = new LinkedHashSet<>();
+        Matcher matcher = EPG_URL_REGEX.matcher(headerLine);
+        while (matcher.find()) {
+            for (String url : matcher.group(1).split(",")) {
+                if (!url.isBlank()) {
+                    urls.add(url.strip());
+                }
+            }
+        }
+        return new ArrayList<>(urls);
     }
 
     private boolean isExtInfo(String line) {

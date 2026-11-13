@@ -105,6 +105,28 @@ class WriterTest {
     }
 
     @Test
+    void testEpgUrlsAreWrittenToTheHeader() {
+        Entry entry = new Builder().channelName("ZDF").tvgId("ZDF.de").channelUri("http://example.com/zdf").build();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        new Writer().write(List.of(entry), List.of("http://epg/a.xml.gz", " http://epg/b.xml ", "http://epg/a.xml.gz"),
+                outputStream);
+
+        String written = outputStream.toString(StandardCharsets.UTF_8);
+        assertThat(written).startsWith("#EXTM3U x-tvg-url=\"http://epg/a.xml.gz,http://epg/b.xml\" "
+                + "url-tvg=\"http://epg/a.xml.gz,http://epg/b.xml\"" + System.lineSeparator());
+        assertThat(new Parser().parse(new ByteArrayInputStream(outputStream.toByteArray())).getEpgUrls())
+                .containsExactly("http://epg/a.xml.gz", "http://epg/b.xml");
+    }
+
+    @Test
+    void testNoEpgUrlsWriteAPlainHeader() {
+        assertThat(Writer.header(List.of())).isEqualTo("#EXTM3U");
+        assertThat(Writer.header(null)).isEqualTo("#EXTM3U");
+        assertThat(Writer.header(java.util.Arrays.asList(" ", null))).isEqualTo("#EXTM3U");
+    }
+
+    @Test
     void testCommaInNameAndUtf8AreKept() {
         Entry entry = new Builder()
                 .channelName("ARD, Das Erste – Österreich")
