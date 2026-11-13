@@ -70,6 +70,7 @@ class XmltvFilesTest {
                     <desc>Nachrichten &amp; <b>Wetter</b></desc>
                     <credits><actor>Somebody</actor></credits>
                     <category>News</category><category>Info</category>
+                    <icon src="http://example.com/tagesschau.jpg"/>
                   </programme>
                   <programme start="20261113201500 +0100" channel="A"><title>Tatort</title><desc>Teil 1.\\n\\nTeil 2.</desc></programme>
                   <programme start="20261113200000 +0100" channel="B"><title>Other</title></programme>
@@ -82,7 +83,7 @@ class XmltvFilesTest {
         assertThat(programmes).containsExactly(
                 new org.bitpunk.m3uedit.plugins.enricher.Programme("a.de", "Channel A",
                         java.time.Instant.parse("2026-11-13T19:00:00Z"), java.time.Instant.parse("2026-11-13T19:15:00Z"),
-                        "Tagesschau", "20 Uhr", "Nachrichten & Wetter", "News"),
+                        "Tagesschau", "20 Uhr", "Nachrichten & Wetter", "News", "http://example.com/tagesschau.jpg"),
                 new org.bitpunk.m3uedit.plugins.enricher.Programme("a.de", "Channel A",
                         java.time.Instant.parse("2026-11-13T19:15:00Z"), null, "Tatort", null, "Teil 1.\n\nTeil 2.", null));
     }

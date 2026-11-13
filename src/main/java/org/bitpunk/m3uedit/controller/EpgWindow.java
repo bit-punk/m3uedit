@@ -1,29 +1,26 @@
 package org.bitpunk.m3uedit.controller;
 
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
@@ -33,38 +30,65 @@ import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
- * Shows the programmes of all channels of a playlist in a table, read from the programme guides of the enrichers.
- * The programmes are read in the background when the window is opened.
+ * Shows the programmes of all channels of a playlist as programme guide (see {@link ProgrammeGuideView}), read from
+ * the programme guides of the enrichers in the background when the window is opened. The selected programme is
+ * described below the guide.
  */
 @Slf4j
 public class EpgWindow extends Stage {
-    static final String ALL_CHANNELS = "All channels";
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEE dd.MM.");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     /**
-     * A choice of the day filter.
-     *
-     * @param label shown to the user
-     * @param date  the day shown, null for {@link #FROM_NOW} and {@link #ALL}
+     * A day to jump to.
      */
-    record DayFilter(String label, LocalDate date) {
-        static final DayFilter FROM_NOW = new DayFilter("From now", null);
-        static final DayFilter ALL = new DayFilter("All days", null);
+    record Day(LocalDate date, String label) {
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    /**
+     * A part of the day to jump to.
+     */
+    enum PartOfDay {
+        MORNING("Morning", LocalTime.of(6, 0)),
+        AFTERNOON("Afternoon", LocalTime.of(12, 0)),
+        EVENING("Evening", LocalTime.of(18, 0)),
+        NIGHT("Night", LocalTime.of(22, 0));
+
+        final String label;
+        final LocalTime start;
+
+        PartOfDay(String label, LocalTime start) {
+            this.label = label;
+            this.start = start;
+        }
+
+        static PartOfDay of(LocalTime time) {
+            PartOfDay part = NIGHT;
+            for (PartOfDay candidate : values()) {
+                if (!time.isBefore(candidate.start)) {
+                    part = candidate;
+                }
+            }
+            // after midnight it is still night
+            return time.isBefore(MORNING.start) ? NIGHT : part;
+        }
 
         @Override
         public String toString() {
@@ -77,21 +101,32 @@ public class EpgWindow extends Stage {
     private final Clock clock;
     private final ZoneId zone;
     @Getter
-    private final ObservableList<Programme> programmes = FXCollections.observableArrayList();
-    private final FilteredList<Programme> filteredProgrammes = new FilteredList<>(programmes);
+    private final ProgrammeGuideView guide;
     @Getter
-    private final TableView<Programme> table = new TableView<>();
+    private final ComboBox<Day> dayComboBox = new ComboBox<>();
     @Getter
-    private final ComboBox<String> channelComboBox = new ComboBox<>();
+    private final ComboBox<PartOfDay> partOfDayComboBox = new ComboBox<>();
     @Getter
-    private final ComboBox<DayFilter> dayComboBox = new ComboBox<>();
+    private final Button nowButton = new Button("Now");
     @Getter
     private final TextField searchField = new TextField();
     @Getter
-    private final TextArea descriptionArea = new TextArea();
+    private final Label titleLabel = new Label();
+    @Getter
+    private final Label timeLabel = new Label();
+    @Getter
+    private final Label descriptionLabel = new Label();
+    private final ImageView imageView = new ImageView();
     @Getter
     private final Label statusLabel = new Label();
-    private final ProgressIndicator progress = new ProgressIndicator();
+    private final Label loadingLabel = new Label("Reading the programme guides …");
+    @Getter
+    private List<Programme> programmes = List.of();
+    /**
+     * Set while the choices are updated to the time shown, so they do not scroll.
+     */
+    private boolean updatingChoices;
+    private final Timeline clockTimer;
 
     /**
      * @param playlist  the playlist, a copy is taken
@@ -106,91 +141,74 @@ public class EpgWindow extends Stage {
         this.providers = List.copyOf(providers);
         this.clock = clock;
         this.zone = clock.getZone();
+        this.guide = new ProgrammeGuideView(zone);
         if (owner != null) {
             initOwner(owner);
         }
         setTitle("EPG – " + projectName);
 
-        channelComboBox.getItems().setAll(ALL_CHANNELS);
-        channelComboBox.getSelectionModel().selectFirst();
-        dayComboBox.getItems().setAll(DayFilter.FROM_NOW, DayFilter.ALL);
-        dayComboBox.getSelectionModel().selectFirst();
+        partOfDayComboBox.getItems().setAll(PartOfDay.values());
+        dayComboBox.valueProperty().addListener((observable, oldDay, day) -> jumpToChoice());
+        partOfDayComboBox.valueProperty().addListener((observable, oldPart, part) -> jumpToChoice());
+        nowButton.setOnAction(event -> showNow());
         searchField.setPromptText("Search title or description");
-        HBox.setHgrow(searchField, Priority.ALWAYS);
-        channelComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateFilter());
-        dayComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateFilter());
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> updateFilter());
-        progress.setPrefSize(16, 16);
-        progress.setMaxSize(16, 16);
-        HBox toolbar = new HBox(8, new Label("Channel:"), channelComboBox, new Label("Day:"), dayComboBox, searchField,
-                progress);
+        searchField.textProperty().addListener((observable, oldText, text) -> guide.setSearch(text));
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox toolbar = new HBox(8, dayComboBox, partOfDayComboBox, nowButton, spacer, searchField);
+        toolbar.getStyleClass().add("guide-toolbar");
         toolbar.setAlignment(Pos.CENTER_LEFT);
-        toolbar.setPadding(new Insets(8));
+        toolbar.setPadding(new Insets(10, 12, 10, 12));
 
-        initTable();
-        descriptionArea.setEditable(false);
-        descriptionArea.setWrapText(true);
-        descriptionArea.setPrefRowCount(4);
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, selected) ->
-                descriptionArea.setText(describe(selected)));
-        SplitPane splitPane = new SplitPane(table, descriptionArea);
-        splitPane.setOrientation(javafx.geometry.Orientation.VERTICAL);
-        splitPane.setDividerPositions(0.8);
-        VBox.setVgrow(splitPane, Priority.ALWAYS);
-        statusLabel.setPadding(new Insets(4, 8, 6, 8));
-        statusLabel.setText("Reading the programme guides …");
+        loadingLabel.getStyleClass().add("guide-loading");
+        loadingLabel.setWrapText(true);
+        StackPane guideArea = new StackPane(guide, loadingLabel);
+        VBox.setVgrow(guideArea, Priority.ALWAYS);
 
-        VBox root = new VBox(toolbar, splitPane, statusLabel);
-        setScene(new Scene(root, 1100, 700));
+        VBox details = details();
+        guide.getSelectedProgramme().addListener((observable, oldProgramme, programme) -> describe(programme));
+        // the time shown is reflected by the choices
+        guide.getScrollPane().hvalueProperty().addListener((observable, oldValue, newValue) -> updateChoices());
+
+        statusLabel.getStyleClass().add("guide-status");
+        statusLabel.setPadding(new Insets(4, 12, 6, 12));
+        VBox root = new VBox(toolbar, guideArea, details, statusLabel);
+        root.getStyleClass().add("guide-window");
+        Scene scene = new Scene(root, 1200, 720);
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/css/epg.css"))
+                .toExternalForm());
+        setScene(scene);
+
+        clockTimer = new Timeline(new KeyFrame(Duration.seconds(30), event -> guide.setNow(clock.instant())));
+        clockTimer.setCycleCount(Timeline.INDEFINITE);
+        setOnShown(event -> clockTimer.play());
+        setOnHidden(event -> clockTimer.stop());
     }
 
-    private void initTable() {
-        TableColumn<Programme, String> channel = column("Channel", Programme::channelName, 160);
-        TableColumn<Programme, Instant> day = timeColumn("Day", Programme::start, DAY, 90);
-        TableColumn<Programme, Instant> start = timeColumn("Start", Programme::start, TIME, 60);
-        TableColumn<Programme, Instant> end = timeColumn("End", Programme::stop, TIME, 60);
-        TableColumn<Programme, String> title = column("Title", programme -> programme.subTitle() == null
-                ? programme.title() : "%s – %s".formatted(programme.title(), programme.subTitle()), 420);
-        TableColumn<Programme, String> category = column("Category", Programme::category, 140);
-        table.getColumns().setAll(List.of(channel, day, start, end, title, category));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No programmes."));
-        SortedList<Programme> sorted = new SortedList<>(filteredProgrammes);
-        // unsorted by the user: by start, then in the order of the playlist
-        sorted.comparatorProperty().bind(javafx.beans.binding.Bindings.createObjectBinding(
-                () -> table.getComparator() != null ? table.getComparator() : defaultOrder(), table.comparatorProperty()));
-        table.setItems(sorted);
-    }
-
-    private Comparator<Programme> defaultOrder() {
-        List<String> channelOrder = playlist.stream().map(Entry::getTvgId).filter(Objects::nonNull).map(String::strip)
-                .distinct().toList();
-        return Comparator.comparing(Programme::start, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparingInt(programme -> channelOrder.indexOf(programme.channelId()));
-    }
-
-    private static TableColumn<Programme, String> column(String title, Function<Programme, String> value, double width) {
-        TableColumn<Programme, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(value.apply(cell.getValue())));
-        column.setPrefWidth(width);
-        return column;
-    }
-
-    private TableColumn<Programme, Instant> timeColumn(String title, Function<Programme, Instant> value,
-                                                       DateTimeFormatter format, double width) {
-        TableColumn<Programme, Instant> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(value.apply(cell.getValue())));
-        column.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
-        column.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(Instant instant, boolean empty) {
-                super.updateItem(instant, empty);
-                setText(empty || instant == null ? null : format.format(instant.atZone(zone)));
-            }
-        });
-        column.setPrefWidth(width);
-        column.setMinWidth(Region.USE_PREF_SIZE);
-        return column;
+    private VBox details() {
+        imageView.setFitWidth(176);
+        imageView.setFitHeight(99);
+        imageView.setPreserveRatio(true);
+        StackPane image = new StackPane(imageView);
+        image.getStyleClass().add("guide-image");
+        image.setMinSize(176, 99);
+        image.setMaxSize(176, 99);
+        titleLabel.getStyleClass().add("guide-details-title");
+        timeLabel.getStyleClass().add("guide-details-time");
+        descriptionLabel.getStyleClass().add("guide-details-description");
+        descriptionLabel.setWrapText(true);
+        descriptionLabel.setAlignment(Pos.TOP_LEFT);
+        descriptionLabel.setMaxHeight(Double.MAX_VALUE);
+        VBox text = new VBox(4, titleLabel, timeLabel, descriptionLabel);
+        VBox.setVgrow(descriptionLabel, Priority.ALWAYS);
+        HBox.setHgrow(text, Priority.ALWAYS);
+        HBox box = new HBox(16, image, text);
+        box.setPadding(new Insets(14, 16, 10, 16));
+        VBox details = new VBox(box);
+        details.getStyleClass().add("guide-details");
+        details.setMinHeight(150);
+        details.setPrefHeight(150);
+        return details;
     }
 
     /**
@@ -218,94 +236,139 @@ public class EpgWindow extends Stage {
         task.setOnSucceeded(event -> showProgrammes(task.getValue()));
         task.setOnFailed(event -> {
             log.error("The programmes could not be read", task.getException());
-            progress.setVisible(false);
             statusLabel.setText("The programme guides could not be read: " + task.getException().getMessage());
+            loadingLabel.setText(statusLabel.getText());
         });
+        statusLabel.setText("Reading the programme guides …");
         executor.execute(task);
     }
 
+    /**
+     * Shows the programmes, a row for each channel of the playlist with programmes, in the order of the playlist.
+     */
     void showProgrammes(List<Programme> read) {
-        progress.setVisible(false);
-        programmes.setAll(read);
-        Set<String> channels = new LinkedHashSet<>();
-        channels.add(ALL_CHANNELS);
-        // in the order of the playlist
+        programmes = List.copyOf(read);
+        loadingLabel.setVisible(read.isEmpty());
+        loadingLabel.setText("No programmes for the channels of the playlist.");
+        Map<String, List<Programme>> byChannel = new LinkedHashMap<>();
+        Map<String, ProgrammeGuideView.Channel> channels = new LinkedHashMap<>();
         for (Entry entry : playlist) {
-            read.stream().filter(programme -> Objects.equals(programme.channelId(), strip(entry.getTvgId())))
-                    .findFirst().ifPresent(programme -> channels.add(programme.channelName()));
+            String id = entry.getTvgId() == null ? null : entry.getTvgId().strip();
+            if (id != null && !channels.containsKey(id)) {
+                channels.put(id, new ProgrammeGuideView.Channel(entry.getName(), entry.getTvgLogo()));
+                byChannel.put(id, new ArrayList<>());
+            }
         }
-        channelComboBox.getItems().setAll(channels);
-        channelComboBox.getSelectionModel().selectFirst();
-        List<DayFilter> days = new ArrayList<>(List.of(DayFilter.FROM_NOW, DayFilter.ALL));
-        read.stream().map(Programme::start).filter(Objects::nonNull).map(start -> start.atZone(zone).toLocalDate())
-                .distinct().sorted()
-                .forEach(date -> days.add(new DayFilter(DAY.format(date), date)));
-        dayComboBox.getItems().setAll(days);
-        dayComboBox.getSelectionModel().selectFirst();
-        updateFilter();
+        read.forEach(programme -> {
+            List<Programme> channel = byChannel.get(programme.channelId());
+            if (channel != null) {
+                channel.add(programme);
+            }
+        });
+        byChannel.values().removeIf(List::isEmpty);
+        channels.keySet().retainAll(byChannel.keySet());
+        Instant now = clock.instant();
+        guide.setChannels(List.copyOf(channels.values()), List.copyOf(byChannel.values()), now);
+
+        Set<LocalDate> dates = new TreeSet<>();
+        guide.getRows().forEach(row -> row.forEach(slot -> {
+            dates.add(slot.start().atZone(zone).toLocalDate());
+        }));
+        LocalDate today = now.atZone(zone).toLocalDate();
+        dates.add(today);
+        updatingChoices = true;
+        dayComboBox.getItems().setAll(dates.stream().map(date -> new Day(date, label(date, today))).toList());
+        updatingChoices = false;
+        statusLabel.setText("%d programmes of %d channels".formatted(read.size(), channels.size()));
+        // the viewport has its size after the next layout
+        Platform.runLater(this::showNow);
     }
 
-    private static String strip(String value) {
-        return value == null ? null : value.strip();
-    }
-
-    private void updateFilter() {
-        filteredProgrammes.setPredicate(filter(channelComboBox.getValue(), dayComboBox.getValue(), searchField.getText(),
-                clock.instant(), zone));
-        long channelCount = programmes.stream().map(Programme::channelId).distinct().count();
-        statusLabel.setText("%d of %d programmes of %d channels".formatted(filteredProgrammes.size(), programmes.size(),
-                channelCount));
+    private static String label(LocalDate date, LocalDate today) {
+        if (date.equals(today)) {
+            return "Today";
+        }
+        if (date.equals(today.plusDays(1))) {
+            return "Tomorrow";
+        }
+        if (date.equals(today.minusDays(1))) {
+            return "Yesterday";
+        }
+        return DAY.format(date);
     }
 
     /**
-     * @return the filter of the programmes shown
+     * Scrolls to the current time and selects the programme running on the first channel.
      */
-    static Predicate<Programme> filter(String channel, DayFilter day, String search, Instant now, ZoneId zone) {
-        String text = search == null ? "" : search.strip().toLowerCase(Locale.ROOT);
-        return programme -> {
-            if (channel != null && !ALL_CHANNELS.equals(channel) && !channel.equals(programme.channelName())) {
-                return false;
-            }
-            if (day == DayFilter.FROM_NOW) {
-                Instant end = programme.stop() != null ? programme.stop() : programme.start();
-                if (end != null && !end.isAfter(now)) {
-                    return false;
-                }
-            } else if (day != null && day.date() != null && (programme.start() == null
-                    || !programme.start().atZone(zone).toLocalDate().equals(day.date()))) {
-                return false;
-            }
-            return text.isEmpty() || contains(programme.title(), text) || contains(programme.subTitle(), text)
-                    || contains(programme.description(), text);
-        };
+    void showNow() {
+        Instant now = clock.instant();
+        guide.setNow(now);
+        guide.scrollTo(now);
+        guide.selectAt(now);
+        updateChoices(now);
+        guide.requestFocus();
     }
 
-    private static boolean contains(String value, String text) {
-        return value != null && value.toLowerCase(Locale.ROOT).contains(text);
+    private void jumpToChoice() {
+        if (updatingChoices || dayComboBox.getValue() == null || partOfDayComboBox.getValue() == null) {
+            return;
+        }
+        Instant target = dayComboBox.getValue().date().atTime(partOfDayComboBox.getValue().start).atZone(zone).toInstant();
+        guide.scrollTo(target);
     }
 
-    private String describe(Programme programme) {
+    /**
+     * Shows the day and part of the day at the left edge of the guide.
+     */
+    private void updateChoices() {
+        if (guide.getTimeline() == null) {
+            return;
+        }
+        // the left edge is 60 pixels before the time jumped to
+        updateChoices(guide.getTimeline().timeAt(guide.scrollX() + 60));
+    }
+
+    private void updateChoices(Instant time) {
+        LocalDate date = time.atZone(zone).toLocalDate();
+        LocalTime localTime = time.atZone(zone).toLocalTime();
+        // the night of a day reaches until the morning of the next one
+        if (localTime.isBefore(PartOfDay.MORNING.start)) {
+            date = date.minusDays(1);
+        }
+        LocalDate shownDate = date;
+        updatingChoices = true;
+        try {
+            dayComboBox.getItems().stream().filter(day -> day.date().equals(shownDate)).findFirst()
+                    .ifPresent(dayComboBox::setValue);
+            partOfDayComboBox.setValue(PartOfDay.of(localTime));
+        } finally {
+            updatingChoices = false;
+        }
+    }
+
+    private void describe(Programme programme) {
         if (programme == null) {
-            return "";
+            titleLabel.setText(null);
+            timeLabel.setText(null);
+            descriptionLabel.setText(null);
+            imageView.setImage(null);
+            return;
         }
-        StringBuilder text = new StringBuilder(programme.title() == null ? "" : programme.title());
-        if (programme.subTitle() != null) {
-            text.append(" – ").append(programme.subTitle());
-        }
-        text.append("\n").append(programme.channelName());
+        titleLabel.setText(programme.subTitle() == null ? programme.title()
+                : "%s – %s".formatted(programme.title(), programme.subTitle()));
+        StringBuilder time = new StringBuilder(programme.channelName());
         if (programme.start() != null) {
-            text.append(", ").append(DAY.format(programme.start().atZone(zone))).append(' ')
+            time.append(" · ").append(DAY.format(programme.start().atZone(zone))).append(' ')
                     .append(TIME.format(programme.start().atZone(zone)));
             if (programme.stop() != null) {
-                text.append(" – ").append(TIME.format(programme.stop().atZone(zone)));
+                time.append(" – ").append(TIME.format(programme.stop().atZone(zone)));
             }
         }
         if (programme.category() != null) {
-            text.append(" (").append(programme.category()).append(')');
+            time.append(" · ").append(programme.category());
         }
-        if (programme.description() != null) {
-            text.append("\n\n").append(programme.description());
-        }
-        return text.toString();
+        timeLabel.setText(time.toString());
+        descriptionLabel.setText(programme.description());
+        imageView.setImage(programme.icon() == null ? null : new Image(programme.icon(), 176, 99, true, true, true));
     }
 }

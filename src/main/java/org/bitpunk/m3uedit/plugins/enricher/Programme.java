@@ -13,7 +13,13 @@ import java.time.Instant;
  * @param subTitle    e.g. the title of the episode, null if none
  * @param description null if none
  * @param category    the (first) category, null if none
+ * @param icon        the url of an image of the programme, null if none
  */
 public record Programme(String channelId, String channelName, Instant start, Instant stop, String title,
-                        String subTitle, String description, String category) {
+                        String subTitle, String description, String category, String icon) {
+
+    public Programme(String channelId, String channelName, Instant start, Instant stop, String title,
+                     String subTitle, String description, String category) {
+        this(channelId, channelName, start, stop, title, subTitle, description, category, null);
+    }
 }

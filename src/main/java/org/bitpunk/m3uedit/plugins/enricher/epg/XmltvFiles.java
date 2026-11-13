@@ -143,6 +143,7 @@ final class XmltvFiles {
         Instant start = XmltvTimes.parse(reader.getAttributeValue(null, "start"), defaultZone);
         Instant stop = XmltvTimes.parse(reader.getAttributeValue(null, "stop"), defaultZone);
         Map<String, String> texts = new HashMap<>();
+        String icon = null;
         int depth = 1;
         while (depth > 0 && reader.hasNext()) {
             int event = reader.next();
@@ -154,6 +155,9 @@ final class XmltvFiles {
                         texts.putIfAbsent(element, text);
                     }
                 } else {
+                    if (depth == 1 && "icon".equals(element) && icon == null) {
+                        icon = reader.getAttributeValue(null, "src");
+                    }
                     depth++;
                 }
             } else if (event == XMLStreamConstants.END_ELEMENT) {
@@ -161,7 +165,7 @@ final class XmltvFiles {
             }
         }
         return new Programme(channelId, channelName, start, stop, texts.get("title"), texts.get("sub-title"),
-                texts.get("desc"), texts.get("category"));
+                texts.get("desc"), texts.get("category"), icon == null || icon.isBlank() ? null : icon.strip());
     }
 
     /**

@@ -1,0 +1,417 @@
+package org.bitpunk.m3uedit.controller;
+
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.PseudoClass;
+import javafx.geometry.Bounds;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
+import lombok.Getter;
+import org.bitpunk.m3uedit.controller.GuideTimeline.Slot;
+import org.bitpunk.m3uedit.plugins.enricher.Programme;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * A programme guide like on a TV: a row per channel with its programmes as blocks along a time axis. The channel
+ * column and the time axis stay in place while the programmes are scrolled. A vertical line marks the current time,
+ * running programmes show their progress. The arrow keys move the selection between the programmes.
+ */
+public class ProgrammeGuideView extends VBox {
+    static final double CHANNEL_WIDTH = 170;
+    static final double ROW_HEIGHT = 34;
+    static final double HEADER_HEIGHT = 28;
+    static final double PIXELS_PER_MINUTE = 3.5;
+    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
+    private static final PseudoClass RUNNING = PseudoClass.getPseudoClass("running");
+    private static final PseudoClass DIMMED = PseudoClass.getPseudoClass("dimmed");
+    private static final DateTimeFormatter TICK = DateTimeFormatter.ofPattern("H:mm");
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("EEE dd.MM.");
+
+    /**
+     * A channel of the guide.
+     *
+     * @param name the name shown
+     * @param logo the url of its logo, null if none
+     */
+    public record Channel(String name, String logo) {
+    }
+
+    private final ZoneId zone;
+    @Getter
+    private final ObjectProperty<Programme> selectedProgramme = new SimpleObjectProperty<>(this, "selectedProgramme");
+    private final Label cornerLabel = new Label();
+    private final Pane timeHeader = new Pane();
+    private final VBox channelColumn = new VBox();
+    private final Pane grid = new Pane();
+    private final Region nowLine = new Region();
+    private final Region nowMarker = new Region();
+    @Getter
+    private final ScrollPane scrollPane = new ScrollPane(grid);
+    private final Map<Programme, Block> blocks = new IdentityHashMap<>();
+    @Getter
+    private List<List<Slot>> rows = List.of();
+    @Getter
+    private GuideTimeline timeline;
+    private Instant now = Instant.now();
+
+    /**
+     * The block of a programme, with its progress while it is running.
+     */
+    private static final class Block extends StackPane {
+        final Slot slot;
+        final int row;
+        final Region progress = new Region();
+
+        Block(Slot slot, int row, String text) {
+            this.slot = slot;
+            this.row = row;
+            getStyleClass().add("guide-programme");
+            Label label = new Label(text);
+            label.getStyleClass().add("guide-programme-title");
+            label.setMinWidth(0);
+            progress.getStyleClass().add("guide-progress");
+            progress.setManaged(false);
+            getChildren().addAll(label, progress);
+            setAlignment(Pos.CENTER_LEFT);
+            setMinWidth(0);
+        }
+    }
+
+    public ProgrammeGuideView(ZoneId zone) {
+        this.zone = zone;
+        getStyleClass().add("guide");
+        setFocusTraversable(true);
+
+        cornerLabel.getStyleClass().add("guide-corner");
+        cornerLabel.setMinWidth(CHANNEL_WIDTH);
+        cornerLabel.setPrefWidth(CHANNEL_WIDTH);
+        cornerLabel.setPrefHeight(HEADER_HEIGHT);
+        timeHeader.getStyleClass().add("guide-time-header");
+        Pane headerClip = clipped(timeHeader);
+        headerClip.setPrefHeight(HEADER_HEIGHT);
+        HBox.setHgrow(headerClip, Priority.ALWAYS);
+        HBox header = new HBox(cornerLabel, headerClip);
+
+        channelColumn.getStyleClass().add("guide-channels");
+        Pane channelClip = clipped(channelColumn);
+        channelClip.setMinWidth(CHANNEL_WIDTH);
+        channelClip.setPrefWidth(CHANNEL_WIDTH);
+        grid.getStyleClass().add("guide-grid");
+        scrollPane.getStyleClass().add("guide-scroll");
+        scrollPane.setFocusTraversable(false);
+        // the keys are used to move the selection, not to scroll
+        scrollPane.addEventFilter(KeyEvent.ANY, event -> {
+            if (event.getCode().isArrowKey() || event.getCode().isNavigationKey()) {
+                if (event.getEventType() == KeyEvent.KEY_PRESSED) {
+                    handleKey(event);
+                }
+                event.consume();
+            }
+        });
+        HBox.setHgrow(scrollPane, Priority.ALWAYS);
+        HBox body = new HBox(channelClip, scrollPane);
+        VBox.setVgrow(body, Priority.ALWAYS);
+        getChildren().addAll(header, body);
+
+        nowLine.getStyleClass().add("guide-now-line");
+        nowLine.setManaged(false);
+        nowMarker.getStyleClass().add("guide-now-marker");
+        nowMarker.setManaged(false);
+        // the channel column and the time axis follow the scrolled programmes
+        scrollPane.hvalueProperty().addListener((observable, oldValue, newValue) -> followScrolling());
+        scrollPane.vvalueProperty().addListener((observable, oldValue, newValue) -> followScrolling());
+        scrollPane.viewportBoundsProperty().addListener((observable, oldBounds, bounds) -> followScrolling());
+        setOnKeyPressed(this::handleKey);
+        selectedProgramme.addListener((observable, oldProgramme, newProgramme) -> {
+            Block previous = oldProgramme == null ? null : blocks.get(oldProgramme);
+            if (previous != null) {
+                previous.pseudoClassStateChanged(SELECTED, false);
+            }
+            Block selected = newProgramme == null ? null : blocks.get(newProgramme);
+            if (selected != null) {
+                selected.pseudoClassStateChanged(SELECTED, true);
+                scrollIntoView(selected);
+            }
+        });
+    }
+
+    private static Pane clipped(Node content) {
+        Pane pane = new Pane(content);
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(pane.widthProperty());
+        clip.heightProperty().bind(pane.heightProperty());
+        pane.setClip(clip);
+        pane.setMinSize(0, 0);
+        return pane;
+    }
+
+    private void followScrolling() {
+        timeHeader.setTranslateX(-scrollX());
+        channelColumn.setTranslateY(-scrollY());
+        if (timeline != null) {
+            cornerLabel.setText(DATE.format(timeline.timeAt(scrollX()).atZone(zone)));
+        }
+    }
+
+    /**
+     * @return the horizontal position of the programmes at the left edge of the viewport
+     */
+    double scrollX() {
+        double scrollable = grid.getPrefWidth() - scrollPane.getViewportBounds().getWidth();
+        return scrollable > 0 ? scrollPane.getHvalue() * scrollable : 0;
+    }
+
+    /**
+     * @return the vertical position of the programmes at the top edge of the viewport
+     */
+    double scrollY() {
+        double scrollable = grid.getPrefHeight() - scrollPane.getViewportBounds().getHeight();
+        return scrollable > 0 ? scrollPane.getVvalue() * scrollable : 0;
+    }
+
+    /**
+     * Shows the given channels, each with its programmes.
+     *
+     * @param channels   the channels in the order shown
+     * @param programmes the programmes of each channel, in the same order
+     */
+    public void setChannels(List<Channel> channels, List<List<Programme>> programmes, Instant now) {
+        this.now = now;
+        blocks.clear();
+        List<List<Slot>> slotRows = new ArrayList<>();
+        programmes.forEach(row -> slotRows.add(GuideTimeline.slots(row)));
+        rows = List.copyOf(slotRows);
+        timeline = GuideTimeline.covering(rows, zone, PIXELS_PER_MINUTE);
+
+        channelColumn.getChildren().clear();
+        grid.getChildren().clear();
+        for (int i = 0; i < channels.size(); i++) {
+            channelColumn.getChildren().add(channelCell(channels.get(i)));
+            Region background = new Region();
+            background.getStyleClass().add(i % 2 == 0 ? "guide-row" : "guide-row-odd");
+            background.resizeRelocate(0, i * ROW_HEIGHT, timeline.width(), ROW_HEIGHT);
+            background.setManaged(false);
+            grid.getChildren().add(background);
+            for (Slot slot : rows.get(i)) {
+                Block block = block(slot, i);
+                blocks.put(slot.programme(), block);
+                grid.getChildren().add(block);
+            }
+        }
+        grid.setPrefSize(timeline.width(), Math.max(1, channels.size()) * ROW_HEIGHT);
+        grid.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        grid.getChildren().add(nowLine);
+        buildTimeHeader();
+        setNow(now);
+        selectedProgramme.set(null);
+        followScrolling();
+    }
+
+    private Node channelCell(Channel channel) {
+        HBox cell = new HBox(8);
+        cell.getStyleClass().add("guide-channel");
+        cell.setAlignment(Pos.CENTER_LEFT);
+        cell.setMinSize(CHANNEL_WIDTH, ROW_HEIGHT);
+        cell.setPrefSize(CHANNEL_WIDTH, ROW_HEIGHT);
+        cell.setMaxSize(CHANNEL_WIDTH, ROW_HEIGHT);
+        if (channel.logo() != null && !channel.logo().isBlank()) {
+            ImageView logo = new ImageView(new Image(channel.logo(), 40, 24, true, true, true));
+            logo.setFitWidth(40);
+            logo.setFitHeight(24);
+            logo.setPreserveRatio(true);
+            cell.getChildren().add(logo);
+        }
+        Label name = new Label(channel.name());
+        name.getStyleClass().add("guide-channel-name");
+        name.setMinWidth(0);
+        cell.getChildren().add(name);
+        return cell;
+    }
+
+    private Block block(Slot slot, int row) {
+        Programme programme = slot.programme();
+        String title = programme.title() == null ? "" : programme.title();
+        Block block = new Block(slot, row, title);
+        double x = timeline.x(slot.start());
+        double width = Math.max(4, timeline.x(slot.end()) - x - 2);
+        block.setManaged(false);
+        block.resizeRelocate(x + 1, row * ROW_HEIGHT + 2, width, ROW_HEIGHT - 4);
+        String time = "%s – %s".formatted(TICK.format(slot.start().atZone(zone)), TICK.format(slot.end().atZone(zone)));
+        Tooltip.install(block, new Tooltip(programme.subTitle() == null ? "%s\n%s".formatted(title, time)
+                : "%s – %s\n%s".formatted(title, programme.subTitle(), time)));
+        block.setOnMouseClicked(event -> {
+            selectedProgramme.set(programme);
+            requestFocus();
+        });
+        return block;
+    }
+
+    private void buildTimeHeader() {
+        timeHeader.getChildren().clear();
+        for (Instant tick : timeline.ticks()) {
+            boolean midnight = tick.atZone(zone).toLocalTime().equals(java.time.LocalTime.MIDNIGHT);
+            Label label = new Label(midnight ? DATE.format(tick.atZone(zone)) : TICK.format(tick.atZone(zone)));
+            label.getStyleClass().add(midnight ? "guide-tick-day" : "guide-tick");
+            // managed: the pane sizes it once its style is known, the position is kept
+            label.relocate(timeline.x(tick), 5);
+            timeHeader.getChildren().add(label);
+        }
+        timeHeader.getChildren().add(nowMarker);
+        timeHeader.setPrefSize(timeline.width(), HEADER_HEIGHT);
+    }
+
+    /**
+     * Moves the line of the current time and updates the progress of the running programmes.
+     */
+    public void setNow(Instant now) {
+        this.now = now;
+        if (timeline == null) {
+            return;
+        }
+        double x = timeline.x(now);
+        boolean visible = !now.isBefore(timeline.start()) && now.isBefore(timeline.end());
+        nowLine.setVisible(visible);
+        nowMarker.setVisible(visible);
+        nowLine.resizeRelocate(x - 1, 0, 2, Math.max(ROW_HEIGHT, grid.getPrefHeight()));
+        nowMarker.resizeRelocate(x - 1, 0, 2, HEADER_HEIGHT);
+        for (Block block : blocks.values()) {
+            boolean running = block.slot.isRunningAt(now);
+            block.pseudoClassStateChanged(RUNNING, running);
+            double fraction = running ? (double) java.time.Duration.between(block.slot.start(), now).toSeconds()
+                    / java.time.Duration.between(block.slot.start(), block.slot.end()).toSeconds() : 0;
+            block.progress.setVisible(running);
+            block.progress.resizeRelocate(0, block.getHeight() - 3, Math.max(0, block.getWidth() * fraction), 3);
+        }
+    }
+
+    /**
+     * Dims the programmes not matching the search text (title, sub-title or description), none if it is empty.
+     */
+    public void setSearch(String search) {
+        String text = search == null ? "" : search.strip().toLowerCase(Locale.ROOT);
+        for (Block block : blocks.values()) {
+            Programme programme = block.slot.programme();
+            boolean matches = text.isEmpty() || contains(programme.title(), text)
+                    || contains(programme.subTitle(), text) || contains(programme.description(), text);
+            block.pseudoClassStateChanged(DIMMED, !matches);
+        }
+    }
+
+    private static boolean contains(String value, String text) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(text);
+    }
+
+    /**
+     * Scrolls horizontally, so the given time is shown near the left edge.
+     */
+    public void scrollTo(Instant time) {
+        if (timeline == null) {
+            return;
+        }
+        double viewportWidth = scrollPane.getViewportBounds().getWidth();
+        double scrollable = timeline.width() - viewportWidth;
+        if (scrollable > 0) {
+            scrollPane.setHvalue(Math.clamp((timeline.x(time) - 60) / scrollable, 0, 1));
+        }
+    }
+
+    /**
+     * Selects the programme of the first channel running at the given time (or the next one).
+     */
+    public void selectAt(Instant time) {
+        for (List<Slot> row : rows) {
+            Slot slot = GuideTimeline.slotAt(row, time);
+            if (slot != null) {
+                selectedProgramme.set(slot.programme());
+                return;
+            }
+        }
+    }
+
+    private void handleKey(KeyEvent event) {
+        Programme selected = selectedProgramme.get();
+        Block block = selected == null ? null : blocks.get(selected);
+        if (block == null) {
+            selectAt(now);
+            event.consume();
+            return;
+        }
+        Slot target = switch (event.getCode()) {
+            case LEFT -> neighbour(block, -1);
+            case RIGHT -> neighbour(block, 1);
+            case UP -> slotInRow(block.row - 1, block.slot);
+            case DOWN -> slotInRow(block.row + 1, block.slot);
+            case PAGE_UP -> slotInRow(Math.max(0, block.row - visibleRowCount()), block.slot);
+            case PAGE_DOWN -> slotInRow(Math.min(rows.size() - 1, block.row + visibleRowCount()), block.slot);
+            default -> null;
+        };
+        if (target != null) {
+            selectedProgramme.set(target.programme());
+            event.consume();
+        }
+    }
+
+    private int visibleRowCount() {
+        return Math.max(1, (int) (scrollPane.getViewportBounds().getHeight() / ROW_HEIGHT));
+    }
+
+    private Slot neighbour(Block block, int direction) {
+        List<Slot> row = rows.get(block.row);
+        int index = row.indexOf(block.slot) + direction;
+        return index >= 0 && index < row.size() ? row.get(index) : null;
+    }
+
+    /**
+     * @return the slot of another row running at the start of the given one (or at the left edge, if it started
+     * earlier), so moving up and down keeps the time
+     */
+    private Slot slotInRow(int row, Slot from) {
+        if (row < 0 || row >= rows.size()) {
+            return null;
+        }
+        Instant leftEdge = timeline.timeAt(scrollX());
+        Instant time = from.start().isBefore(leftEdge) ? leftEdge : from.start();
+        return GuideTimeline.slotAt(rows.get(row), time);
+    }
+
+    private void scrollIntoView(Block block) {
+        Bounds viewport = scrollPane.getViewportBounds();
+        double scrollableWidth = grid.getPrefWidth() - viewport.getWidth();
+        double scrollableHeight = grid.getPrefHeight() - viewport.getHeight();
+        double left = scrollX();
+        double top = scrollY();
+        double x = block.getLayoutX();
+        double y = block.getLayoutY();
+        if (scrollableWidth > 0 && (x < left || x > left + viewport.getWidth() - 80)) {
+            scrollPane.setHvalue(Math.clamp((x - 60) / scrollableWidth, 0, 1));
+        }
+        if (scrollableHeight > 0) {
+            if (y < top) {
+                scrollPane.setVvalue(Math.clamp(y / scrollableHeight, 0, 1));
+            } else if (y + ROW_HEIGHT > top + viewport.getHeight()) {
+                scrollPane.setVvalue(Math.clamp((y + ROW_HEIGHT - viewport.getHeight()) / scrollableHeight, 0, 1));
+            }
+        }
+    }
+}
