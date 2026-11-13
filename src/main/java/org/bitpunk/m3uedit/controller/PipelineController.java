@@ -1,9 +1,11 @@
 package org.bitpunk.m3uedit.controller;
 
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -24,6 +26,7 @@ import org.bitpunk.m3uedit.model.StepResult;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputFactory;
@@ -40,7 +43,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * The pipeline of a project, top to bottom: inputs &rarr; filters &rarr; sorters &rarr; outputs.
+ * The pipeline of a project, top to bottom: inputs &rarr; filters &rarr; sorters &rarr; enrichers &rarr; outputs.
  * Between the stages, the number of entries passed on is shown. Each plugin shows its effect, e.g. the number of
  * entries removed by a filter. The plugin selected here is shown in detail by the {@link DiffController}.
  */
@@ -62,11 +65,14 @@ public class PipelineController extends VBox implements ModelAware {
     @Getter
     private PluginStageView<Sorter> sorterStage;
     @Getter
+    private PluginStageView<Enricher> enricherStage;
+    @Getter
     private PluginStageView<Output> outputStage;
     @Getter
     private final Button writeButton = new Button("Write playlist");
     private final Label loadedLabel = flowLabel();
     private final Label filteredLabel = flowLabel();
+    private final Label sortedLabel = flowLabel();
     private final Label playlistLabel = flowLabel();
     @Getter
     private final Label epgLabel = new Label();
@@ -107,6 +113,10 @@ public class PipelineController extends VBox implements ModelAware {
                 true, Plugin::getDescription);
         sorterStage.setOnConfigured(sorter -> dataModel.sortFilteredEntries());
 
+        enricherStage = new PluginStageView<>("Enrichers", "complete the entries, add files", dataModel.getEnrichers(),
+                selectedStep, true, Plugin::getDescription);
+        enricherStage.setOnConfigured(enricher -> dataModel.enrichSortedEntries());
+
         outputStage = new PluginStageView<>("Outputs", "receive the same playlist", dataModel.getOutputs(),
                 selectedStep, false, output -> describe(output.getOutput()));
         outputStage.setAddAction(OutputPluginService.getInstance().getAllPluginNames(), this::addOutput);
@@ -118,8 +128,15 @@ public class PipelineController extends VBox implements ModelAware {
         // writing to the outputs runs in the background, prevent starting it twice
         writeButton.disableProperty().bind(dataModel.savingProperty());
 
+        HBox sortedConnector = connector(sortedLabel);
         getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
-                sorterStage, connector(playlistLabel), outputStage, epgRow(), writeButton);
+                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage, epgRow(),
+                writeButton);
+        // the stage is only shown if there are enrichers (none are installed yet in older setups)
+        for (Node node : List.of(sortedConnector, enricherStage)) {
+            node.visibleProperty().bind(Bindings.isNotEmpty(dataModel.getEnrichers()));
+            node.managedProperty().bind(node.visibleProperty());
+        }
 
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
@@ -178,8 +195,12 @@ public class PipelineController extends VBox implements ModelAware {
         for (Sorter sorter : dataModel.getSorters()) {
             sorter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.sortFilteredEntries());
         }
+        for (Enricher enricher : dataModel.getEnrichers()) {
+            enricher.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.enrichSortedEntries());
+        }
         dataModel.getFilters().addListener((ListChangeListener<Filter>) change -> dataModel.filterRawEntries());
         dataModel.getSorters().addListener((ListChangeListener<Sorter>) change -> dataModel.sortFilteredEntries());
+        dataModel.getEnrichers().addListener((ListChangeListener<Enricher>) change -> dataModel.enrichSortedEntries());
     }
 
     private void refresh() {
@@ -198,6 +219,9 @@ public class PipelineController extends VBox implements ModelAware {
                 : new Badge("±0", "badge-zero", "nothing removed")));
         sorterStage.setBadgeProvider(stepBadge(result, step -> new Badge("⇅ " + step.movedCount(),
                 step.movedCount() > 0 ? "badge-moved" : "badge-zero", "%d entries moved".formatted(step.movedCount()))));
+        enricherStage.setBadgeProvider(stepBadge(result, step -> step.modifiedCount() > 0
+                ? new Badge("✎ " + step.modifiedCount(), "badge-modified", "%d entries changed".formatted(step.modifiedCount()))
+                : new Badge("±0", "badge-zero", "nothing changed")));
         int loaded = result.raw().size();
         inputStage.setStatusProvider(() -> "%s, %s".formatted(count(dataModel.getInputs().size(), "input"),
                 count(loaded, "entry", "entries")));
@@ -206,11 +230,15 @@ public class PipelineController extends VBox implements ModelAware {
         int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
         sorterStage.setStatusProvider(() -> "%d of %d enabled, ⇅ %s".formatted(enabledCount(dataModel.getSorters()),
                 dataModel.getSorters().size(), count(reordered, "entry", "entries")));
+        int changed = result.origins().size();
+        enricherStage.setStatusProvider(() -> "%d of %d enabled, ✎ %s".formatted(enabledCount(dataModel.getEnrichers()),
+                dataModel.getEnrichers().size(), count(changed, "entry", "entries")));
         outputStage.setStatusProvider(() -> dataModel.getOutputs().isEmpty() ? "no output"
                 : count(dataModel.getOutputs().size(), "output"));
         inputStage.refresh();
         filterStage.refresh();
         sorterStage.refresh();
+        enricherStage.refresh();
         outputStage.refresh();
         updateFlowLabels();
     }
@@ -235,6 +263,7 @@ public class PipelineController extends VBox implements ModelAware {
         PipelineResult result = dataModel.getPipelineResult();
         loadedLabel.setText("%d entries loaded".formatted(result.raw().size()));
         filteredLabel.setText("%d left after filtering".formatted(result.filtered().size()));
+        sortedLabel.setText("%d entries sorted".formatted(result.sorted().size()));
         playlistLabel.setText("%d entries in the playlist".formatted(dataModel.getSortedEntryList().size()));
     }
 

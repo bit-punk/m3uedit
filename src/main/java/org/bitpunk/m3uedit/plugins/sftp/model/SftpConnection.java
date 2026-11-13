@@ -45,6 +45,11 @@ public class SftpConnection {
      */
     private boolean overwriteWithoutAsking;
     /**
+     * Output only: the url players read the target directory from (e.g. a web server serving it), used to reference
+     * the additional files written next to the playlist, e.g. the programme guide. Optional.
+     */
+    private String playerBaseUrl;
+    /**
      * Kept in memory only: never persisted to the project file and never logged.
      * Optional: if empty (e.g. after loading a project) the user is asked for it on the first write.
      */

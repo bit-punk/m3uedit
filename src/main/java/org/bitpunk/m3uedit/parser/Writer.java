@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,8 +33,15 @@ public class Writer {
      * @param epgUrls the urls of the EPG (XMLTV) files written to the header, none if empty
      */
     public void write(List<Entry> entries, List<String> epgUrls, OutputStream outputStream) {
+        write(entries, epgAttributes(epgUrls), outputStream);
+    }
+
+    /**
+     * @param headerAttributes the attributes of the {@code #EXTM3U} header, e.g. {@code x-tvg-url}
+     */
+    public void write(List<Entry> entries, Map<String, String> headerAttributes, OutputStream outputStream) {
         PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-        printWriter.print(header(epgUrls));
+        printWriter.print(header(headerAttributes));
         for (Entry entry : entries) {
             StringBuilder builder = new StringBuilder();
             builder.append(System.lineSeparator());
@@ -46,19 +54,33 @@ public class Writer {
     }
 
     /**
-     * The EPG urls are written as {@code x-tvg-url} and {@code url-tvg}, as players support either of them.
+     * The EPG urls are referenced by {@code x-tvg-url} and {@code url-tvg}, as players support either of them.
+     *
+     * @return the header attributes referencing the given EPG urls (comma-separated), none if there are no urls
      */
-    static String header(List<String> epgUrls) {
-        StringBuilder builder = new StringBuilder(M3U_START_MARKER);
+    public static Map<String, String> epgAttributes(List<String> epgUrls) {
         String urls = epgUrls == null ? "" : epgUrls.stream()
                 .filter(Objects::nonNull)
                 .map(String::strip)
                 .filter(url -> !url.isEmpty())
                 .distinct()
                 .collect(Collectors.joining(","));
+        Map<String, String> attributes = new LinkedHashMap<>();
         if (!urls.isEmpty()) {
-            appendAttribute(builder, "x-tvg-url", urls);
-            appendAttribute(builder, "url-tvg", urls);
+            attributes.put("x-tvg-url", urls);
+            attributes.put("url-tvg", urls);
+        }
+        return attributes;
+    }
+
+    static String header(Map<String, String> headerAttributes) {
+        StringBuilder builder = new StringBuilder(M3U_START_MARKER);
+        if (headerAttributes != null) {
+            headerAttributes.forEach((name, value) -> {
+                if (value != null && !value.isBlank()) {
+                    appendAttribute(builder, name, value);
+                }
+            });
         }
         return builder.toString();
     }

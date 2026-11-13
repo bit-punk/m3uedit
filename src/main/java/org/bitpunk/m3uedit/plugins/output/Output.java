@@ -8,12 +8,13 @@ import java.util.List;
 
 public interface Output extends Plugin {
     /**
-     * @param epgUrls the urls of the EPG (XMLTV) files to reference in the playlist header, none if empty
+     * Writes the playlist and the additional files of the enrichers next to it.
+     * Runs in the background; dialogs (e.g. asking for a password) have to be shown on the JavaFX application thread.
      */
-    void write(List<Entry> playlist, List<String> epgUrls);
+    void write(Export export);
 
     default void write(List<Entry> playlist) {
-        write(playlist, List.of());
+        write(Export.of(playlist));
     }
 
     void configure();

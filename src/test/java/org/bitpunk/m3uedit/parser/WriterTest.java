@@ -121,9 +121,9 @@ class WriterTest {
 
     @Test
     void testNoEpgUrlsWriteAPlainHeader() {
-        assertThat(Writer.header(List.of())).isEqualTo("#EXTM3U");
-        assertThat(Writer.header(null)).isEqualTo("#EXTM3U");
-        assertThat(Writer.header(java.util.Arrays.asList(" ", null))).isEqualTo("#EXTM3U");
+        assertThat(Writer.header(Writer.epgAttributes(List.of()))).isEqualTo("#EXTM3U");
+        assertThat(Writer.header(Writer.epgAttributes(null))).isEqualTo("#EXTM3U");
+        assertThat(Writer.header(Writer.epgAttributes(java.util.Arrays.asList(" ", null)))).isEqualTo("#EXTM3U");
     }
 
     @Test
@@ -142,5 +142,15 @@ class WriterTest {
         return new BufferedReader(new InputStreamReader(Objects.requireNonNull(WriterTest.class.getResourceAsStream(fileName))))
                 .lines()
                 .collect(Collectors.joining(System.lineSeparator()));
+    }
+
+    @Test
+    void testHeaderAttributesAreWrittenInTheirOrder() {
+        java.util.Map<String, String> attributes = new java.util.LinkedHashMap<>();
+        attributes.put("url-tvg", "http://epg/a.xml");
+        attributes.put("x-tvg-url", "http://epg/\"b\".xml");
+        attributes.put("empty", " ");
+
+        assertThat(Writer.header(attributes)).isEqualTo("#EXTM3U url-tvg=\"http://epg/a.xml\" x-tvg-url=\"http://epg/'b'.xml\"");
     }
 }

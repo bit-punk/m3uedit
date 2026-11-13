@@ -25,16 +25,21 @@ import org.bitpunk.m3uedit.model.EntryDiff.Row;
 import org.bitpunk.m3uedit.model.PipelineResult;
 import org.bitpunk.m3uedit.model.StepResult;
 import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.EntryMapper;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -63,9 +68,25 @@ public class DiffController extends VBox {
 
     /**
      * What is compared: the entries before and after a step.
+     *
+     * @param origin            returns the entry of the left side an entry of the right side has been derived from
+     *                          (by an enricher), the entry itself if unchanged
+     * @param changeDescription describes the change of an entry, given the entry before and after the change
      */
     record Scope(String context, String leftTitle, List<Entry> left, String rightTitle, List<Entry> right,
-                 Function<Entry, String> removalReason) {
+                 Function<Entry, String> removalReason, Function<Entry, Entry> origin,
+                 BiFunction<Entry, Entry, String> changeDescription) {
+
+        Scope(String context, String leftTitle, List<Entry> left, String rightTitle, List<Entry> right,
+              Function<Entry, String> removalReason) {
+            this(context, leftTitle, left, rightTitle, right, removalReason, Function.identity(),
+                    EntryMapper::describeChanges);
+        }
+
+        Scope(String context, String leftTitle, List<Entry> left, String rightTitle, List<Entry> right,
+              Function<Entry, String> removalReason, Function<Entry, Entry> origin) {
+            this(context, leftTitle, left, rightTitle, right, removalReason, origin, EntryMapper::describeChanges);
+        }
     }
 
     @Getter
@@ -176,7 +197,7 @@ public class DiffController extends VBox {
         contextBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("step"), selectedStep.get() != null);
         leftTitleLabel.setText("%s (%d)".formatted(scope.leftTitle(), scope.left().size()));
         rightTitleLabel.setText("%s (%d)".formatted(scope.rightTitle(), scope.right().size()));
-        diff = EntryDiff.compute(scope.left(), scope.right());
+        diff = EntryDiff.compute(scope.left(), scope.right(), scope.origin());
         List<String> stats = new ArrayList<>();
         if (diff.getRemovedCount() > 0) {
             stats.add("−%d removed".formatted(diff.getRemovedCount()));
@@ -186,6 +207,9 @@ public class DiffController extends VBox {
         }
         if (diff.getAddedCount() > 0) {
             stats.add("+%d added".formatted(diff.getAddedCount()));
+        }
+        if (diff.getModifiedCount() > 0) {
+            stats.add("✎ %d changed".formatted(diff.getModifiedCount()));
         }
         stats.add("%d unchanged".formatted(diff.getUnchangedCount()));
         statsLabel.setText(String.join("   ", stats));
@@ -200,10 +224,10 @@ public class DiffController extends VBox {
         };
         if (step instanceof Input input) {
             List<Entry> fromInput = result.entriesOf(input);
+            List<Entry> inPlaylist = playlist.stream().filter(entry -> result.sourceOf(entry) == input).toList();
             return new Scope("%s delivers %d entries, %d of them are in the playlist.".formatted(input.getName(),
-                    fromInput.size(), playlist.stream().filter(entry -> result.sources().get(entry) == input).count()),
-                    input.getName(), fromInput, "In the playlist",
-                    playlist.stream().filter(entry -> result.sources().get(entry) == input).toList(), globalReason);
+                    fromInput.size(), inPlaylist.size()), input.getName(), fromInput, "In the playlist", inPlaylist,
+                    globalReason, result::originOf);
         }
         if (step instanceof Filter filter) {
             Optional<StepResult> stepResult = result.step(filter);
@@ -227,9 +251,27 @@ public class DiffController extends VBox {
             return new Scope("%s moves %d of %d entries.".formatted(sorter.getName(), sorterStep.movedCount(),
                     sorterStep.input().size()), "Before", sorterStep.input(), "After", sorterStep.output(), entry -> null);
         }
+        if (step instanceof Enricher enricher) {
+            Optional<StepResult> stepResult = result.step(enricher);
+            if (stepResult.isEmpty()) {
+                return disabledScope(enricher);
+            }
+            StepResult enricherStep = stepResult.get();
+            Map<Entry, Entry> origins = new IdentityHashMap<>();
+            for (int i = 0; i < enricherStep.output().size(); i++) {
+                origins.put(enricherStep.output().get(i), enricherStep.input().get(i));
+            }
+            return new Scope("%s changes %d of %d entries.".formatted(enricher.getName(), enricherStep.modifiedCount(),
+                    enricherStep.input().size()), "Before", enricherStep.input(), "After", enricherStep.output(),
+                    entry -> null, entry -> origins.getOrDefault(entry, entry), (before, after) -> {
+                String changes = EntryMapper.describeChanges(before, after);
+                String reason = enricher.describeChange(before, after);
+                return reason == null ? changes : changes.isEmpty() ? reason : "%s (%s)".formatted(changes, reason);
+            });
+        }
         String context = "All steps: the entries loaded from the inputs compared to the playlist."
                 + " Select a step of the pipeline to see its effect.";
-        return new Scope(context, "Loaded", result.raw(), "Playlist", playlist, globalReason);
+        return new Scope(context, "Loaded", result.raw(), "Playlist", playlist, globalReason, result::originOf);
     }
 
     private static Scope disabledScope(Plugin plugin) {
@@ -298,19 +340,29 @@ public class DiffController extends VBox {
     void showCounterpart(Entry entry, boolean onLeftSide) {
         for (Item item : List.copyOf(diffListView.getItems())) {
             if (item instanceof FoldItem fold && fold.hiddenRows().stream()
-                    .anyMatch(row -> (onLeftSide ? row.right() : row.left()) == entry)) {
+                    .anyMatch(row -> isCounterpart(row, entry, onLeftSide))) {
                 expand(fold);
                 break;
             }
         }
         List<Item> items = diffListView.getItems();
         for (int i = 0; i < items.size(); i++) {
-            if (items.get(i) instanceof RowItem(Row row) && (onLeftSide ? row.right() : row.left()) == entry) {
+            if (items.get(i) instanceof RowItem(Row row) && isCounterpart(row, entry, onLeftSide)) {
                 diffListView.scrollTo(Math.max(0, i - 3));
                 diffListView.getSelectionModel().select(i);
                 return;
             }
         }
+    }
+
+    /**
+     * @return true if the other side of the row shows the given entry, or the entry it has been derived from
+     */
+    private boolean isCounterpart(Row row, Entry entry, boolean onLeftSide) {
+        if (onLeftSide) {
+            return row.right() != null && scope.origin().apply(row.right()) == entry;
+        }
+        return row.left() != null && row.left() == scope.origin().apply(entry);
     }
 
     private class DiffCell extends ListCell<Item> {
@@ -338,8 +390,8 @@ public class DiffController extends VBox {
             switch (item) {
                 case null -> setGraphic(null);
                 case RowItem(Row row) -> {
-                    left.show(row.left(), row.leftPosition(), row.leftKind());
-                    right.show(row.right(), row.rightPosition(), row.rightKind());
+                    left.show(row.left(), row.leftPosition(), row.leftKind(), row.right());
+                    right.show(row.right(), row.rightPosition(), row.rightKind(), row.left());
                     setGraphic(rowBox);
                 }
                 case FoldItem fold -> {
@@ -387,10 +439,13 @@ public class DiffController extends VBox {
             });
         }
 
-        void show(Entry entry, int entryPosition, Kind kind) {
+        /**
+         * @param counterpart the entry on the other side of the row, null if none
+         */
+        void show(Entry entry, int entryPosition, Kind kind, Entry counterpart) {
             this.entry = entry;
             this.kind = kind;
-            getStyleClass().removeAll("removed", "moved", "added", "blank");
+            getStyleClass().removeAll("removed", "moved", "added", "modified", "blank");
             if (entry == null) {
                 getStyleClass().add("blank");
                 gutter.setText(null);
@@ -413,8 +468,15 @@ public class DiffController extends VBox {
                 case MOVED -> {
                     getStyleClass().add("moved");
                     gutterText = "↕";
-                    noteText = leftSide ? "to #%d".formatted(positionOf(entry, scope.right()))
-                            : "from #%d".formatted(positionOf(entry, scope.left()));
+                    noteText = leftSide ? "to #%d".formatted(positionInRight(entry))
+                            : "from #%d".formatted(positionInLeft(entry));
+                }
+                case MODIFIED -> {
+                    getStyleClass().add("modified");
+                    gutterText = "✎";
+                    if (!leftSide && counterpart != null) {
+                        noteText = scope.changeDescription().apply(counterpart, entry);
+                    }
                 }
                 case ADDED -> {
                     getStyleClass().add("added");
@@ -436,9 +498,21 @@ public class DiffController extends VBox {
         }
     }
 
-    private static int positionOf(Entry entry, List<Entry> entries) {
+    private int positionInLeft(Entry rightEntry) {
+        Entry origin = scope.origin().apply(rightEntry);
+        List<Entry> entries = scope.left();
         for (int i = 0; i < entries.size(); i++) {
-            if (entries.get(i) == entry) {
+            if (entries.get(i) == origin) {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
+    private int positionInRight(Entry leftEntry) {
+        List<Entry> entries = scope.right();
+        for (int i = 0; i < entries.size(); i++) {
+            if (scope.origin().apply(entries.get(i)) == leftEntry) {
                 return i + 1;
             }
         }

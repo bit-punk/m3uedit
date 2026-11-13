@@ -145,4 +145,36 @@ class DiffControllerTest {
 
         assertThat(diffController.getContextLabel().getText()).isEqualTo("in delivers 20 entries, 16 of them are in the playlist.");
     }
+
+    @Test
+    void anEnricherShowsTheChangedEntriesWithTheirChanges() {
+        TestPlugins.TestEnricher enricher = new TestPlugins.TestEnricher();
+        dataModel.getEnrichers().add(enricher);
+        enricher.getEnabled().set(true);
+        dataModel.enrichSortedEntries();
+
+        selection.set(enricher);
+
+        assertThat(diffController.getContextLabel().getText()).isEqualTo("Test Enricher changes 16 of 16 entries.");
+        assertThat(diffController.getDiff().getModifiedCount()).isEqualTo(16);
+        assertThat(diffController.getStatsLabel().getText()).contains("✎ 16 changed");
+        RowItem first = rows().getFirst();
+        assertThat(first.row().rightKind()).isEqualTo(Kind.MODIFIED);
+        assertThat(first.row().right().getTvgId()).isEqualTo("CHANNEL A");
+    }
+
+    @Test
+    void enrichedEntriesAreModifiedInTheWholePipeline() {
+        TestPlugins.TestEnricher enricher = new TestPlugins.TestEnricher();
+        dataModel.getEnrichers().add(enricher);
+        enricher.getEnabled().set(true);
+        dataModel.enrichSortedEntries();
+
+        assertThat(diffController.getDiff().getRemovedCount()).isEqualTo(4);
+        assertThat(diffController.getDiff().getModifiedCount()).isEqualTo(16);
+        assertThat(diffController.getDiff().getAddedCount()).isZero();
+
+        selection.set(input);
+        assertThat(diffController.getContextLabel().getText()).isEqualTo("in delivers 20 entries, 16 of them are in the playlist.");
+    }
 }

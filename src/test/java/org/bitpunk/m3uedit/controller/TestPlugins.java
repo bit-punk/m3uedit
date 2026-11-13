@@ -3,9 +3,12 @@ package org.bitpunk.m3uedit.controller;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.enricher.Enricher;
+import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.EntryMapper;
 
 import java.util.Comparator;
 import java.util.List;
@@ -111,6 +114,42 @@ final class TestPlugins {
         @Override
         public String getDescription() {
             return name + " description";
+        }
+
+        @Override
+        public BooleanProperty getEnabled() {
+            return enabled;
+        }
+    }
+
+    /**
+     * Sets the tvg-id of each entry to its name in upper case.
+     */
+    static class TestEnricher implements Enricher {
+        private final BooleanProperty enabled = new SimpleBooleanProperty(false);
+
+        @Override
+        public Enrichment enrich(List<Entry> entries) {
+            return Enrichment.of(entries.stream().map(entry -> {
+                Entry enriched = EntryMapper.copyOf(entry);
+                enriched.setTvgId(entry.getName().toUpperCase());
+                return enriched;
+            }).toList());
+        }
+
+        @Override
+        public String describeChange(Entry before, Entry after) {
+            return "test match";
+        }
+
+        @Override
+        public String getName() {
+            return "Test Enricher";
+        }
+
+        @Override
+        public String getDescription() {
+            return "sets the tvg-id";
         }
 
         @Override

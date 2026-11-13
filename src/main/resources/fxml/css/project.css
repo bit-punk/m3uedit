@@ -6,6 +6,8 @@
     -m3u-moved-bg: #e3eafc;
     -m3u-added: #167a3c;
     -m3u-added-bg: #e0f3e6;
+    -m3u-modified: #8a5a00;
+    -m3u-modified-bg: #fbf0d9;
     -m3u-kept: #3f9a62;
     -m3u-muted: derive(-fx-text-base-color, 45%);
     -m3u-line: derive(-fx-color, -12%);
@@ -161,6 +163,11 @@
 .badge-removed {
     -fx-background-color: -m3u-removed-bg;
     -fx-text-fill: -m3u-removed;
+}
+
+.badge-modified {
+    -fx-background-color: -m3u-modified-bg;
+    -fx-text-fill: -m3u-modified;
 }
 
 .badge-moved {
@@ -365,6 +372,15 @@
 .diff-side.added .diff-gutter,
 .diff-side.added .diff-note {
     -fx-text-fill: -m3u-added;
+}
+
+.diff-side.modified {
+    -fx-background-color: -m3u-modified-bg;
+}
+
+.diff-side.modified .diff-gutter,
+.diff-side.modified .diff-note {
+    -fx-text-fill: -m3u-modified;
 }
 
 .diff-side.blank {

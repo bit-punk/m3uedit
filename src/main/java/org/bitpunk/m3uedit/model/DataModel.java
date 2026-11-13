@@ -19,13 +19,22 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.enricher.Attachment;
+import org.bitpunk.m3uedit.plugins.enricher.Enricher;
+import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.output.Export;
+import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.util.EntryMapper;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,8 +53,9 @@ import java.util.function.Consumer;
  * The model of a project: its inputs, filters, sorters and outputs, plus the entry-lists computed from them.
  * <p>
  * The entry-lists are derived data and therefore not persisted. They are (re-)computed in the background
- * whenever inputs, filters or sorters change: inputs &rarr; {@link #rawEntryList} &rarr; enabled filters &rarr;
- * {@link #filteredEntryList} &rarr; enabled sorters &rarr; {@link #sortedEntryList}.
+ * whenever inputs, filters, sorters or enrichers change: inputs &rarr; {@link #rawEntryList} &rarr; enabled filters
+ * &rarr; {@link #filteredEntryList} &rarr; enabled sorters &rarr; enabled enrichers &rarr; manual changes &rarr;
+ * {@link #sortedEntryList} (the playlist).
  * The results are applied to the observable lists on the JavaFX application thread.
  * <p>
  * The methods triggering a re-computation must be called on the JavaFX application thread.
@@ -53,7 +63,7 @@ import java.util.function.Consumer;
 @Slf4j
 @Getter
 @Setter
-@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "outputs", "epgUrls", "manualChanges"})
+@JsonPropertyOrder({"name", "inputs", "filters", "sorters", "enrichers", "outputs", "epgUrls", "manualChanges"})
 public class DataModel {
     private static final ExecutorService DEFAULT_BACKGROUND_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "datamodel-worker");
@@ -65,7 +75,7 @@ public class DataModel {
      * The step a re-computation starts with; all following steps are computed as well.
      */
     enum Step {
-        LOAD_INPUTS, FILTER, SORT
+        LOAD_INPUTS, FILTER, SORT, ENRICH
     }
 
     /**
@@ -93,6 +103,8 @@ public class DataModel {
     private ObservableList<Filter> filters;
     @Setter(AccessLevel.NONE)
     private ObservableList<Sorter> sorters;
+    @Setter(AccessLevel.NONE)
+    private ObservableList<Enricher> enrichers;
     @Setter(AccessLevel.NONE)
     private ObservableList<Output> outputs;
 
@@ -167,7 +179,7 @@ public class DataModel {
     private transient ListChangeListener<Input> inputsRecomputeListener;
 
     public DataModel(String name) {
-        this(name, null, null, null, null, null, null);
+        this(name, null, null, null, null, null, null, null);
     }
 
     /**
@@ -178,6 +190,7 @@ public class DataModel {
               @JsonProperty("inputs") List<Input> inputs,
               @JsonProperty("filters") List<Filter> filters,
               @JsonProperty("sorters") List<Sorter> sorters,
+              @JsonProperty("enrichers") List<Enricher> enrichers,
               @JsonProperty("outputs") List<Output> outputs,
               @JsonProperty("epgUrls") List<String> epgUrls,
               @JsonProperty("manualChanges") List<ManualChange> manualChanges) {
@@ -185,6 +198,7 @@ public class DataModel {
         this.inputs = observableListOf(inputs);
         this.filters = observableListOf(filters);
         this.sorters = observableListOf(sorters);
+        this.enrichers = observableListOf(enrichers);
         this.outputs = observableListOf(outputs);
         this.epgUrls = observableListOf(epgUrls);
         this.manualChanges = observableListOf(manualChanges);
@@ -214,6 +228,7 @@ public class DataModel {
         observePluginList(inputs);
         observePluginList(filters);
         observePluginList(sorters);
+        observePluginList(enrichers);
         observePluginList(outputs);
         initRecomputeListeners();
     }
@@ -257,6 +272,12 @@ public class DataModel {
         stopObservingPluginList(this.sorters);
         this.sorters = sorters;
         observePluginList(this.sorters);
+    }
+
+    public void setEnrichers(ObservableList<Enricher> enrichers) {
+        stopObservingPluginList(this.enrichers);
+        this.enrichers = enrichers;
+        observePluginList(this.enrichers);
     }
 
     public void setOutputs(ObservableList<Output> outputs) {
@@ -324,6 +345,13 @@ public class DataModel {
         recompute(Step.SORT);
     }
 
+    /**
+     * Applies the enabled enrichers to the sorted entries in the background.
+     */
+    public void enrichSortedEntries() {
+        recompute(Step.ENRICH);
+    }
+
     private void recompute(Step requestedStep) {
         // a computation still running might have been started with an earlier step: it gets superseded,
         // so the new computation has to start with the earliest step requested
@@ -336,6 +364,7 @@ public class DataModel {
         List<Input> inputsSnapshot = new ArrayList<>(inputs);
         List<Filter> enabledFilters = filters.stream().filter(filter -> filter.getEnabled().get()).toList();
         List<Sorter> enabledSorters = sorters.stream().filter(sorter -> sorter.getEnabled().get()).toList();
+        List<Enricher> enabledEnrichers = enrichers.stream().filter(enricher -> enricher.getEnabled().get()).toList();
         List<Entry> rawSnapshot = new ArrayList<>(rawEntryList);
         List<Entry> filteredSnapshot = new ArrayList<>(filteredEntryList);
         // the results of the steps not re-computed are taken over from the previous computation (immutable)
@@ -373,10 +402,23 @@ public class DataModel {
                     });
                     removedBy.putAll(previous.removedBy());
                 }
-                List<Entry> sorted = sortEntries(enabledSorters, filtered, steps);
-                List<Entry> playlist = ManualChange.applyAll(sorted, changesSnapshot);
-                Result result = new Result(new PipelineResult(raw, filtered, sorted, sources, steps, removedBy),
-                        playlist, changesSnapshot.size(), inputErrors, loadedEpgUrls);
+                List<Entry> sorted;
+                if (step.compareTo(Step.ENRICH) < 0) {
+                    sorted = sortEntries(enabledSorters, filtered, steps);
+                } else {
+                    sorted = previous.sorted();
+                    previous.steps().forEach((plugin, stepResult) -> {
+                        if (plugin instanceof Sorter) {
+                            steps.put(plugin, stepResult);
+                        }
+                    });
+                }
+                Map<Entry, Entry> origins = new IdentityHashMap<>();
+                List<Attachment> attachments = new ArrayList<>();
+                List<Entry> enriched = enrichEntries(enabledEnrichers, sorted, steps, origins, attachments);
+                List<Entry> playlist = ManualChange.applyAll(enriched, changesSnapshot);
+                Result result = new Result(new PipelineResult(raw, filtered, sorted, enriched, sources, steps,
+                        removedBy, origins, attachments), playlist, changesSnapshot.size(), inputErrors, loadedEpgUrls);
                 getFxExecutorOrDefault().execute(() -> applyResult(currentGeneration, step, result));
             } catch (RuntimeException e) {
                 log.error("Error re-computing the entries of project '{}'", name, e);
@@ -586,11 +628,15 @@ public class DataModel {
         List<Output> outputsSnapshot = new ArrayList<>(outputs);
         List<Entry> playlist = List.copyOf(sortedEntryList);
         List<String> epgUrlsSnapshot = getEffectiveEpgUrls();
+        List<Attachment> attachments = pipelineResult.get().attachments();
         getBackgroundExecutorOrDefault().execute(() -> {
             List<String> errors = new ArrayList<>();
+            List<ExportFile> files = new ArrayList<>();
             try {
-                writeToOutputs(outputsSnapshot, playlist, epgUrlsSnapshot, errors);
+                files.addAll(createFiles(attachments, playlist, errors));
+                writeToOutputs(outputsSnapshot, new Export(playlist, epgUrlsSnapshot, files), errors);
             } finally {
+                files.forEach(file -> deleteQuietly(file.content()));
                 getFxExecutorOrDefault().execute(() -> {
                     saving.set(false);
                     if (!errors.isEmpty()) {
@@ -601,11 +647,46 @@ public class DataModel {
         });
     }
 
-    private void writeToOutputs(List<Output> outputs, List<Entry> playlist, List<String> epgUrls, List<String> errors) {
-        for (Output output : outputs) {
-            log.debug("saving {} entries to output {}", playlist.size(), output.getName());
+    /**
+     * Creates the content of the additional files once for all outputs, as temporary files.
+     * A file that cannot be created is reported and left out, the playlist is written anyway.
+     */
+    private static List<ExportFile> createFiles(List<Attachment> attachments, List<Entry> playlist, List<String> errors) {
+        List<ExportFile> files = new ArrayList<>();
+        for (Attachment attachment : attachments) {
+            Path content = null;
             try {
-                output.write(playlist, epgUrls);
+                content = Files.createTempFile("m3uedit-", attachment.suffix());
+                try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(content))) {
+                    attachment.content().write(playlist, outputStream);
+                }
+                files.add(new ExportFile(attachment.name(), attachment.suffix(), attachment.headerAttributes(), content));
+            } catch (IOException | RuntimeException e) {
+                log.error("Error creating {}", attachment.name(), e);
+                errors.add("%s: %s".formatted(attachment.name(), UncaughtExceptionHandler.describe(e)));
+                deleteQuietly(content);
+            }
+        }
+        return files;
+    }
+
+    private static void deleteQuietly(Path file) {
+        if (file == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            log.warn("Temporary file {} could not be deleted: {}", file, e.getMessage());
+        }
+    }
+
+    private void writeToOutputs(List<Output> outputs, Export export, List<String> errors) {
+        for (Output output : outputs) {
+            log.debug("saving {} entries and {} files to output {}", export.playlist().size(), export.files().size(),
+                    output.getName());
+            try {
+                output.write(export);
             } catch (RuntimeException e) {
                 log.error("Error writing to output {} ({})", output.getName(), output.getOutput(), e);
                 errors.add("%s: %s".formatted(output.getName(), UncaughtExceptionHandler.describe(e)));
@@ -660,6 +741,49 @@ public class DataModel {
         return filteredEntries;
     }
 
+    /**
+     * Applies the enrichers in their order. An entry changed by an enricher is a new object, its origin (the sorted
+     * entry it has been derived from, possibly by several enrichers) is recorded in {@code origins}.
+     */
+    private static List<Entry> enrichEntries(List<Enricher> enrichers, List<Entry> entries, Map<Plugin, StepResult> steps,
+                                             Map<Entry, Entry> origins, List<Attachment> attachments) {
+        List<Entry> enrichedEntries = List.copyOf(entries);
+        for (Enricher enricher : enrichers) {
+            List<Entry> input = enrichedEntries;
+            Enrichment enrichment = enricher.enrich(input);
+            List<Entry> output = enrichment.entries();
+            checkEnrichment(enricher, input, output);
+            for (int i = 0; i < output.size(); i++) {
+                if (output.get(i) != input.get(i)) {
+                    origins.put(output.get(i), origins.getOrDefault(input.get(i), input.get(i)));
+                }
+            }
+            steps.put(enricher, StepResult.ofEnrichment(input, output));
+            attachments.addAll(enrichment.attachments());
+            enrichedEntries = output;
+        }
+        return enrichedEntries;
+    }
+
+    /**
+     * Enrichers must keep the entries, their order and their identifying name and channel-uri, see {@link Enricher}.
+     */
+    private static void checkEnrichment(Enricher enricher, List<Entry> input, List<Entry> output) {
+        if (output.size() != input.size()) {
+            throw new IllegalStateException("%s returned %d instead of %d entries".formatted(enricher.getName(),
+                    output.size(), input.size()));
+        }
+        for (int i = 0; i < output.size(); i++) {
+            Entry before = input.get(i);
+            Entry after = output.get(i);
+            if (after != before && (!Objects.equals(before.getName(), after.getName())
+                    || !Objects.equals(before.getChannelUri(), after.getChannelUri()))) {
+                throw new IllegalStateException("%s must not change the name or url of entry '%s'".formatted(
+                        enricher.getName(), before.getName()));
+            }
+        }
+    }
+
     private static List<Entry> sortEntries(List<Sorter> sorters, List<Entry> entries, Map<Plugin, StepResult> steps) {
         List<Entry> sortedEntries = new ArrayList<>(entries);
         for (Sorter sorter : sorters) {
@@ -683,7 +807,8 @@ public class DataModel {
      */
     @Override
     public String toString() {
-        return "DataModel[name=%s, projectFile=%s, inputs=%d, filters=%d, sorters=%d, outputs=%d]".formatted(
-                name, projectFile, inputs.size(), filters.size(), sorters.size(), outputs.size());
+        return "DataModel[name=%s, projectFile=%s, inputs=%d, filters=%d, sorters=%d, enrichers=%d, outputs=%d]"
+                .formatted(name, projectFile, inputs.size(), filters.size(), sorters.size(), enrichers.size(),
+                        outputs.size());
     }
 }

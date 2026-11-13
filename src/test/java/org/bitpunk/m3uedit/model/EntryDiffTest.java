@@ -140,4 +140,41 @@ class EntryDiffTest {
         assertThat(diff.getUnchangedCount()).isEqualTo(1);
         assertThat(diff.getMovedCount()).isEqualTo(3);
     }
+
+    @Test
+    void testCopiesAreMatchedWithTheirOriginAndShownAsModified() {
+        Entry a = entry("a");
+        Entry b = entry("b");
+        Entry c = entry("c");
+        Entry changedB = entry("b");
+        changedB.setTvgId("B.de");
+        java.util.Map<Entry, Entry> origins = new java.util.IdentityHashMap<>();
+        origins.put(changedB, b);
+
+        EntryDiff diff = EntryDiff.compute(List.of(a, b, c), List.of(a, changedB, c), entry -> origins.getOrDefault(entry, entry));
+
+        assertThat(diff.getModifiedCount()).isEqualTo(1);
+        assertThat(diff.getUnchangedCount()).isEqualTo(2);
+        assertThat(diff.getRemovedCount()).isZero();
+        assertThat(diff.getAddedCount()).isZero();
+        Row modified = diff.getRows().get(1);
+        assertThat(modified.leftKind()).isEqualTo(Kind.MODIFIED);
+        assertThat(modified.rightKind()).isEqualTo(Kind.MODIFIED);
+        assertThat(modified.left()).isSameAs(b);
+        assertThat(modified.right()).isSameAs(changedB);
+        assertThat(modified.isUnchanged()).isFalse();
+        assertThat(modified.isAnchor()).isTrue();
+    }
+
+    @Test
+    void testCopiesWithoutOriginAreRemovedAndAdded() {
+        Entry b = entry("b");
+        Entry changedB = entry("b");
+
+        EntryDiff diff = EntryDiff.compute(List.of(b), List.of(changedB));
+
+        assertThat(diff.getRemovedCount()).isEqualTo(1);
+        assertThat(diff.getAddedCount()).isEqualTo(1);
+        assertThat(diff.getModifiedCount()).isZero();
+    }
 }

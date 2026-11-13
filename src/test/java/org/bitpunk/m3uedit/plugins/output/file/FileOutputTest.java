@@ -29,7 +29,7 @@ class FileOutputTest {
     @Test
     void testWriteNullOrEmptyListDoesNotThrow() {
         FileOutput fileOutput = new FileOutput();
-        fileOutput.write(null);
+        fileOutput.write((List<Entry>) null);
         fileOutput.write(Collections.emptyList());
     }
 
@@ -82,5 +82,26 @@ class FileOutputTest {
 
         assertThatThrownBy(() -> fileOutput.write(List.of(entry))).isInstanceOf(OutputException.class)
                 .hasMessageContaining("could not be written to").hasMessageContaining("output.m3u");
+    }
+
+    @Test
+    void testAdditionalFilesAreWrittenNextToThePlaylistAndReferenced(@TempDir Path tempDir) throws IOException {
+        Path content = tempDir.resolve("content.tmp");
+        Files.writeString(content, "<tv/>");
+        Path target = tempDir.resolve("tv.m3u");
+        FileOutput fileOutput = new FileOutput();
+        fileOutput.setOutput(target.toUri());
+        Entry entry = new Entry();
+        entry.setName("ZDF");
+        entry.setChannelUri("http://example.com/zdf.ts");
+        org.bitpunk.m3uedit.plugins.output.Export export = new org.bitpunk.m3uedit.plugins.output.Export(List.of(entry),
+                List.of("http://source/epg.xml"), List.of(new org.bitpunk.m3uedit.plugins.output.Export.ExportFile(
+                "EPG", ".xml", List.of("x-tvg-url"), content)));
+
+        fileOutput.write(export);
+
+        Path guide = tempDir.resolve("tv.xml");
+        assertThat(guide).hasContent("<tv/>");
+        assertThat(Files.readString(target)).startsWith("#EXTM3U x-tvg-url=\"" + guide.toUri() + "\" url-tvg=\"http://source/epg.xml\"");
     }
 }

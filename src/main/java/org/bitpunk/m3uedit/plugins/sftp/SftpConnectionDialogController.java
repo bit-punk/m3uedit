@@ -8,8 +8,10 @@ import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -23,6 +25,7 @@ import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
 
 import java.net.URL;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -79,6 +82,12 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private CheckBox overwriteWithoutAskingCheckBox;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private Label playerBaseUrlLabel;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
+    private TextField playerBaseUrlTextField;
     @Getter
     private BooleanBinding inputsFull;
     // no field initializer: assigned in initialize(), which runs during the super constructor
@@ -98,6 +107,10 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         boolean output = mode == Mode.OUTPUT;
         overwriteWithoutAskingCheckBox.setVisible(output);
         overwriteWithoutAskingCheckBox.setManaged(output);
+        for (Node node : List.of(playerBaseUrlLabel, playerBaseUrlTextField)) {
+            node.setVisible(output);
+            node.setManaged(output);
+        }
         fileNameTextField.setPromptText(output ? SftpConnection.DEFAULT_FILE_NAME : "name of the playlist file");
         inputsFull.invalidate();
     }
@@ -140,6 +153,10 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         usernameTextField.setText(sftpConnection.getUserName());
         passwordField.setText(sftpConnection.getPassword());
         overwriteWithoutAskingCheckBox.setSelected(sftpConnection.isOverwriteWithoutAsking());
+        // recently used servers do not know the player url, it is kept then
+        if (sftpConnection.getPlayerBaseUrl() != null) {
+            playerBaseUrlTextField.setText(sftpConnection.getPlayerBaseUrl());
+        }
     }
 
     private SftpConnection createSftpConnectionFromInput() {
@@ -151,6 +168,10 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         sftpConnection.setUserName(usernameTextField.getText());
         sftpConnection.setPassword(passwordField.getText());
         sftpConnection.setOverwriteWithoutAsking(overwriteWithoutAskingCheckBox.isSelected());
+        if (mode == Mode.OUTPUT) {
+            String playerBaseUrl = playerBaseUrlTextField.getText();
+            sftpConnection.setPlayerBaseUrl(playerBaseUrl == null || playerBaseUrl.isBlank() ? null : playerBaseUrl.strip());
+        }
         return sftpConnection;
     }
 

@@ -39,6 +39,10 @@
 
             <CheckBox fx:id="overwriteWithoutAskingCheckBox" text="Overwrite existing file without asking"
                       GridPane.columnIndex="1" GridPane.rowIndex="7" GridPane.columnSpan="3"/>
+
+            <Label fx:id="playerBaseUrlLabel" text="Player URL:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
+            <TextField fx:id="playerBaseUrlTextField" promptText="optional, e.g. http://nas.local/iptv/ (for additional files, e.g. the EPG)"
+                       GridPane.columnIndex="1" GridPane.rowIndex="8" GridPane.columnSpan="3"/>
             <columnConstraints>
                 <ColumnConstraints/>
                 <ColumnConstraints hgrow="ALWAYS"/>

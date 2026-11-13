@@ -2,15 +2,25 @@ package org.bitpunk.m3uedit.model;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import org.bitpunk.m3uedit.plugins.enricher.Attachment;
+import org.bitpunk.m3uedit.plugins.enricher.Enricher;
+import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
 import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.output.Export;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.bitpunk.m3uedit.util.EntryMapper;
+
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -337,7 +347,7 @@ class DataModelTest {
         runAll();
 
         assertThat(dataModel).hasToString(
-                "DataModel[name=test, projectFile=null, inputs=1, filters=1, sorters=1, outputs=0]");
+                "DataModel[name=test, projectFile=null, inputs=1, filters=1, sorters=1, enrichers=0, outputs=0]");
         assertThat(uniqueNameFilter).hasToString("UniqueNameFilter[Unique Name Filter]");
     }
 
@@ -411,17 +421,220 @@ class DataModelTest {
             }
 
             @Override
-            public void write(List<Entry> playlist, List<String> epgUrls) {
+            public void write(Export export) {
                 if (failure != null) {
                     throw failure;
                 }
-                written.add(List.copyOf(playlist));
-                writtenEpgUrls.add(epgUrls);
+                written.add(List.copyOf(export.playlist()));
+                writtenEpgUrls.add(export.epgUrls());
+                exports.add(export);
+                // the content of the additional files is only available while writing
+                export.files().forEach(file -> {
+                    try {
+                        writtenFiles.add(file.name() + "=" + Files.readString(file.content()));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
             }
         };
     }
 
     private final List<List<String>> writtenEpgUrls = new ArrayList<>();
+    private final List<Export> exports = new ArrayList<>();
+    private final List<String> writtenFiles = new ArrayList<>();
+
+    /**
+     * Sets the tvg-id of the entries whose name starts with the prefix, provides a file listing the tvg-ids.
+     */
+    private static class TestEnricher implements Enricher {
+        private final String prefix;
+        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        final AtomicInteger enrichCount = new AtomicInteger();
+        boolean renameEntries;
+        boolean failingAttachment;
+
+        TestEnricher(String prefix) {
+            this.prefix = prefix;
+        }
+
+        @Override
+        public Enrichment enrich(List<Entry> entries) {
+            enrichCount.incrementAndGet();
+            List<Entry> enriched = entries.stream().map(entry -> {
+                if (!entry.getName().startsWith(prefix)) {
+                    return entry;
+                }
+                Entry copy = EntryMapper.copyOf(entry);
+                copy.setTvgId(prefix + "-id");
+                if (renameEntries) {
+                    copy.setName("renamed");
+                }
+                return copy;
+            }).toList();
+            Attachment attachment = new Attachment("ids of " + prefix, ".ids", List.of("x-tvg-url"),
+                    (playlist, outputStream) -> {
+                        if (failingAttachment) {
+                            throw new IOException("source not reachable");
+                        }
+                        outputStream.write(playlist.stream().map(Entry::getTvgId).filter(java.util.Objects::nonNull)
+                                .collect(java.util.stream.Collectors.joining(",")).getBytes(StandardCharsets.UTF_8));
+                    });
+            return new Enrichment(enriched, List.of(attachment));
+        }
+
+        @Override
+        public String getName() {
+            return "Test Enricher " + prefix;
+        }
+
+        @Override
+        public String getDescription() {
+            return getName();
+        }
+
+        @Override
+        public BooleanProperty getEnabled() {
+            return enabled;
+        }
+    }
+
+    @Test
+    void testEnrichersChangeCopiesOfTheEntries() {
+        TestEnricher enricher = new TestEnricher("a");
+        dataModel.getEnrichers().add(enricher);
+        Entry a = entry("a");
+        Entry b = entry("b");
+        dataModel.getInputs().add(new TestInput("in", List.of(b, a)));
+        runAll();
+
+        PipelineResult result = dataModel.getPipelineResult();
+        assertThat(result.sorted()).containsExactly(b, a);
+        assertThat(result.enriched()).hasSize(2).first().isSameAs(b);
+        Entry enrichedA = result.enriched().get(1);
+        assertThat(enrichedA).isNotSameAs(a);
+        assertThat(enrichedA.getTvgId()).isEqualTo("a-id");
+        assertThat(a.getTvgId()).as("the sorted entry is not modified").isNull();
+        assertThat(result.originOf(enrichedA)).isSameAs(a);
+        assertThat(result.sourceOf(enrichedA)).isSameAs(dataModel.getInputs().getFirst());
+        assertThat(result.step(enricher)).hasValueSatisfying(step -> assertThat(step.modifiedCount()).isEqualTo(1));
+        assertThat(dataModel.getSortedEntryList()).containsExactly(b, enrichedA);
+    }
+
+    @Test
+    void testChainedEnrichersKeepTheOriginalOrigin() {
+        TestEnricher first = new TestEnricher("a");
+        TestEnricher second = new TestEnricher("a");
+        dataModel.getEnrichers().addAll(first, second);
+        Entry a = entry("a");
+        dataModel.getInputs().add(new TestInput("in", List.of(a)));
+        runAll();
+
+        Entry enriched = dataModel.getSortedEntryList().getFirst();
+        assertThat(dataModel.getPipelineResult().originOf(enriched)).isSameAs(a);
+    }
+
+    @Test
+    void testDisabledEnrichersAreNotApplied() {
+        TestEnricher enricher = new TestEnricher("a");
+        enricher.getEnabled().set(false);
+        dataModel.getEnrichers().add(enricher);
+        Entry a = entry("a");
+        dataModel.getInputs().add(new TestInput("in", List.of(a)));
+        runAll();
+
+        assertThat(dataModel.getSortedEntryList()).containsExactly(a);
+        assertThat(dataModel.getPipelineResult().step(enricher)).isEmpty();
+    }
+
+    @Test
+    void testEnrichingDoesNotReloadFilterOrSort() {
+        TestEnricher enricher = new TestEnricher("a");
+        dataModel.getEnrichers().add(enricher);
+        TestInput input = new TestInput("in", List.of(entry("b"), entry("a")));
+        dataModel.getInputs().add(input);
+        channelNameSorter.getEnabled().set(true);
+        dataModel.sortFilteredEntries();
+        runAll();
+        int reads = input.readCount.get();
+        PipelineResult before = dataModel.getPipelineResult();
+
+        dataModel.enrichSortedEntries();
+        runAll();
+
+        assertThat(input.readCount).hasValue(reads);
+        PipelineResult after = dataModel.getPipelineResult();
+        assertThat(after.sorted()).containsExactlyElementsOf(before.sorted());
+        assertThat(after.step(channelNameSorter)).isEqualTo(before.step(channelNameSorter));
+        assertThat(names(dataModel.getSortedEntryList())).containsExactly("a", "b");
+        assertThat(enricher.enrichCount).hasValue(3);
+    }
+
+    @Test
+    void testEnricherChangingTheNameIsReported() {
+        TestEnricher enricher = new TestEnricher("a");
+        enricher.renameEntries = true;
+        dataModel.getEnrichers().add(enricher);
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+
+        assertThat(errors).singleElement().asString().contains("must not change the name or url");
+    }
+
+    @Test
+    void testManualChangesAreAppliedAfterTheEnrichers() {
+        dataModel.getEnrichers().add(new TestEnricher("a"));
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+        Entry edited = EntryMapper.copyOf(dataModel.getSortedEntryList().getFirst());
+        edited.setTvgId("manual-id");
+        dataModel.editEntry(dataModel.getSortedEntryList().getFirst(), edited);
+        runAll();
+
+        dataModel.enrichSortedEntries();
+        runAll();
+
+        assertThat(dataModel.getSortedEntryList()).singleElement()
+                .satisfies(entry -> assertThat(entry.getTvgId()).isEqualTo("manual-id"));
+    }
+
+    @Test
+    void testAttachmentsAreCreatedOnceWithThePlaylistAndPassedToAllOutputs() {
+        dataModel.getEnrichers().add(new TestEnricher("a"));
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"), entry("b"))));
+        runAll();
+        dataModel.getOutputs().addAll(output("first", new ArrayList<>(), null), output("second", new ArrayList<>(), null));
+
+        dataModel.saveEntries();
+        runAll();
+
+        assertThat(writtenFiles).containsExactly("ids of a=a-id", "ids of a=a-id");
+        assertThat(exports).hasSize(2);
+        assertThat(exports.getFirst().files()).singleElement().satisfies(file -> {
+            assertThat(file.suffix()).isEqualTo(".ids");
+            assertThat(file.headerAttributes()).containsExactly("x-tvg-url");
+            assertThat(file.content()).as("temporary files are deleted after writing").doesNotExist();
+        });
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void testFailingAttachmentIsReportedAndThePlaylistIsWrittenAnyway() {
+        TestEnricher enricher = new TestEnricher("a");
+        enricher.failingAttachment = true;
+        dataModel.getEnrichers().add(enricher);
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+        List<List<Entry>> written = new ArrayList<>();
+        dataModel.getOutputs().add(output("out", written, null));
+
+        dataModel.saveEntries();
+        runAll();
+
+        assertThat(written).hasSize(1);
+        assertThat(exports).singleElement().satisfies(export -> assertThat(export.files()).isEmpty());
+        assertThat(errors).singleElement().asString().contains("ids of a: source not reachable");
+    }
 
     private static EntryList entryList(List<String> epgUrls, Entry... entries) {
         EntryList list = new EntryList();

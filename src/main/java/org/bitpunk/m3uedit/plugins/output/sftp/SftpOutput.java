@@ -10,6 +10,8 @@ import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.output.Export;
+import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
 import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.bitpunk.m3uedit.plugins.sftp.RecentSftpServers;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
@@ -19,13 +21,18 @@ import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Getter
@@ -75,9 +82,10 @@ public class SftpOutput extends AbstractPlugin implements Output {
     }
 
     @Override
-    public void write(List<Entry> playlist, List<String> epgUrls) {
+    public void write(Export export) {
         log.debug("write()");
-        if (playlist != null && !playlist.isEmpty() && sftpConnection != null) {
+        List<Entry> playlist = export.playlist();
+        if (!playlist.isEmpty() && sftpConnection != null) {
             SftpUserInteraction userInteraction = createUserInteraction();
             if (!userInteraction.ensurePassword(sftpConnection)) {
                 log.warn("Writing to SFTP server {}@{}:{} skipped: no password entered",
@@ -89,13 +97,6 @@ public class SftpOutput extends AbstractPlugin implements Output {
             int payloadBytes = 0;
             try (SftpClient client = SftpClient.connect(sftpConnection, userInteraction)) {
                 channelSftp = client.channel();
-                Writer writer = new Writer();
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                writer.write(playlist, epgUrls, outputStream);
-                byte[] bytes = outputStream.toByteArray();
-                payloadBytes = bytes.length;
-
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
                 targetPath = sftpConnection.isLegacyPath()
                         ? resolveTargetPath(channelSftp, sftpConnection.getPath())
                         : sftpConnection.getTargetPath();
@@ -105,6 +106,15 @@ public class SftpOutput extends AbstractPlugin implements Output {
                     log.info("Writing to SFTP destination {} skipped: overwriting the existing file was not confirmed", targetPath);
                     return;
                 }
+                // the additional files are written first, so the playlist never references a file not written
+                Map<ExportFile, String> fileNames = putFiles(channelSftp, targetPath, export.files());
+
+                Writer writer = new Writer();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                writer.write(playlist, export.headerAttributes(file -> playerUrlOf(fileNames.get(file))), outputStream);
+                byte[] bytes = outputStream.toByteArray();
+                payloadBytes = bytes.length;
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
                 log.info("Writing playlist ({} entries, {} bytes) to SFTP server {}@{}:{} at target path '{}' (configured path: '{}')",
                         playlist.size(), payloadBytes, sftpConnection.getUserName(), sftpConnection.getHostName(),
                         sftpConnection.getPort(), targetPath, sftpConnection.getPath());
@@ -127,6 +137,45 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 throw new OutputException(describeFailure(e), e);
             }
         }
+    }
+
+    /**
+     * Uploads the additional files next to the playlist, overwriting existing ones: they belong to the playlist.
+     *
+     * @return the file name of each file uploaded
+     */
+    private Map<ExportFile, String> putFiles(ChannelSftp channelSftp, String playlistPath, List<ExportFile> files)
+            throws SftpException {
+        Map<ExportFile, String> fileNames = new IdentityHashMap<>();
+        int lastSlash = playlistPath.lastIndexOf('/');
+        String directory = lastSlash >= 0 ? playlistPath.substring(0, lastSlash + 1) : "";
+        String playlistFileName = playlistPath.substring(lastSlash + 1);
+        for (ExportFile file : files) {
+            String fileName = file.fileNameFor(playlistFileName);
+            log.info("Writing {} to SFTP destination {}", file.name(), directory + fileName);
+            try (InputStream inputStream = Files.newInputStream(file.content())) {
+                channelSftp.put(inputStream, directory + fileName);
+            } catch (IOException e) {
+                throw new OutputException("%s could not be read: %s".formatted(file.name(), e.getMessage()), e);
+            }
+            fileNames.put(file, fileName);
+        }
+        return fileNames;
+    }
+
+    /**
+     * Players read the additional files via the base url configured for this output (e.g. a web server serving
+     * the target directory). Without one, the files are not referenced by the playlist.
+     *
+     * @return the url players read the file with the given name from, null if unknown
+     */
+    String playerUrlOf(String fileName) {
+        String baseUrl = sftpConnection.getPlayerBaseUrl();
+        if (fileName == null || baseUrl == null || baseUrl.isBlank()) {
+            return null;
+        }
+        String base = baseUrl.strip();
+        return (base.endsWith("/") ? base : base + "/") + fileName;
     }
 
     /**
