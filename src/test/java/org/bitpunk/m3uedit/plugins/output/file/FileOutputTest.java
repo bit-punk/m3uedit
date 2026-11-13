@@ -102,6 +102,13 @@ class FileOutputTest {
 
         Path guide = tempDir.resolve("tv.xml");
         assertThat(guide).hasContent("<tv/>");
+        if (guide.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+            // not the permissions of the private temporary file: players may run as another user
+            Files.setPosixFilePermissions(content, java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+            Files.delete(guide);
+            fileOutput.write(export);
+            assertThat(Files.getPosixFilePermissions(guide)).isEqualTo(Files.getPosixFilePermissions(target));
+        }
         assertThat(Files.readString(target)).startsWith("#EXTM3U x-tvg-url=\"" + guide.toUri() + "\" url-tvg=\"http://source/epg.xml\"");
     }
 }

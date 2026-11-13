@@ -18,6 +18,7 @@ import org.bitpunk.m3uedit.plugins.output.OutputException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -49,8 +50,9 @@ public class FileOutput extends AbstractPlugin implements Output {
         Map<ExportFile, Path> written = new IdentityHashMap<>();
         for (ExportFile file : export.files()) {
             Path target = playlistPath.resolveSibling(file.fileNameFor(playlistPath.getFileName().toString()));
-            try {
-                Files.copy(file.content(), target, StandardCopyOption.REPLACE_EXISTING);
+            // copied as content: a new file gets the default permissions, not those of the (private) temporary file
+            try (InputStream content = Files.newInputStream(file.content())) {
+                Files.copy(content, target, StandardCopyOption.REPLACE_EXISTING);
                 written.put(file, target);
             } catch (IOException e) {
                 throw new OutputException("%s could not be written to %s: %s".formatted(file.name(), target,

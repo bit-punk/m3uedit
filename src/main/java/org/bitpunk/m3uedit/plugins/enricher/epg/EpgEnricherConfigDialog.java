@@ -32,7 +32,8 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
     /**
      * The configuration entered.
      */
-    public record Config(List<String> sources, List<MatchStrategy> strategies, List<UrlRule> urlRules, int cacheHours) {
+    public record Config(List<String> sources, List<MatchStrategy> strategies, List<UrlRule> urlRules, int cacheHours,
+                         boolean compileGuide, int guideDaysAhead, int guideHoursPast, boolean compressGuide) {
     }
 
     @Getter
@@ -43,6 +44,14 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
     private final Map<MatchStrategy, CheckBox> strategyCheckBoxes = new EnumMap<>(MatchStrategy.class);
     @Getter
     private final Spinner<Integer> cacheHoursSpinner = new Spinner<>(1, 24 * 7, EpgEnricher.DEFAULT_CACHE_HOURS);
+    @Getter
+    private final CheckBox compileGuideCheckBox = new CheckBox("Write a guide with only the channels of the playlist next to it");
+    @Getter
+    private final Spinner<Integer> guideDaysAheadSpinner = new Spinner<>(0, 31, EpgEnricher.DEFAULT_GUIDE_DAYS_AHEAD);
+    @Getter
+    private final Spinner<Integer> guideHoursPastSpinner = new Spinner<>(0, 24 * 7, EpgEnricher.DEFAULT_GUIDE_HOURS_PAST);
+    @Getter
+    private final CheckBox compressGuideCheckBox = new CheckBox("gzip-compressed (.xml.gz)");
     @Getter
     private final Label errorLabel = new Label();
     @Getter
@@ -78,6 +87,17 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         cacheHoursSpinner.setEditable(true);
         cacheHoursSpinner.setPrefWidth(90);
 
+        compileGuideCheckBox.setSelected(enricher.isCompileGuide());
+        guideDaysAheadSpinner.getValueFactory().setValue(Math.max(0, enricher.getGuideDaysAhead()));
+        guideHoursPastSpinner.getValueFactory().setValue(Math.max(0, enricher.getGuideHoursPast()));
+        compressGuideCheckBox.setSelected(enricher.isCompressGuide());
+        for (Spinner<Integer> spinner : List.of(guideDaysAheadSpinner, guideHoursPastSpinner)) {
+            spinner.setEditable(true);
+            spinner.setPrefWidth(90);
+            spinner.disableProperty().bind(compileGuideCheckBox.selectedProperty().not());
+        }
+        compressGuideCheckBox.disableProperty().bind(compileGuideCheckBox.selectedProperty().not());
+
         errorLabel.setStyle("-fx-text-fill: red;");
         errorLabel.setWrapText(true);
 
@@ -99,6 +119,15 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
                 + " channel id (may use groups like $1)."), 1, row++);
         grid.add(new Label("Update after:"), 0, row);
         grid.add(new HBox(6, cacheHoursSpinner, new Label("hours")), 1, row++);
+        grid.add(new Label("Guide:"), 0, row);
+        grid.add(compileGuideCheckBox, 1, row++);
+        HBox window = new HBox(6, new Label("Programmes up to"), guideDaysAheadSpinner, new Label("days ahead, ended up to"),
+                guideHoursPastSpinner, new Label("hours ago (0: all)"));
+        window.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        grid.add(window, 1, row++);
+        grid.add(compressGuideCheckBox, 1, row++);
+        grid.add(hint("Written by the outputs when the playlist is written, named after it (tv.m3u: tv.xml.gz), "
+                + "and referenced by the playlist where the output knows its URL."), 1, row++);
         grid.add(errorLabel, 1, row);
         GridPane.setHgrow(sourcesTextArea, Priority.ALWAYS);
         GridPane.setVgrow(sourcesTextArea, Priority.ALWAYS);
@@ -164,7 +193,9 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
                 return null;
             }
         }).filter(java.util.Objects::nonNull).toList();
-        return new Config(lines(sourcesTextArea.getText()), strategies, rules, cacheHoursSpinner.getValue());
+        return new Config(lines(sourcesTextArea.getText()), strategies, rules, cacheHoursSpinner.getValue(),
+                compileGuideCheckBox.isSelected(), guideDaysAheadSpinner.getValue(), guideHoursPastSpinner.getValue(),
+                compressGuideCheckBox.isSelected());
     }
 
     static List<String> lines(String text) {

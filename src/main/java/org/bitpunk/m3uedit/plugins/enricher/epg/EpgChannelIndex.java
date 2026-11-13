@@ -12,6 +12,7 @@ import java.util.Map;
  */
 final class EpgChannelIndex {
     private final Map<String, XmltvChannel> byId = new LinkedHashMap<>();
+    private final Map<String, Integer> sourceById = new HashMap<>();
     private final Map<String, String> idByLowerCaseId = new HashMap<>();
     private final Map<String, String> idByName = new HashMap<>();
 
@@ -19,11 +20,12 @@ final class EpgChannelIndex {
      * @param channelsPerSource the channels of each source, in the order of the sources
      */
     EpgChannelIndex(List<List<XmltvChannel>> channelsPerSource) {
-        for (List<XmltvChannel> channels : channelsPerSource) {
-            for (XmltvChannel channel : channels) {
+        for (int source = 0; source < channelsPerSource.size(); source++) {
+            for (XmltvChannel channel : channelsPerSource.get(source)) {
                 if (byId.putIfAbsent(channel.id(), channel) != null) {
                     continue;
                 }
+                sourceById.put(channel.id(), source);
                 idByLowerCaseId.putIfAbsent(channel.id().toLowerCase(Locale.ROOT), channel.id());
             }
         }
@@ -42,6 +44,13 @@ final class EpgChannelIndex {
 
     int size() {
         return byId.size();
+    }
+
+    /**
+     * @return the index of the source the channel with the given id is taken from, -1 if there is none
+     */
+    int sourceOf(String id) {
+        return id == null ? -1 : sourceById.getOrDefault(id, -1);
     }
 
     boolean contains(String id) {

@@ -388,6 +388,10 @@ class ProjectPersisterUtilTest {
         epgEnricher.setStrategies(List.of(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE));
         epgEnricher.setUrlRules(List.of(new UrlRule("service=514", "ZDF.de")));
         epgEnricher.setCacheHours(6);
+        epgEnricher.setCompileGuide(false);
+        epgEnricher.setGuideDaysAhead(3);
+        epgEnricher.setGuideHoursPast(0);
+        epgEnricher.setCompressGuide(false);
         epgEnricher.getEnabled().set(true);
         dataModel.getEnrichers().add(epgEnricher);
         sftpOutput.getSftpConnection().setPlayerBaseUrl("http://nas.local/iptv/");
@@ -417,6 +421,10 @@ class ProjectPersisterUtilTest {
             assertThat(enricher.getStrategies()).containsExactly(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE);
             assertThat(enricher.getUrlRules()).containsExactly(new UrlRule("service=514", "ZDF.de"));
             assertThat(enricher.getCacheHours()).isEqualTo(6);
+            assertThat(enricher.isCompileGuide()).isFalse();
+            assertThat(enricher.getGuideDaysAhead()).isEqualTo(3);
+            assertThat(enricher.getGuideHoursPast()).isZero();
+            assertThat(enricher.isCompressGuide()).isFalse();
         });
     }
 

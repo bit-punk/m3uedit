@@ -15,6 +15,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class EpgEnricherTest {
+    /**
+     * The test guide contains a programme on 2026-11-13 20:00 (+0100).
+     */
+    static final Clock NOW = Clock.fixed(java.time.Instant.parse("2026-11-13T18:00:00Z"), java.time.ZoneId.of("Europe/Berlin"));
 
     @TempDir
     Path tempDir;
@@ -32,7 +36,7 @@ class EpgEnricherTest {
     @BeforeEach
     void setUp() throws IOException {
         enricher = new EpgEnricher(new EpgSourceCache(tempDir.resolve("cache"), HttpClient.newHttpClient(),
-                Clock.systemUTC()));
+                Clock.systemUTC()), NOW);
         source = XmltvTestFiles.write(tempDir.resolve("guide.xml"), XmltvTestFiles.GUIDE).toUri().toString();
         enricher.setSources(List.of(source));
     }
@@ -149,5 +153,74 @@ class EpgEnricherTest {
         Enrichment enrichment = enricher.enrich(List.of(entry("ZDF Österreich", null, "http://e/1")));
 
         assertThat(enrichment.entries().getFirst().getTvgId()).isNull();
+    }
+
+    private static String compile(Enrichment enrichment, List<Entry> playlist) throws IOException {
+        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+        enrichment.attachments().getFirst().content().write(playlist, outputStream);
+        byte[] bytes = outputStream.toByteArray();
+        if (bytes.length > 1 && bytes[0] == 0x1f && (bytes[1] & 0xff) == 0x8b) {
+            bytes = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(bytes)).readAllBytes();
+        }
+        return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void testGuideWithTheChannelsOfThePlaylistIsProvided() throws IOException {
+        Enrichment enrichment = enricher.enrich(List.of(entry("Das Erste HD", null, "http://e/1")));
+
+        assertThat(enrichment.attachments()).singleElement().satisfies(attachment -> {
+            assertThat(attachment.name()).isEqualTo(EpgEnricher.GUIDE_NAME);
+            assertThat(attachment.suffix()).isEqualTo(".xml.gz");
+            assertThat(attachment.headerAttributes()).containsExactly("x-tvg-url", "url-tvg");
+        });
+        String guide = compile(enrichment, enrichment.entries());
+        assertThat(guide).contains("<channel id=\"DasErste.de\">", "<title lang=\"de\">Tagesschau</title>",
+                        "Nachrichten &amp; Wetter")
+                .doesNotContain("ZDF.de", "arte.de", "Late.de");
+        Path written = XmltvTestFiles.write(tempDir.resolve("written.xml"), guide);
+        assertThat(XmltvFiles.readChannels(written)).containsExactly(new XmltvChannel("DasErste.de", List.of("Das Erste")));
+    }
+
+    @Test
+    void testGuideIsCompiledFromThePlaylistWritten() throws IOException {
+        enricher.setCompressGuide(false);
+        Enrichment enrichment = enricher.enrich(List.of(entry("Das Erste HD", null, "http://e/1")));
+        // e.g. set manually by the user after the enrichment, with another spelling
+        Entry manual = entry("Mein Sender", "zdf.DE", "http://e/2");
+
+        String guide = compile(enrichment, List.of(enrichment.entries().getFirst(), manual));
+
+        assertThat(enrichment.attachments().getFirst().suffix()).isEqualTo(".xml");
+        assertThat(guide).startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+                .contains("<channel id=\"DasErste.de\">", "<channel id=\"zdf.DE\">");
+    }
+
+    @Test
+    void testNoGuideIfSwitchedOffOrWithoutChannels() {
+        enricher.setCompileGuide(false);
+        assertThat(enricher.enrich(List.of(entry("ZDF", null, "http://e/1"))).attachments()).isEmpty();
+
+        enricher.setCompileGuide(true);
+        enricher.setSources(List.of(tempDir.resolve("missing.xml").toUri().toString()));
+        assertThat(enricher.enrich(List.of(entry("ZDF", null, "http://e/1"))).attachments()).isEmpty();
+    }
+
+    @Test
+    void testTimeWindowOfTheGuide() throws IOException {
+        enricher.setCompressGuide(false);
+        enricher.setGuideDaysAhead(0);
+        enricher.setGuideHoursPast(1);
+        Enrichment enrichment = enricher.enrich(List.of(entry("Das Erste", null, "http://e/1")));
+        assertThat(compile(enrichment, enrichment.entries())).as("programme in 1 hour").contains("Tagesschau");
+
+        EpgEnricher later = new EpgEnricher(new EpgSourceCache(tempDir.resolve("cache"), HttpClient.newHttpClient(),
+                Clock.systemUTC()), Clock.offset(NOW, java.time.Duration.ofHours(3)));
+        later.setSources(List.of(source));
+        later.setCompressGuide(false);
+        later.setGuideHoursPast(1);
+        Enrichment laterEnrichment = later.enrich(List.of(entry("Das Erste", null, "http://e/1")));
+        assertThat(compile(laterEnrichment, laterEnrichment.entries())).as("ended 1:45 hours ago")
+                .doesNotContain("Tagesschau").contains("<channel id=\"DasErste.de\">");
     }
 }
