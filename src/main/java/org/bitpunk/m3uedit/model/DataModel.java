@@ -84,7 +84,7 @@ public class DataModel {
      * @param appliedChanges the number of manual changes applied to the playlist
      */
     private record Result(PipelineResult pipeline, List<Entry> playlist, int appliedChanges, List<String> inputErrors,
-                          List<String> inputEpgUrls) {
+                          List<String> inputEpgUrls, List<String> enricherWarnings) {
     }
 
     @NotNull
@@ -415,10 +415,14 @@ public class DataModel {
                 }
                 Map<Entry, Entry> origins = new IdentityHashMap<>();
                 List<Attachment> attachments = new ArrayList<>();
-                List<Entry> enriched = enrichEntries(enabledEnrichers, sorted, steps, origins, attachments);
+                Set<String> enricherEpgUrls = new LinkedHashSet<>();
+                List<String> enricherWarnings = new ArrayList<>();
+                List<Entry> enriched = enrichEntries(enabledEnrichers, sorted, steps, origins, attachments,
+                        enricherEpgUrls, enricherWarnings);
                 List<Entry> playlist = ManualChange.applyAll(enriched, changesSnapshot);
                 Result result = new Result(new PipelineResult(raw, filtered, sorted, enriched, sources, steps,
-                        removedBy, origins, attachments), playlist, changesSnapshot.size(), inputErrors, loadedEpgUrls);
+                        removedBy, origins, attachments, List.copyOf(enricherEpgUrls)), playlist,
+                        changesSnapshot.size(), inputErrors, loadedEpgUrls, enricherWarnings);
                 getFxExecutorOrDefault().execute(() -> applyResult(currentGeneration, step, result));
             } catch (RuntimeException e) {
                 log.error("Error re-computing the entries of project '{}'", name, e);
@@ -451,6 +455,9 @@ public class DataModel {
         busy.set(false);
         if (!result.inputErrors().isEmpty()) {
             reportError("Some inputs could not be read:\n" + String.join("\n", result.inputErrors()));
+        }
+        if (!result.enricherWarnings().isEmpty()) {
+            reportError("Some enrichers reported problems:\n" + String.join("\n", result.enricherWarnings()));
         }
     }
 
@@ -706,11 +713,15 @@ public class DataModel {
     }
 
     /**
-     * @return the EPG urls written to the playlist header: the ones set for the project, or those of the inputs
-     * if none are set
+     * @return the EPG urls written to the playlist header (unless replaced by an additional file of an enricher):
+     * the ones set for the project; if none are set, those of the enrichers; if there are none, those of the inputs
      */
     public List<String> getEffectiveEpgUrls() {
-        return epgUrls.isEmpty() ? getInputEpgUrls() : List.copyOf(epgUrls);
+        if (!epgUrls.isEmpty()) {
+            return List.copyOf(epgUrls);
+        }
+        List<String> enricherEpgUrls = getPipelineResult().epgUrls();
+        return enricherEpgUrls.isEmpty() ? getInputEpgUrls() : enricherEpgUrls;
     }
 
     /**
@@ -746,7 +757,8 @@ public class DataModel {
      * entry it has been derived from, possibly by several enrichers) is recorded in {@code origins}.
      */
     private static List<Entry> enrichEntries(List<Enricher> enrichers, List<Entry> entries, Map<Plugin, StepResult> steps,
-                                             Map<Entry, Entry> origins, List<Attachment> attachments) {
+                                             Map<Entry, Entry> origins, List<Attachment> attachments,
+                                             Set<String> epgUrls, List<String> warnings) {
         List<Entry> enrichedEntries = List.copyOf(entries);
         for (Enricher enricher : enrichers) {
             List<Entry> input = enrichedEntries;
@@ -758,8 +770,10 @@ public class DataModel {
                     origins.put(output.get(i), origins.getOrDefault(input.get(i), input.get(i)));
                 }
             }
-            steps.put(enricher, StepResult.ofEnrichment(input, output));
+            steps.put(enricher, StepResult.ofEnrichment(input, output, enrichment.notes(), enrichment.summary()));
             attachments.addAll(enrichment.attachments());
+            epgUrls.addAll(enrichment.epgUrls());
+            enrichment.warnings().forEach(warning -> warnings.add("%s: %s".formatted(enricher.getName(), warning)));
             enrichedEntries = output;
         }
         return enrichedEntries;

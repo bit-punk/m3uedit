@@ -35,7 +35,7 @@ public class EpgUrlDialog extends Dialog<List<String>> {
 
     /**
      * @param epgUrls      the urls currently set for the project
-     * @param inputEpgUrls the urls found in the headers of the inputs, used if none are set
+     * @param inputEpgUrls the urls of the enrichers or found in the headers of the inputs, used if none are set
      */
     public EpgUrlDialog(List<String> epgUrls, List<String> inputEpgUrls) {
         initModality(Modality.APPLICATION_MODAL);
@@ -46,7 +46,7 @@ public class EpgUrlDialog extends Dialog<List<String>> {
         Label hint = new Label(inputEpgUrls.isEmpty()
                 ? "One URL per line (.xml or .xml.gz). The channels are matched by their tvg-id."
                 : "One URL per line (.xml or .xml.gz). The channels are matched by their tvg-id.\n"
-                + "Leave empty to use the EPG URLs of the inputs:\n" + String.join("\n", inputEpgUrls));
+                + "Leave empty to use the EPG URLs of the enrichers or inputs:\n" + String.join("\n", inputEpgUrls));
         hint.setWrapText(true);
         urlTextArea.setPromptText("https://example.org/guide.xml.gz");
         urlTextArea.setPrefRowCount(6);
@@ -59,7 +59,7 @@ public class EpgUrlDialog extends Dialog<List<String>> {
 
         VBox content = new VBox(8, hint, urlTextArea, errorLabel);
         if (!inputEpgUrls.isEmpty()) {
-            Button copyButton = new Button("Copy URLs of the inputs");
+            Button copyButton = new Button("Copy these URLs");
             copyButton.setOnAction(event -> urlTextArea.setText(String.join("\n",
                     union(parseUrls(urlTextArea.getText()), inputEpgUrls))));
             content.getChildren().add(2, copyButton);

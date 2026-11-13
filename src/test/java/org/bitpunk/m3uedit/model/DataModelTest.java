@@ -499,6 +499,37 @@ class DataModelTest {
         }
     }
 
+    private static Enricher reportingEnricher(List<String> epgUrls, List<String> warnings) {
+        return new TestEnricher("x") {
+            @Override
+            public Enrichment enrich(List<Entry> entries) {
+                return new Enrichment(entries, List.of(), null, "summary", warnings, epgUrls);
+            }
+        };
+    }
+
+    @Test
+    void testWarningsOfEnrichersAreReported() {
+        dataModel.getEnrichers().add(reportingEnricher(List.of(), List.of("source down")));
+        dataModel.getInputs().add(new TestInput("in", List.of(entry("a"))));
+        runAll();
+
+        assertThat(errors).singleElement().asString().contains("Test Enricher x: source down");
+    }
+
+    @Test
+    void testEpgUrlsOfEnrichersAreUsedBeforeThoseOfTheInputs() {
+        dataModel.getEnrichers().add(reportingEnricher(List.of("http://epg/enricher.xml"), List.of()));
+        dataModel.getInputs().add(new TestInput("in", entryList(List.of("http://epg/input.xml"), entry("a"))));
+        runAll();
+
+        assertThat(dataModel.getEffectiveEpgUrls()).containsExactly("http://epg/enricher.xml");
+        assertThat(dataModel.getPipelineResult().step(dataModel.getEnrichers().getFirst()))
+                .hasValueSatisfying(step -> assertThat(step.summary()).isEqualTo("summary"));
+        dataModel.getEpgUrls().add("http://epg/own.xml");
+        assertThat(dataModel.getEffectiveEpgUrls()).containsExactly("http://epg/own.xml");
+    }
+
     @Test
     void testEnrichersChangeCopiesOfTheEntries() {
         TestEnricher enricher = new TestEnricher("a");

@@ -143,6 +143,7 @@ public class PipelineController extends VBox implements ModelAware {
         dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> updateFlowLabels());
         dataModel.getEpgUrls().addListener((ListChangeListener<String>) change -> updateEpgLabel());
         dataModel.inputEpgUrlsProperty().addListener((observable, oldUrls, newUrls) -> updateEpgLabel());
+        dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> updateEpgLabel());
         refresh();
         updateEpgLabel();
     }
@@ -166,7 +167,9 @@ public class PipelineController extends VBox implements ModelAware {
     }
 
     private void editEpgUrls() {
-        epgUrlEditor.apply(List.copyOf(dataModel.getEpgUrls()), dataModel.getInputEpgUrls())
+        List<String> enricherEpgUrls = dataModel.getPipelineResult().epgUrls();
+        epgUrlEditor.apply(List.copyOf(dataModel.getEpgUrls()),
+                        enricherEpgUrls.isEmpty() ? dataModel.getInputEpgUrls() : enricherEpgUrls)
                 .filter(urls -> !urls.equals(dataModel.getEpgUrls()))
                 .ifPresent(urls -> dataModel.getEpgUrls().setAll(urls));
     }
@@ -177,7 +180,8 @@ public class PipelineController extends VBox implements ModelAware {
         if (urls.isEmpty()) {
             text = "none";
         } else if (dataModel.getEpgUrls().isEmpty()) {
-            text = "from inputs: " + String.join(", ", urls);
+            boolean fromEnrichers = !dataModel.getPipelineResult().epgUrls().isEmpty();
+            text = (fromEnrichers ? "from enrichers: " : "from inputs: ") + String.join(", ", urls);
         } else {
             text = String.join(", ", urls);
         }
@@ -219,9 +223,13 @@ public class PipelineController extends VBox implements ModelAware {
                 : new Badge("±0", "badge-zero", "nothing removed")));
         sorterStage.setBadgeProvider(stepBadge(result, step -> new Badge("⇅ " + step.movedCount(),
                 step.movedCount() > 0 ? "badge-moved" : "badge-zero", "%d entries moved".formatted(step.movedCount()))));
-        enricherStage.setBadgeProvider(stepBadge(result, step -> step.modifiedCount() > 0
-                ? new Badge("✎ " + step.modifiedCount(), "badge-modified", "%d entries changed".formatted(step.modifiedCount()))
-                : new Badge("±0", "badge-zero", "nothing changed")));
+        enricherStage.setBadgeProvider(stepBadge(result, step -> {
+            String tooltip = step.modifiedCount() > 0 ? "%d entries changed".formatted(step.modifiedCount())
+                    : "nothing changed";
+            tooltip = step.summary() == null ? tooltip : tooltip + "\n" + step.summary();
+            return step.modifiedCount() > 0 ? new Badge("✎ " + step.modifiedCount(), "badge-modified", tooltip)
+                    : new Badge("±0", "badge-zero", tooltip);
+        }));
         int loaded = result.raw().size();
         inputStage.setStatusProvider(() -> "%s, %s".formatted(count(dataModel.getInputs().size(), "input"),
                 count(loaded, "entry", "entries")));

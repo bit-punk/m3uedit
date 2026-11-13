@@ -25,11 +25,12 @@ import java.util.Optional;
  * @param removedBy   the filter that removed an entry, for each entry removed by a filter
  * @param origins     the sorted entry each entry changed by an enricher has been derived from
  * @param attachments the additional files provided by the enabled enrichers
+ * @param epgUrls     the EPG urls provided by the enabled enrichers
  */
 public record PipelineResult(List<Entry> raw, List<Entry> filtered, List<Entry> sorted, List<Entry> enriched,
                              Map<Entry, Input> sources, Map<Plugin, StepResult> steps,
                              Map<Entry, Filter> removedBy, Map<Entry, Entry> origins,
-                             List<Attachment> attachments) {
+                             List<Attachment> attachments, List<String> epgUrls) {
 
     public static final PipelineResult EMPTY = new PipelineResult(List.of(), List.of(), List.of(),
             new IdentityHashMap<>(), new IdentityHashMap<>(), new IdentityHashMap<>());
@@ -44,6 +45,7 @@ public record PipelineResult(List<Entry> raw, List<Entry> filtered, List<Entry> 
         removedBy = Collections.unmodifiableMap(new IdentityHashMap<>(removedBy));
         origins = Collections.unmodifiableMap(new IdentityHashMap<>(origins));
         attachments = List.copyOf(attachments);
+        epgUrls = epgUrls == null ? List.of() : List.copyOf(epgUrls);
     }
 
     /**
@@ -51,7 +53,7 @@ public record PipelineResult(List<Entry> raw, List<Entry> filtered, List<Entry> 
      */
     public PipelineResult(List<Entry> raw, List<Entry> filtered, List<Entry> sorted, Map<Entry, Input> sources,
                           Map<Plugin, StepResult> steps, Map<Entry, Filter> removedBy) {
-        this(raw, filtered, sorted, sorted, sources, steps, removedBy, new IdentityHashMap<>(), List.of());
+        this(raw, filtered, sorted, sorted, sources, steps, removedBy, new IdentityHashMap<>(), List.of(), List.of());
     }
 
     /**

@@ -29,6 +29,9 @@ import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.PreferredChannelOrderSorter;
+import org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher;
+import org.bitpunk.m3uedit.plugins.enricher.epg.MatchStrategy;
+import org.bitpunk.m3uedit.plugins.enricher.epg.UrlRule;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -380,6 +383,14 @@ class ProjectPersisterUtilTest {
         dataModel.getFilters().addAll(FilterPluginService.getInstance().getAllPlugins());
         dataModel.getSorters().addAll(new ChannelNameSorter(), preferredSorter);
         dataModel.getOutputs().addAll(new FileOutput(), sftpOutput);
+        EpgEnricher epgEnricher = new EpgEnricher();
+        epgEnricher.setSources(List.of("https://epg.example.org/de.xml.gz"));
+        epgEnricher.setStrategies(List.of(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE));
+        epgEnricher.setUrlRules(List.of(new UrlRule("service=514", "ZDF.de")));
+        epgEnricher.setCacheHours(6);
+        epgEnricher.getEnabled().set(true);
+        dataModel.getEnrichers().add(epgEnricher);
+        sftpOutput.getSftpConnection().setPlayerBaseUrl("http://nas.local/iptv/");
         Path projectFile = tempDir.resolve("all.m3uproj");
 
         assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isTrue();
@@ -398,6 +409,15 @@ class ProjectPersisterUtilTest {
         assertThat(((PreferredChannelOrderSorter) loaded.getSorters().get(1)).getSelectedProfileId()).isEqualTo("my_profile");
         assertThat(loaded.getSorters().get(1).getEnabled().get()).isTrue();
         assertThat(((SftpOutput) loaded.getOutputs().get(1)).getSftpConnection().getHostName()).isEqualTo("example.com");
+        assertThat(((SftpOutput) loaded.getOutputs().get(1)).getSftpConnection().getPlayerBaseUrl())
+                .isEqualTo("http://nas.local/iptv/");
+        assertThat(loaded.getEnrichers()).singleElement().isInstanceOfSatisfying(EpgEnricher.class, enricher -> {
+            assertThat(enricher.getEnabled().get()).isTrue();
+            assertThat(enricher.getSources()).containsExactly("https://epg.example.org/de.xml.gz");
+            assertThat(enricher.getStrategies()).containsExactly(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE);
+            assertThat(enricher.getUrlRules()).containsExactly(new UrlRule("service=514", "ZDF.de"));
+            assertThat(enricher.getCacheHours()).isEqualTo(6);
+        });
     }
 
     @ParameterizedTest

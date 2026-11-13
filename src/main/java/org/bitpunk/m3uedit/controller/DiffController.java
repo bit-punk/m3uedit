@@ -72,20 +72,22 @@ public class DiffController extends VBox {
      * @param origin            returns the entry of the left side an entry of the right side has been derived from
      *                          (by an enricher), the entry itself if unchanged
      * @param changeDescription describes the change of an entry, given the entry before and after the change
+     * @param note              a note for an entry of the right side worth mentioning even if it is unchanged
+     *                          (e.g. "no EPG data"), null if none; such entries are not folded away
      */
     record Scope(String context, String leftTitle, List<Entry> left, String rightTitle, List<Entry> right,
                  Function<Entry, String> removalReason, Function<Entry, Entry> origin,
-                 BiFunction<Entry, Entry, String> changeDescription) {
+                 BiFunction<Entry, Entry, String> changeDescription, Function<Entry, String> note) {
 
         Scope(String context, String leftTitle, List<Entry> left, String rightTitle, List<Entry> right,
               Function<Entry, String> removalReason) {
-            this(context, leftTitle, left, rightTitle, right, removalReason, Function.identity(),
-                    EntryMapper::describeChanges);
+            this(context, leftTitle, left, rightTitle, right, removalReason, Function.identity());
         }
 
         Scope(String context, String leftTitle, List<Entry> left, String rightTitle, List<Entry> right,
               Function<Entry, String> removalReason, Function<Entry, Entry> origin) {
-            this(context, leftTitle, left, rightTitle, right, removalReason, origin, EntryMapper::describeChanges);
+            this(context, leftTitle, left, rightTitle, right, removalReason, origin, EntryMapper::describeChanges,
+                    entry -> null);
         }
     }
 
@@ -261,13 +263,19 @@ public class DiffController extends VBox {
             for (int i = 0; i < enricherStep.output().size(); i++) {
                 origins.put(enricherStep.output().get(i), enricherStep.input().get(i));
             }
-            return new Scope("%s changes %d of %d entries.".formatted(enricher.getName(), enricherStep.modifiedCount(),
-                    enricherStep.input().size()), "Before", enricherStep.input(), "After", enricherStep.output(),
+            Map<Entry, String> notes = enricherStep.notes();
+            String context = "%s changes %d of %d entries.".formatted(enricher.getName(), enricherStep.modifiedCount(),
+                    enricherStep.input().size());
+            return new Scope(enricherStep.summary() == null ? context : context + " " + enricherStep.summary(),
+                    "Before", enricherStep.input(), "After", enricherStep.output(),
                     entry -> null, entry -> origins.getOrDefault(entry, entry), (before, after) -> {
                 String changes = EntryMapper.describeChanges(before, after);
                 String reason = enricher.describeChange(before, after);
+                if (reason == null) {
+                    reason = notes.get(after);
+                }
                 return reason == null ? changes : changes.isEmpty() ? reason : "%s (%s)".formatted(changes, reason);
-            });
+            }, notes::get);
         }
         String context = "All steps: the entries loaded from the inputs compared to the playlist."
                 + " Select a step of the pipeline to see its effect.";
@@ -303,13 +311,13 @@ public class DiffController extends VBox {
     private void foldUnchangedRows(List<Row> rows, List<Item> items) {
         int k = 0;
         while (k < rows.size()) {
-            if (!rows.get(k).isUnchanged()) {
+            if (!isFoldable(rows.get(k))) {
                 items.add(new RowItem(rows.get(k)));
                 k++;
                 continue;
             }
             int start = k;
-            while (k < rows.size() && rows.get(k).isUnchanged()) {
+            while (k < rows.size() && isFoldable(rows.get(k))) {
                 k++;
             }
             int head = start == 0 ? 0 : CONTEXT_ROWS;
@@ -327,6 +335,13 @@ public class DiffController extends VBox {
 
     private static boolean matches(Entry entry, String search) {
         return entry != null && entry.getName() != null && entry.getName().toLowerCase(Locale.ROOT).contains(search);
+    }
+
+    /**
+     * Unchanged rows are folded away, unless the scope has a note for their entry.
+     */
+    private boolean isFoldable(Row row) {
+        return row.isUnchanged() && (row.right() == null || scope.note().apply(row.right()) == null);
     }
 
     void expand(FoldItem fold) {
@@ -484,7 +499,9 @@ public class DiffController extends VBox {
                     noteText = "added or edited manually";
                 }
                 case UNCHANGED -> {
-                    // no marker
+                    if (!leftSide) {
+                        noteText = scope.note().apply(entry);
+                    }
                 }
             }
             gutter.setText(gutterText);
