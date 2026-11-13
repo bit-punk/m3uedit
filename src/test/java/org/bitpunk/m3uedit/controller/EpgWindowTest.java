@@ -145,4 +145,30 @@ class EpgWindowTest {
         assertThat(PartOfDay.of(LocalTime.of(19, 0))).isEqualTo(PartOfDay.EVENING);
         assertThat(PartOfDay.of(LocalTime.of(23, 0))).isEqualTo(PartOfDay.NIGHT);
     }
+
+    private static void click(javafx.scene.Node node, int clickCount) {
+        Event.fireEvent(node, new javafx.scene.input.MouseEvent(javafx.scene.input.MouseEvent.MOUSE_CLICKED, 1, 1, 1, 1,
+                javafx.scene.input.MouseButton.PRIMARY, clickCount, false, false, false, false, true, false, false,
+                true, false, true, null));
+    }
+
+    @Test
+    void testChannelsArePlayedByClickingTheirNameDoubleClickingAProgrammeOrPressingEnter() throws Exception {
+        List<String> played = onFxThread(window -> {
+            List<String> names = new java.util.ArrayList<>();
+            window.getGuide().setOnPlay(entry -> names.add(entry.getName()));
+            List<javafx.scene.Node> channels = List.copyOf(window.getGuide().lookupAll(".guide-channel"));
+            click(channels.get(1), 1);
+            javafx.scene.Node news = window.getGuide().blockOf(ARD_NEWS);
+            // a single click only selects
+            click(news, 1);
+            click(news, 2);
+            press(window, KeyCode.DOWN);
+            press(window, KeyCode.ENTER);
+            return names;
+        });
+
+        // the second channel is played as the first entry with its tvg-id
+        assertThat(played).containsExactly("ZDF", "ARD", "ZDF");
+    }
 }

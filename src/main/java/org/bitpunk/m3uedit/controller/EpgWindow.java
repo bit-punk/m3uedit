@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Programme;
 import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -142,6 +143,7 @@ public class EpgWindow extends Stage {
         this.clock = clock;
         this.zone = clock.getZone();
         this.guide = new ProgrammeGuideView(zone);
+        guide.setOnPlay(ListControllerUtil::playEntry);
         if (owner != null) {
             initOwner(owner);
         }
@@ -255,7 +257,7 @@ public class EpgWindow extends Stage {
         for (Entry entry : playlist) {
             String id = entry.getTvgId() == null ? null : entry.getTvgId().strip();
             if (id != null && !channels.containsKey(id)) {
-                channels.put(id, new ProgrammeGuideView.Channel(entry.getName(), entry.getTvgLogo()));
+                channels.put(id, new ProgrammeGuideView.Channel(entry.getName(), entry.getTvgLogo(), entry));
                 byChannel.put(id, new ArrayList<>());
             }
         }

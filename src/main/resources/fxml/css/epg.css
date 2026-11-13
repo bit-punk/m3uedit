@@ -74,6 +74,18 @@
     -fx-text-fill: -guide-text;
 }
 
+.guide-channel-playable {
+    -fx-cursor: hand;
+}
+
+.guide-channel-playable:hover {
+    -fx-background-color: #262a3a;
+}
+
+.guide-channel-playable:hover .guide-channel-name {
+    -fx-underline: true;
+}
+
 .guide-scroll,
 .guide-scroll > .viewport {
     -fx-background-color: -fx-background;

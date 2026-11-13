@@ -11,7 +11,9 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -20,7 +22,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import lombok.Getter;
+import lombok.Setter;
 import org.bitpunk.m3uedit.controller.GuideTimeline.Slot;
+import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Programme;
 
 import java.time.Instant;
@@ -31,11 +35,15 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * A programme guide like on a TV: a row per channel with its programmes as blocks along a time axis. The channel
  * column and the time axis stay in place while the programmes are scrolled. A vertical line marks the current time,
  * running programmes show their progress. The arrow keys move the selection between the programmes.
+ * <p>
+ * Clicking the name of a channel, double-clicking a programme or pressing enter plays the channel, see
+ * {@link #setOnPlay(Consumer)}.
  */
 public class ProgrammeGuideView extends VBox {
     static final double CHANNEL_WIDTH = 170;
@@ -51,10 +59,14 @@ public class ProgrammeGuideView extends VBox {
     /**
      * A channel of the guide.
      *
-     * @param name the name shown
-     * @param logo the url of its logo, null if none
+     * @param name  the name shown
+     * @param logo  the url of its logo, null if none
+     * @param entry the entry of the playlist played for this channel, null if none
      */
-    public record Channel(String name, String logo) {
+    public record Channel(String name, String logo, Entry entry) {
+        public Channel(String name, String logo) {
+            this(name, logo, null);
+        }
     }
 
     private final ZoneId zone;
@@ -71,6 +83,13 @@ public class ProgrammeGuideView extends VBox {
     private final Map<Programme, Block> blocks = new IdentityHashMap<>();
     @Getter
     private List<List<Slot>> rows = List.of();
+    @Getter
+    private List<Channel> channels = List.of();
+    /**
+     * Plays the entry of a channel, e.g. in the external player.
+     */
+    @Setter
+    private Consumer<Entry> onPlay = entry -> {};
     @Getter
     private GuideTimeline timeline;
     private Instant now = Instant.now();
@@ -122,7 +141,7 @@ public class ProgrammeGuideView extends VBox {
         scrollPane.setFocusTraversable(false);
         // the keys are used to move the selection, not to scroll
         scrollPane.addEventFilter(KeyEvent.ANY, event -> {
-            if (event.getCode().isArrowKey() || event.getCode().isNavigationKey()) {
+            if (event.getCode().isArrowKey() || event.getCode().isNavigationKey() || event.getCode() == KeyCode.ENTER) {
                 if (event.getEventType() == KeyEvent.KEY_PRESSED) {
                     handleKey(event);
                 }
@@ -198,6 +217,7 @@ public class ProgrammeGuideView extends VBox {
      */
     public void setChannels(List<Channel> channels, List<List<Programme>> programmes, Instant now) {
         this.now = now;
+        this.channels = List.copyOf(channels);
         blocks.clear();
         List<List<Slot>> slotRows = new ArrayList<>();
         programmes.forEach(row -> slotRows.add(GuideTimeline.slots(row)));
@@ -246,6 +266,15 @@ public class ProgrammeGuideView extends VBox {
         name.getStyleClass().add("guide-channel-name");
         name.setMinWidth(0);
         cell.getChildren().add(name);
+        if (channel.entry() != null) {
+            cell.getStyleClass().add("guide-channel-playable");
+            Tooltip.install(cell, new Tooltip("Play %s in the external player".formatted(channel.name())));
+            cell.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY) {
+                    onPlay.accept(channel.entry());
+                }
+            });
+        }
         return cell;
     }
 
@@ -263,6 +292,9 @@ public class ProgrammeGuideView extends VBox {
         block.setOnMouseClicked(event -> {
             selectedProgramme.set(programme);
             requestFocus();
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                play(row);
+            }
         });
         return block;
     }
@@ -349,9 +381,33 @@ public class ProgrammeGuideView extends VBox {
         }
     }
 
+    /**
+     * @return the node showing the given programme, null if it is not shown
+     */
+    Node blockOf(Programme programme) {
+        return blocks.get(programme);
+    }
+
+    /**
+     * Plays the channel of the given row.
+     */
+    private void play(int row) {
+        Entry entry = row >= 0 && row < channels.size() ? channels.get(row).entry() : null;
+        if (entry != null) {
+            onPlay.accept(entry);
+        }
+    }
+
     private void handleKey(KeyEvent event) {
         Programme selected = selectedProgramme.get();
         Block block = selected == null ? null : blocks.get(selected);
+        if (event.getCode() == KeyCode.ENTER) {
+            if (block != null) {
+                play(block.row);
+            }
+            event.consume();
+            return;
+        }
         if (block == null) {
             selectAt(now);
             event.consume();
