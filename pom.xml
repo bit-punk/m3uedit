@@ -29,7 +29,7 @@
         <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
         <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
         <jpackage-maven-plugin.version>1.8.0</jpackage-maven-plugin.version>
-        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+        <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
         <!-- jpackage requires a purely numeric version -->
         <jpackage.app.version>1.0</jpackage.app.version>
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
