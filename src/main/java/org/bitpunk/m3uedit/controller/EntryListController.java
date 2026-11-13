@@ -30,6 +30,9 @@ public class EntryListController extends AbstractController  implements Initiali
     private TableColumn<Entry, String> channelNameColumn;
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
+    private TableColumn<Entry, String> tvgIdColumn;
+    @FXML
+    @SuppressWarnings({"UnusedDeclaration"})
     private TableColumn<Entry, String> channelUriColumn;
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
@@ -70,6 +73,8 @@ public class EntryListController extends AbstractController  implements Initiali
         ListControllerUtil.addPlayColumn(entryTableView);
 
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        // e.g. set by the EPG enricher, players match the channels of the programme guide by it
+        tvgIdColumn.setCellValueFactory(new PropertyValueFactory<>("tvgId"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
         entryTableView.setOnKeyPressed(this::deleteKeyListenerTableView);
     }
