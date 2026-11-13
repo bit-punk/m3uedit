@@ -39,6 +39,8 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
     @Getter
     private final TextArea sourcesTextArea = new TextArea();
     @Getter
+    private Button defaultSourcesButton;
+    @Getter
     private final TextArea urlRulesTextArea = new TextArea();
     @Getter
     private final Map<MatchStrategy, CheckBox> strategyCheckBoxes = new EnumMap<>(MatchStrategy.class);
@@ -106,7 +108,13 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         grid.setVgap(6);
         grid.setPadding(new Insets(4));
         int row = 0;
-        grid.add(new Label("Sources:"), 0, row);
+        defaultSourcesButton = new Button("Default sources");
+        defaultSourcesButton.setTooltip(new javafx.scene.control.Tooltip(
+                "The free programme guides of epgshare01 for Germany, Austria and Switzerland"));
+        defaultSourcesButton.setOnAction(event -> sourcesTextArea.setText(String.join("\n", EpgEnricher.DEFAULT_SOURCES)));
+        javafx.scene.layout.VBox sourcesLabel = new javafx.scene.layout.VBox(6, new Label("Sources:"), defaultSourcesButton);
+        sourcesLabel.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        grid.add(sourcesLabel, 0, row);
         grid.add(sourcesTextArea, 1, row++);
         grid.add(hint("One URL per line (.xml or .xml.gz), the first source wins if several contain a channel."), 1, row++);
         grid.add(new Label("Match by:"), 0, row);

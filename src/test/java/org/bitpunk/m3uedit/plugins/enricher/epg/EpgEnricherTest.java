@@ -239,4 +239,18 @@ class EpgEnricherTest {
             assertThat(programme.description()).isEqualTo("Nachrichten & Wetter");
         });
     }
+
+    @Test
+    void testNewEnricherHasTheDefaultSources() {
+        EpgEnricher enricher = new EpgEnricher();
+
+        assertThat(enricher.getSources()).containsExactly(
+                "https://epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz",
+                "https://epgshare01.online/epgshare01/epg_ripper_AT1.xml.gz",
+                "https://epgshare01.online/epgshare01/epg_ripper_CH1.xml.gz");
+        assertThat(enricher.getEnabled().get()).as("nothing is downloaded until enabled").isFalse();
+        // the defaults are copied, changing the sources of one enricher does not change them
+        enricher.getSources().clear();
+        assertThat(new EpgEnricher().getSources()).hasSize(3);
+    }
 }

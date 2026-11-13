@@ -615,4 +615,18 @@ class ProjectPersisterUtilTest {
         assertThat(ManualChange.applyAll(List.of(a, b), loaded.getManualChanges()))
                 .extracting(Entry::getName).containsExactly("b", "added");
     }
+
+    @Test
+    void testEpgEnricherWithoutSourcesInTheProjectFileGetsTheDefaults(@TempDir Path tempDir) throws Exception {
+        Path withoutSources = tempDir.resolve("without.m3uproj");
+        Files.writeString(withoutSources, "name: old\nenrichers:\n- type: EpgEnricher\n  cacheHours: 6\n");
+        Path emptySources = tempDir.resolve("empty.m3uproj");
+        Files.writeString(emptySources, "name: empty\nenrichers:\n- type: EpgEnricher\n  sources: []\n");
+
+        assertThat(((org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher) ProjectPersisterUtil.loadProject(withoutSources)
+                .getEnrichers().getFirst()).getSources())
+                .containsExactlyElementsOf(org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher.DEFAULT_SOURCES);
+        assertThat(((org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher) ProjectPersisterUtil.loadProject(emptySources)
+                .getEnrichers().getFirst()).getSources()).as("cleared by the user").isEmpty();
+    }
 }

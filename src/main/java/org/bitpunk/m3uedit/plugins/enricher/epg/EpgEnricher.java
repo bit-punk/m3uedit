@@ -48,6 +48,13 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
     static final int DEFAULT_GUIDE_DAYS_AHEAD = 7;
     static final int DEFAULT_GUIDE_HOURS_PAST = 6;
     static final String GUIDE_NAME = "EPG guide";
+    /**
+     * The sources of a new enricher: the free programme guides of epgshare01 for Germany, Austria and Switzerland.
+     */
+    public static final List<String> DEFAULT_SOURCES = List.of(
+            "https://epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz",
+            "https://epgshare01.online/epgshare01/epg_ripper_AT1.xml.gz",
+            "https://epgshare01.online/epgshare01/epg_ripper_CH1.xml.gz");
     static final String NO_EPG_DATA = "no EPG data";
 
     /**
@@ -73,9 +80,10 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
     private final String description = "Sets the tvg-id of the entries to the channels of EPG sources (XMLTV)";
 
     /**
-     * The urls of the XMLTV files, in the order of their priority.
+     * The urls of the XMLTV files, in the order of their priority. Project files without sources (e.g. written before
+     * the enricher existed) get the default sources; an empty list saved by the user stays empty.
      */
-    private List<String> sources = new ArrayList<>();
+    private List<String> sources = new ArrayList<>(DEFAULT_SOURCES);
     /**
      * The strategies applied, always in the order of {@link MatchStrategy}.
      */

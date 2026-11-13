@@ -70,4 +70,17 @@ class EpgEnricherConfigDialogTest {
         assertThat(result.get(1).toString()).contains("Not a valid source URL: guide.xml")
                 .contains("Select at least one way").doesNotContain("Invalid expression");
     }
+
+    @Test
+    void testDefaultSourcesCanBeRestored() throws Exception {
+        EpgEnricher enricher = new EpgEnricher();
+        enricher.setSources(List.of("https://epg.example.org/de.xml.gz"));
+
+        EpgEnricherConfigDialog.Config config = onFxThread(dialog -> {
+            dialog.getDefaultSourcesButton().fire();
+            return dialog.toConfig();
+        }, enricher);
+
+        assertThat(config.sources()).containsExactlyElementsOf(EpgEnricher.DEFAULT_SOURCES);
+    }
 }
