@@ -6,7 +6,10 @@
     -fx-accent: #3d7be0;
     -fx-focus-color: #5b93ef;
     -fx-faint-focus-color: transparent;
-    -guide-programme: #1e2a78;
+    -guide-programme: #22308a;
+    -guide-programme-odd: #1c2770;
+    -guide-programme-past: #1c2142;
+    -guide-programme-past-odd: #181c38;
     -guide-programme-border: #2c3a95;
     -guide-programme-running: #24339a;
     -guide-programme-selected: #3b73d1;
@@ -78,6 +81,10 @@
     -fx-cursor: hand;
 }
 
+.guide-channel:odd {
+    -fx-background-color: #101114;
+}
+
 .guide-channel-playable:hover {
     -fx-background-color: #262a3a;
 }
@@ -100,11 +107,11 @@
 }
 
 .guide-row {
-    -fx-background-color: #1b1c21;
+    -fx-background-color: #202128;
 }
 
-.guide-row-odd {
-    -fx-background-color: #1e1f25;
+.guide-row:odd {
+    -fx-background-color: #17181c;
 }
 
 .guide-programme {
@@ -115,15 +122,34 @@
     -fx-cursor: hand;
 }
 
+.guide-programme:odd {
+    -fx-background-color: -guide-programme-odd;
+}
+
+.guide-programme:past {
+    -fx-background-color: -guide-programme-past;
+    -fx-border-color: #262c55;
+}
+
+.guide-programme:past:odd {
+    -fx-background-color: -guide-programme-past-odd;
+}
+
+.guide-programme:past .guide-programme-title {
+    -fx-text-fill: -guide-muted;
+}
+
 .guide-programme:running {
     -fx-background-color: -guide-programme-running;
 }
 
-.guide-programme:hover {
+.guide-programme:hover,
+.guide-programme:past:hover {
     -fx-background-color: derive(-guide-programme-running, 15%);
 }
 
-.guide-programme:selected {
+.guide-programme:selected,
+.guide-programme:past:selected {
     -fx-background-color: -guide-programme-selected;
     -fx-border-color: white;
     -fx-border-width: 0 0 2 0;

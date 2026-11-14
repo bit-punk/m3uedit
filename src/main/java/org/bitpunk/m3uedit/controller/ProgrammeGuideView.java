@@ -53,6 +53,8 @@ public class ProgrammeGuideView extends VBox {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass RUNNING = PseudoClass.getPseudoClass("running");
     private static final PseudoClass DIMMED = PseudoClass.getPseudoClass("dimmed");
+    private static final PseudoClass PAST = PseudoClass.getPseudoClass("past");
+    private static final PseudoClass ODD = PseudoClass.getPseudoClass("odd");
     private static final DateTimeFormatter TICK = DateTimeFormatter.ofPattern("H:mm");
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("EEE dd.MM.");
 
@@ -114,6 +116,7 @@ public class ProgrammeGuideView extends VBox {
             getChildren().addAll(label, progress);
             setAlignment(Pos.CENTER_LEFT);
             setMinWidth(0);
+            pseudoClassStateChanged(ODD, row % 2 != 0);
         }
     }
 
@@ -242,9 +245,12 @@ public class ProgrammeGuideView extends VBox {
         channelColumn.getChildren().clear();
         grid.getChildren().clear();
         for (int i = 0; i < channels.size(); i++) {
-            channelColumn.getChildren().add(channelCell(channels.get(i)));
+            Node cell = channelCell(channels.get(i));
+            cell.pseudoClassStateChanged(ODD, i % 2 != 0);
+            channelColumn.getChildren().add(cell);
             Region background = new Region();
-            background.getStyleClass().add(i % 2 == 0 ? "guide-row" : "guide-row-odd");
+            background.getStyleClass().add("guide-row");
+            background.pseudoClassStateChanged(ODD, i % 2 != 0);
             background.resizeRelocate(0, i * ROW_HEIGHT, timeline.width(), ROW_HEIGHT);
             background.setManaged(false);
             grid.getChildren().add(background);
@@ -329,7 +335,7 @@ public class ProgrammeGuideView extends VBox {
     }
 
     /**
-     * Moves the line of the current time and updates the progress of the running programmes.
+     * Moves the line of the current time, updates the progress of the running programmes and darkens the past ones.
      */
     public void setNow(Instant now) {
         this.now = now;
@@ -345,6 +351,7 @@ public class ProgrammeGuideView extends VBox {
         for (Block block : blocks.values()) {
             boolean running = block.slot.isRunningAt(now);
             block.pseudoClassStateChanged(RUNNING, running);
+            block.pseudoClassStateChanged(PAST, !block.slot.end().isAfter(now));
             double fraction = running ? (double) java.time.Duration.between(block.slot.start(), now).toSeconds()
                     / java.time.Duration.between(block.slot.start(), block.slot.end()).toSeconds() : 0;
             block.progress.setVisible(running);
