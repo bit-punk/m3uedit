@@ -1,0 +1,2 @@
+# enrichers provided by m3uedit, one class name per line
+org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher

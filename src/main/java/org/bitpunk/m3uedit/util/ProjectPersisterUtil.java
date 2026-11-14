@@ -115,7 +115,8 @@ public class ProjectPersisterUtil {
                         InputPluginService.getInstance(),
                         OutputPluginService.getInstance(),
                         FilterPluginService.getInstance(),
-                        SorterPluginService.getInstance())
+                        SorterPluginService.getInstance(),
+                        EnricherPluginService.getInstance())
                 .flatMap(pluginService -> pluginService.getAllPluginTypes().stream())
                 .map(pluginType -> new NamedType(pluginType, pluginType.getSimpleName()))
                 .toArray(NamedType[]::new);

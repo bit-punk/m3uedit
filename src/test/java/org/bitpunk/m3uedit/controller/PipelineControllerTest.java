@@ -5,6 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import org.bitpunk.m3uedit.controller.TestPlugins.NameSorter;
+import org.bitpunk.m3uedit.controller.TestPlugins.TestEnricher;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestFilter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestInput;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -60,6 +61,62 @@ class PipelineControllerTest {
             parent.getChildrenUnmodifiable().forEach(child -> texts.addAll(texts(child)));
         }
         return texts;
+    }
+
+    @Test
+    void enricherStageIsOnlyShownIfThereAreEnrichers() {
+        assertThat(pipeline.getEnricherStage().isVisible()).isFalse();
+        assertThat(pipeline.getEnricherStage().isManaged()).isFalse();
+
+        dataModel.getEnrichers().add(new TestEnricher());
+
+        assertThat(pipeline.getEnricherStage().isVisible()).isTrue();
+    }
+
+    @Test
+    void enricherBadgeShowsTheNumberOfChangedEntries() {
+        TestEnricher enricher = new TestEnricher();
+        dataModel.getEnrichers().add(enricher);
+        PipelineController controller = new PipelineController();
+        controller.initModel(dataModel);
+
+        enricher.getEnabled().set(true);
+
+        assertThat(texts(controller.getEnricherStage().rowOf(enricher).orElseThrow())).contains("✎ 4");
+        assertThat(dataModel.getSortedEntryList()).extracting(Entry::getTvgId).contains("ZDF HD", "ARTE");
+    }
+
+    @Test
+    void epgRowShowsTheUrlsWrittenToThePlaylist() {
+        assertThat(pipeline.getEpgLabel().getText()).isEqualTo("none");
+
+        dataModel.getEpgUrls().setAll("http://epg/a.xml", "http://epg/b.xml");
+
+        assertThat(pipeline.getEpgLabel().getText()).isEqualTo("http://epg/a.xml, http://epg/b.xml");
+    }
+
+    @Test
+    void editingTheEpgUrlsUpdatesTheProject() {
+        List<List<String>> shown = new ArrayList<>();
+        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> {
+            shown.add(epgUrls);
+            return java.util.Optional.of(List.of("http://epg/new.xml"));
+        });
+
+        pipeline.getEpgButton().fire();
+
+        assertThat(shown).containsExactly(List.of());
+        assertThat(dataModel.getEpgUrls()).containsExactly("http://epg/new.xml");
+    }
+
+    @Test
+    void cancellingTheEpgDialogKeepsTheUrls() {
+        dataModel.getEpgUrls().setAll("http://epg/a.xml");
+        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> java.util.Optional.empty());
+
+        pipeline.getEpgButton().fire();
+
+        assertThat(dataModel.getEpgUrls()).containsExactly("http://epg/a.xml");
     }
 
     @Test

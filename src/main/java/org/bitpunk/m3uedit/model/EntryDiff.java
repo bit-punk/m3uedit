@@ -7,11 +7,13 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * A side-by-side diff of two entry-lists, e.g. the entries before and after a filter.
  * <p>
- * Entries are compared by identity. The entries kept in their relative order form the longest common subsequence
+ * Entries are compared by identity. An entry of the right list may be a changed copy of an entry of the left list
+ * (e.g. enriched): then it is matched with its origin, and shown as {@link Kind#MODIFIED} if it stays in place. The entries kept in their relative order form the longest common subsequence
  * of both lists; as each entry occurs at most once, it is computed as longest increasing subsequence in
  * O(n log n), so the diff stays fast for large playlists.
  * <p>
@@ -29,7 +31,9 @@ public final class EntryDiff {
         /** in both lists, but at another position relative to the unchanged entries */
         MOVED,
         /** only in the right list */
-        ADDED
+        ADDED,
+        /** in both lists, in the same relative order, but changed (a copy of the entry on the left side) */
+        MODIFIED
     }
 
     /**
@@ -39,6 +43,13 @@ public final class EntryDiff {
         public boolean isUnchanged() {
             return leftKind == Kind.UNCHANGED;
         }
+
+        /**
+         * @return true if the entry has been kept in its relative order, changed or not
+         */
+        public boolean isAnchor() {
+            return leftKind == Kind.UNCHANGED || leftKind == Kind.MODIFIED;
+        }
     }
 
     private final List<Row> rows;
@@ -46,6 +57,7 @@ public final class EntryDiff {
     private final int movedCount;
     private final int addedCount;
     private final int unchangedCount;
+    private final int modifiedCount;
 
     private EntryDiff(List<Row> rows) {
         this.rows = Collections.unmodifiableList(rows);
@@ -53,7 +65,11 @@ public final class EntryDiff {
         int moved = 0;
         int added = 0;
         int unchanged = 0;
+        int modified = 0;
         for (Row row : rows) {
+            if (row.leftKind() == Kind.MODIFIED) {
+                modified++;
+            }
             if (row.leftKind() == Kind.REMOVED) {
                 removed++;
             } else if (row.leftKind() == Kind.MOVED) {
@@ -69,9 +85,18 @@ public final class EntryDiff {
         this.movedCount = moved;
         this.addedCount = added;
         this.unchangedCount = unchanged;
+        this.modifiedCount = modified;
     }
 
     public static EntryDiff compute(List<Entry> left, List<Entry> right) {
+        return compute(left, right, Function.identity());
+    }
+
+    /**
+     * @param origin returns the entry an entry of the right list has been derived from (e.g. by an enricher),
+     *               the entry itself if it has not been changed
+     */
+    public static EntryDiff compute(List<Entry> left, List<Entry> right, Function<Entry, Entry> origin) {
         // position of each entry in the left list, an entry occurring twice is matched once only
         Map<Entry, Integer> leftIndex = new IdentityHashMap<>();
         for (int i = 0; i < left.size(); i++) {
@@ -80,7 +105,8 @@ public final class EntryDiff {
         int[] matchOfRight = new int[right.size()];     // index in the left list, -1 if not contained
         boolean[] leftMatched = new boolean[left.size()];
         for (int j = 0; j < right.size(); j++) {
-            Integer i = leftIndex.get(right.get(j));
+            Entry rightOrigin = origin.apply(right.get(j));
+            Integer i = leftIndex.get(rightOrigin != null ? rightOrigin : right.get(j));
             if (i != null && !leftMatched[i]) {
                 leftMatched[i] = true;
                 matchOfRight[j] = i;
@@ -121,8 +147,8 @@ public final class EntryDiff {
                         rightEntry, rightEntry == null ? 0 : r + 1, rightKind));
             }
             if (nextLeft < left.size() && nextRight < right.size()) {
-                rows.add(new Row(left.get(nextLeft), nextLeft + 1, Kind.UNCHANGED,
-                        right.get(nextRight), nextRight + 1, Kind.UNCHANGED));
+                Kind kind = left.get(nextLeft) == right.get(nextRight) ? Kind.UNCHANGED : Kind.MODIFIED;
+                rows.add(new Row(left.get(nextLeft), nextLeft + 1, kind, right.get(nextRight), nextRight + 1, kind));
             }
             i = nextLeft + 1;
             j = nextRight + 1;

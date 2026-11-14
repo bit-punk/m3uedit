@@ -107,4 +107,32 @@ class EntryListControllerTest {
             assertThat(items(controller).get(2)).isSameAs(other);
         });
     }
+
+    @Test
+    void testTvgIdIsShownNextToTheName() throws Exception {
+        Entry zdf = entry("ZDF HD");
+        zdf.setTvgId("ZDF.de");
+        Entry plain = entry("Plain");
+        EntryListController controller = controllerWith(zdf, plain);
+
+        runOnFxThread(() -> {
+            List<String> titles = controller.entryTableView().getColumns().stream()
+                    .map(javafx.scene.control.TableColumn::getText).toList();
+            assertThat(titles).containsSubsequence("Channel Name", "tvg-id", "Channel URI");
+            javafx.scene.control.TableColumn<Entry, ?> tvgIdColumn = controller.entryTableView().getColumns().stream()
+                    .filter(column -> "tvg-id".equals(column.getText())).findFirst().orElseThrow();
+            assertThat(tvgIdColumn.getCellData(zdf)).isEqualTo("ZDF.de");
+            assertThat(tvgIdColumn.getCellData(plain)).isNull();
+        });
+    }
+
+    @Test
+    void testEpgButtonIsEnabledWithAnEnabledEpgEnricher() throws Exception {
+        EntryListController controller = controllerWith(entry("ZDF"));
+
+        runOnFxThread(() -> {
+            assertThat(controller.epgButton().isDisable()).isTrue();
+            assertThat(controller.programmeGuideProviders()).isEmpty();
+        });
+    }
 }

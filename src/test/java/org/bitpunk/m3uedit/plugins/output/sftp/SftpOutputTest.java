@@ -4,8 +4,11 @@ import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.junit.jupiter.api.Test;
 
+import org.bitpunk.m3uedit.model.Entry;
+
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +47,7 @@ class SftpOutputTest {
     @Test
     void testWriteNullOrEmptyPlaylistDoesNotThrow() {
         SftpOutput sftpOutput = new SftpOutput();
-        sftpOutput.write(null);
+        sftpOutput.write((List<Entry>) null);
         sftpOutput.write(Collections.emptyList());
     }
 
@@ -157,5 +160,19 @@ class SftpOutputTest {
             lastTarget = target;
             return decision;
         }
+    }
+
+    @Test
+    void testPlayerUrlOfAdditionalFiles() {
+        SftpOutput sftpOutput = new SftpOutput();
+        SftpConnection connection = new SftpConnection();
+        sftpOutput.setSftpConnection(connection);
+
+        assertThat(sftpOutput.playerUrlOf("tv.xml.gz")).as("no base url configured").isNull();
+        connection.setPlayerBaseUrl("http://nas.local/iptv");
+        assertThat(sftpOutput.playerUrlOf("tv.xml.gz")).isEqualTo("http://nas.local/iptv/tv.xml.gz");
+        connection.setPlayerBaseUrl(" http://nas.local/iptv/ ");
+        assertThat(sftpOutput.playerUrlOf("tv.xml.gz")).isEqualTo("http://nas.local/iptv/tv.xml.gz");
+        assertThat(sftpOutput.playerUrlOf(null)).as("file not written").isNull();
     }
 }

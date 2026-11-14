@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.parser;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.model.EntryList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -93,6 +94,23 @@ class ParserTest {
         assertThat(stream).isNotNull();
         stream.close();
         assertThatExceptionOfType(ParsingException.class).isThrownBy(() -> new Parser().parse(stream));
+    }
+
+    @Test
+    void testEpgUrlsAreReadFromTheHeader() {
+        EntryList entries = new Parser().parse(new ByteArrayInputStream((
+                "#EXTM3U x-tvg-url=\"http://epg/a.xml.gz, http://epg/b.xml\" url-tvg=\"http://epg/a.xml.gz\" tvg-shift=\"1\"\n"
+                        + "#EXTINF:-1 tvg-id=\"ZDF.de\",ZDF\nhttp://example.com/zdf\n").getBytes(StandardCharsets.UTF_8)));
+
+        assertThat(entries.getEpgUrls()).containsExactly("http://epg/a.xml.gz", "http://epg/b.xml");
+        assertThat(entries).singleElement().satisfies(entry -> assertThat(entry.getTvgShift()).isEqualTo("1"));
+    }
+
+    @Test
+    void testHeaderWithoutEpgUrls() {
+        assertThat(Parser.extractEpgUrls("#EXTM3U")).isEmpty();
+        assertThat(Parser.extractEpgUrls("#EXTM3U url-tvg=\"\"")).isEmpty();
+        assertThat(Parser.extractEpgUrls("#EXTM3U URL-TVG=\"http://epg/a.xml\"")).containsExactly("http://epg/a.xml");
     }
 
     private static List<Entry> parseString(String content) {

@@ -1,0 +1,200 @@
+/* programme guide window: a dark TV-like look */
+.guide-window {
+    -fx-base: #2a2c33;
+    -fx-background: #1b1c21;
+    -fx-control-inner-background: #24262d;
+    -fx-accent: #3d7be0;
+    -fx-focus-color: #5b93ef;
+    -fx-faint-focus-color: transparent;
+    -guide-programme: #22308a;
+    -guide-programme-odd: #1c2770;
+    -guide-programme-past: #1c2142;
+    -guide-programme-past-odd: #181c38;
+    -guide-programme-border: #2c3a95;
+    -guide-programme-running: #24339a;
+    -guide-programme-selected: #3b73d1;
+    -guide-progress: #59a8f5;
+    -guide-text: #e8eaf2;
+    -guide-muted: #9aa0b4;
+    -fx-background-color: -fx-background;
+}
+
+.guide-toolbar {
+    -fx-background-color: -fx-background;
+}
+
+.guide-toolbar .text-field {
+    -fx-prompt-text-fill: -guide-muted;
+    -fx-pref-width: 260;
+}
+
+.guide-toolbar .combo-box {
+    -fx-pref-width: 150;
+}
+
+.guide {
+    -fx-background-color: -fx-background;
+}
+
+.guide:focused {
+    -fx-border-color: transparent;
+}
+
+.guide-corner {
+    -fx-text-fill: -guide-text;
+    -fx-padding: 0 0 0 10;
+}
+
+.guide-tick {
+    -fx-text-fill: -guide-text;
+    -fx-padding: 0 0 0 4;
+}
+
+.guide-tick-day {
+    -fx-text-fill: -guide-text;
+    -fx-font-weight: bold;
+}
+
+.guide-time-header {
+    -fx-background-color: -fx-background;
+}
+
+.guide-now-marker,
+.guide-now-line {
+    -fx-background-color: rgba(255, 255, 255, 0.85);
+}
+
+.guide-channels {
+    -fx-background-color: #15161a;
+}
+
+.guide-channel {
+    -fx-padding: 0 8 0 10;
+    -fx-border-color: transparent transparent #24262d transparent;
+}
+
+.guide-channel-name {
+    -fx-text-fill: -guide-text;
+}
+
+.guide-channel-playable {
+    -fx-cursor: hand;
+}
+
+.guide-channel:odd {
+    -fx-background-color: #101114;
+}
+
+.guide-channel-playable:hover {
+    -fx-background-color: #262a3a;
+}
+
+.guide-channel-playable:hover .guide-channel-name {
+    -fx-underline: true;
+}
+
+.guide-scroll,
+.guide-scroll:focused,
+.guide-scroll > .viewport {
+    -fx-background-color: -fx-background;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+}
+
+.guide-grid {
+    -fx-background-color: -fx-background;
+}
+
+.guide-row {
+    -fx-background-color: #202128;
+}
+
+.guide-row:odd {
+    -fx-background-color: #17181c;
+}
+
+.guide-programme {
+    -fx-background-color: -guide-programme;
+    -fx-border-color: -guide-programme-border;
+    -fx-border-width: 0 0 0 1;
+    -fx-padding: 0 6 0 6;
+    -fx-cursor: hand;
+}
+
+.guide-programme:odd {
+    -fx-background-color: -guide-programme-odd;
+}
+
+.guide-programme:past {
+    -fx-background-color: -guide-programme-past;
+    -fx-border-color: #262c55;
+}
+
+.guide-programme:past:odd {
+    -fx-background-color: -guide-programme-past-odd;
+}
+
+.guide-programme:past .guide-programme-title {
+    -fx-text-fill: -guide-muted;
+}
+
+.guide-programme:running {
+    -fx-background-color: -guide-programme-running;
+}
+
+.guide-programme:hover,
+.guide-programme:past:hover {
+    -fx-background-color: derive(-guide-programme-running, 15%);
+}
+
+.guide-programme:selected,
+.guide-programme:past:selected {
+    -fx-background-color: -guide-programme-selected;
+    -fx-border-color: white;
+    -fx-border-width: 0 0 2 0;
+}
+
+.guide-programme:dimmed {
+    -fx-opacity: 0.3;
+}
+
+.guide-programme-title {
+    -fx-text-fill: -guide-text;
+    -fx-text-overrun: ellipsis;
+}
+
+.guide-progress {
+    -fx-background-color: -guide-progress;
+}
+
+.guide-loading {
+    -fx-text-fill: -guide-muted;
+    -fx-font-size: 1.2em;
+}
+
+.guide-details {
+    -fx-background-color: #23252c;
+}
+
+.guide-image {
+    -fx-background-color: #15161a;
+}
+
+.guide-details-title {
+    -fx-text-fill: -guide-text;
+    -fx-font-size: 1.5em;
+    -fx-font-weight: bold;
+}
+
+.guide-details-time {
+    -fx-text-fill: -guide-muted;
+}
+
+.guide-details-description {
+    -fx-text-fill: -guide-text;
+}
+
+.guide-status {
+    -fx-text-fill: -guide-muted;
+}

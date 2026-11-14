@@ -16,6 +16,12 @@ M3UEditor is a small editor written in Java based on JavaFX for managing m3u-pla
   an entry (e.g. `"ZDF HD" exists` or `same URL as "Das Erste HD"`)
 * edit, add, remove and reorder single entries of the playlist and play them in an external player (vlc by default)
 * save the resulting playlist to a local file or an SFTP server
+* add a programme guide (EPG) with the EPG Enricher: it assigns the entries to the channels of XMLTV sources (e.g.
+  [epgshare01](https://epgshare01.online)) by setting their `tvg-id` - matched by `tvg-id`, URL rules (regular
+  expressions on the stream URL), name or the first words of the name - and writes a guide containing only the
+  channels of the playlist next to it (`tv.m3u` &rarr; `tv.xml.gz`), referenced by the playlist header; sources are
+  cached in `~/.m3uedit/cache/epg`. Without enricher, the EPG URLs of the inputs (`x-tvg-url` / `url-tvg`) are kept,
+  or replaced by the URLs set for the project
 * save your inputs, filters, sorters and outputs as project (`*.m3uproj`) to re-create the playlist later on
 
 ## Prerequisites

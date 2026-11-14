@@ -68,7 +68,10 @@ public class ListControllerUtil {
         tableView.getColumns().add(1, playColumn);
     }
 
-    private static void playEntry(Entry entry) {
+    /**
+     * Opens the entry's stream in the external player; an error is shown to the user.
+     */
+    public static void playEntry(Entry entry) {
         try {
             EXTERNAL_PLAYER.play(entry);
         } catch (IOException | IllegalArgumentException e) {

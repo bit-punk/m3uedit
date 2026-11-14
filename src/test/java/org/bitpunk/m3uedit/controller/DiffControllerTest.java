@@ -145,4 +145,60 @@ class DiffControllerTest {
 
         assertThat(diffController.getContextLabel().getText()).isEqualTo("in delivers 20 entries, 16 of them are in the playlist.");
     }
+
+    @Test
+    void anEnricherShowsTheChangedEntriesWithTheirChanges() {
+        TestPlugins.TestEnricher enricher = new TestPlugins.TestEnricher();
+        dataModel.getEnrichers().add(enricher);
+        enricher.getEnabled().set(true);
+        dataModel.enrichSortedEntries();
+
+        selection.set(enricher);
+
+        assertThat(diffController.getContextLabel().getText()).isEqualTo("Test Enricher changes 16 of 16 entries.");
+        assertThat(diffController.getDiff().getModifiedCount()).isEqualTo(16);
+        assertThat(diffController.getStatsLabel().getText()).contains("✎ 16 changed");
+        RowItem first = rows().getFirst();
+        assertThat(first.row().rightKind()).isEqualTo(Kind.MODIFIED);
+        assertThat(first.row().right().getTvgId()).isEqualTo("CHANNEL A");
+    }
+
+    @Test
+    void enrichedEntriesAreModifiedInTheWholePipeline() {
+        TestPlugins.TestEnricher enricher = new TestPlugins.TestEnricher();
+        dataModel.getEnrichers().add(enricher);
+        enricher.getEnabled().set(true);
+        dataModel.enrichSortedEntries();
+
+        assertThat(diffController.getDiff().getRemovedCount()).isEqualTo(4);
+        assertThat(diffController.getDiff().getModifiedCount()).isEqualTo(16);
+        assertThat(diffController.getDiff().getAddedCount()).isZero();
+
+        selection.set(input);
+        assertThat(diffController.getContextLabel().getText()).isEqualTo("in delivers 20 entries, 16 of them are in the playlist.");
+    }
+
+    @Test
+    void entriesWithANoteOfTheEnricherAreNotFolded() {
+        org.bitpunk.m3uedit.plugins.enricher.Enricher enricher = new TestPlugins.TestEnricher() {
+            @Override
+            public org.bitpunk.m3uedit.plugins.enricher.Enrichment enrich(List<Entry> entries) {
+                java.util.Map<Entry, String> notes = new java.util.IdentityHashMap<>();
+                notes.put(entries.get(7), "no EPG data");
+                return new org.bitpunk.m3uedit.plugins.enricher.Enrichment(entries, List.of(), notes,
+                        "15 of 16 entries have EPG data.", null, null);
+            }
+        };
+        dataModel.getEnrichers().add(enricher);
+        enricher.getEnabled().set(true);
+        dataModel.enrichSortedEntries();
+
+        selection.set(enricher);
+
+        assertThat(diffController.getContextLabel().getText())
+                .isEqualTo("Test Enricher changes 0 of 16 entries. 15 of 16 entries have EPG data.");
+        assertThat(rows()).extracting(row -> row.row().right().getName())
+                .containsExactly("channel g", "channel h", "channel i", "channel k", "channel l");
+        assertThat(items()).anyMatch(FoldItem.class::isInstance);
+    }
 }

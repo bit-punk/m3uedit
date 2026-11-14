@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.model;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.plugins.EnricherPluginService;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.Plugin;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
@@ -23,17 +24,19 @@ public class DataModelFactory {
         DataModel dataModel = new DataModel(name);
         dataModel.setFilters(FXCollections.observableArrayList(FilterPluginService.getInstance().getAllPlugins()));
         dataModel.setSorters(FXCollections.observableArrayList(SorterPluginService.getInstance().getAllPlugins()));
+        dataModel.setEnrichers(FXCollections.observableArrayList(EnricherPluginService.getInstance().getAllPlugins()));
         return dataModel;
     }
 
     /**
-     * Makes sure a project contains each available filter and sorter exactly once: plugins added to the application
+     * Makes sure a project contains each available filter, sorter and enricher exactly once: plugins added to the application
      * after the project has been saved are appended (disabled), duplicates of a plugin-type are dropped.
      * The order of the plugins already contained in the project is kept.
      */
     public static void completePlugins(DataModel dataModel) {
         completePlugins(dataModel.getFilters(), FilterPluginService.getInstance().getAllPlugins());
         completePlugins(dataModel.getSorters(), SorterPluginService.getInstance().getAllPlugins());
+        completePlugins(dataModel.getEnrichers(), EnricherPluginService.getInstance().getAllPlugins());
     }
 
     // package-private for tests
