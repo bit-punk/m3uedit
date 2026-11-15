@@ -122,12 +122,13 @@ public class PipelineController extends VBox implements ModelAware {
         // the inputs are reloaded by the data model with each change of its list
         inputStage.setOnConfigured(input -> dataModel.reloadInputs());
 
+        // the order of filters is fixed (see Filter#order), sorters sort completely, so only one is enabled
         filterStage = new PluginStageView<>("Filters", "applied top to bottom", dataModel.getFilters(), selectedStep,
-                true, Plugin::getDescription);
+                true, false, Plugin::getDescription);
         filterStage.setOnConfigured(filter -> dataModel.filterRawEntries());
 
-        sorterStage = new PluginStageView<>("Sorters", "the last one decides", dataModel.getSorters(), selectedStep,
-                true, Plugin::getDescription);
+        sorterStage = new PluginStageView<>("Sorters", "one at a time", dataModel.getSorters(), selectedStep,
+                true, false, Plugin::getDescription);
         sorterStage.setOnConfigured(sorter -> dataModel.sortFilteredEntries());
 
         enricherStage = new PluginStageView<>("Enrichers", "complete the entries, add files", dataModel.getEnrichers(),
@@ -136,8 +137,6 @@ public class PipelineController extends VBox implements ModelAware {
 
         filterStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getFilters(), enabled,
                 dataModel::filterRawEntries));
-        sorterStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getSorters(), enabled,
-                dataModel::sortFilteredEntries));
         enricherStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getEnrichers(), enabled,
                 dataModel::enrichSortedEntries));
 
@@ -294,8 +293,9 @@ public class PipelineController extends VBox implements ModelAware {
         filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
                 dataModel.getFilters().size(), count(loaded - result.filtered().size(), "entry", "entries")));
         int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
-        sorterStage.setStatusProvider(() -> "%d of %d enabled, ⇅ %s".formatted(enabledCount(dataModel.getSorters()),
-                dataModel.getSorters().size(), count(reordered, "entry", "entries")));
+        sorterStage.setStatusProvider(() -> dataModel.getSorters().stream().filter(sorter -> sorter.getEnabled().get())
+                .findFirst().map(sorter -> "%s, ⇅ %s".formatted(sorter.getName(), count(reordered, "entry", "entries")))
+                .orElse("not sorted"));
         int changed = result.origins().size();
         enricherStage.setStatusProvider(() -> "%d of %d enabled, ✎ %s".formatted(enabledCount(dataModel.getEnrichers()),
                 dataModel.getEnrichers().size(), count(changed, "entry", "entries")));

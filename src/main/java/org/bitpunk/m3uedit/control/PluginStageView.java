@@ -47,7 +47,8 @@ import java.util.function.Supplier;
  * One stage of the pipeline of a project (inputs, filters, sorters or outputs): a header and a row per plugin.
  * <p>
  * Clicking a row selects its plugin (shared by all stages), a double-click configures it. Depending on the stage,
- * plugins can be enabled, reordered (drag &amp; drop or arrow-buttons), added or removed.
+ * plugins can be enabled, reordered (drag &amp; drop or arrow-buttons), added or removed. Plugins of stages whose
+ * order is fixed (e.g. filters) can be enabled, but not reordered.
  *
  * @param <T> the plugin type of this stage
  */
@@ -73,7 +74,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
 
     private final ObservableList<T> plugins;
     private final ObjectProperty<Plugin> selection;
-    private final boolean orderable;
+    private final boolean enableable;
     private final Function<T, String> detailText;
     private final VBox rowBox = new VBox();
     private final Label emptyLabel = new Label();
@@ -115,20 +116,37 @@ public class PluginStageView<T extends Plugin> extends VBox {
     private CheckBox enableAllCheckBox;
     private Consumer<Boolean> enableAllAction;
     private PluginRow draggedRow;
+    /**
+     * Whether the plugins can be reordered by the user (only plugins that can be enabled).
+     */
+    private final boolean reorderable;
 
     /**
+     * Creates a stage whose plugins can be enabled and reordered if {@code orderable} is set.
+     *
      * @param title     the name of the stage
      * @param hint      a short explanation shown next to the name
      * @param plugins   the plugins of this stage, changes are shown immediately
      * @param selection the plugin selected in any stage of the pipeline
-     * @param orderable whether plugins can be enabled and reordered (filters and sorters)
+     * @param orderable whether plugins can be enabled and reordered
      * @param detail    the second line shown for a plugin
      */
     public PluginStageView(String title, String hint, ObservableList<T> plugins, ObjectProperty<Plugin> selection,
                            boolean orderable, Function<T, String> detail) {
+        this(title, hint, plugins, selection, orderable, orderable, detail);
+    }
+
+    /**
+     * @param enableable  whether plugins can be enabled (filters, sorters, enrichers)
+     * @param reorderable whether plugins can be reordered (drag &amp; drop or arrow-buttons); only plugins that can
+     *                    be enabled
+     */
+    public PluginStageView(String title, String hint, ObservableList<T> plugins, ObjectProperty<Plugin> selection,
+                           boolean enableable, boolean reorderable, Function<T, String> detail) {
         this.plugins = plugins;
         this.selection = selection;
-        this.orderable = orderable;
+        this.enableable = enableable;
+        this.reorderable = enableable && reorderable;
         this.detailText = detail;
         getStyleClass().add("pipeline-stage");
 
@@ -207,14 +225,14 @@ public class PluginStageView<T extends Plugin> extends VBox {
     }
 
     /**
-     * Shows a checkbox in the header enabling or disabling all plugins of this (orderable) stage at once. A click
+     * Shows a checkbox in the header enabling or disabling all plugins of this stage (whose plugins can be enabled) at once. A click
      * disables all plugins if all are enabled, and enables all otherwise.
      *
      * @param action enables ({@code true}) or disables ({@code false}) all plugins, so the caller can re-compute
      *               once instead of once per plugin
      */
     public void setEnableAllAction(Consumer<Boolean> action) {
-        if (!orderable) {
+        if (!enableable) {
             throw new IllegalStateException("Plugins of the stage %s cannot be enabled".formatted(title));
         }
         enableAllAction = action;
@@ -412,23 +430,27 @@ public class PluginStageView<T extends Plugin> extends VBox {
             badgeLabel.getStyleClass().add("badge");
             badgeLabel.setMinWidth(Region.USE_PREF_SIZE);
 
-            if (orderable) {
+            if (enableable) {
                 // the width of the grip is set by the style sheet, so the checkboxes of the rows are aligned with
                 // the one of the header (which follows the button collapsing the stage)
                 StackPane grip = new StackPane(icon(ICON_GRIP));
                 grip.getStyleClass().add("grip");
+                // without reordering the space of the grip is kept, so the checkboxes stay aligned
+                grip.setVisible(reorderable);
                 enabledCheckBox = new CheckBox();
                 enabledCheckBox.selectedProperty().bindBidirectional(plugin.getEnabled());
                 enabledCheckBox.setAccessibleText("Enable " + plugin.getName());
                 getChildren().addAll(grip, enabledCheckBox);
-                tools.getChildren().addAll(upButton, downButton);
-                upButton.setOnAction(event -> move(plugin, indexOf(plugin) - 1));
-                downButton.setOnAction(event -> move(plugin, indexOf(plugin) + 1));
                 plugin.getEnabled().addListener((observable, oldValue, newValue) -> {
                     updateEnabled();
                     updateEnableAll();
                 });
-                initDragAndDrop();
+                if (reorderable) {
+                    tools.getChildren().addAll(upButton, downButton);
+                    upButton.setOnAction(event -> move(plugin, indexOf(plugin) - 1));
+                    downButton.setOnAction(event -> move(plugin, indexOf(plugin) + 1));
+                    initDragAndDrop();
+                }
             } else {
                 enabledCheckBox = null;
             }
@@ -512,7 +534,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
         }
 
         void updateEnabled() {
-            pseudoClassStateChanged(DISABLED_PLUGIN, orderable && !plugin.getEnabled().get());
+            pseudoClassStateChanged(DISABLED_PLUGIN, enableable && !plugin.getEnabled().get());
         }
 
         void dispose() {

@@ -188,8 +188,9 @@ class PipelineControllerTest {
     @Test
     void filtersSortersAndEnrichersCanBeEnabledAllAtOnce() {
         assertThat(pipeline.getFilterStage().getEnableAllCheckBox()).isNotNull();
-        assertThat(pipeline.getSorterStage().getEnableAllCheckBox()).isNotNull();
         assertThat(pipeline.getEnricherStage().getEnableAllCheckBox()).isNotNull();
+        // only one sorter is enabled at a time
+        assertThat(pipeline.getSorterStage().getEnableAllCheckBox()).isNull();
         // inputs and outputs are always used
         assertThat(pipeline.getInputStage().getEnableAllCheckBox()).isNull();
         assertThat(pipeline.getOutputStage().getEnableAllCheckBox()).isNull();
@@ -207,13 +208,40 @@ class PipelineControllerTest {
         scene.getRoot().applyCss();
         scene.getRoot().layout();
 
-        for (var stage : List.of(pipeline.getFilterStage(), pipeline.getSorterStage(), pipeline.getEnricherStage())) {
+        for (var stage : List.of(pipeline.getFilterStage(), pipeline.getEnricherStage())) {
             Node headerBox = stage.getEnableAllCheckBox().lookup(".box");
             Node rowBox = stage.lookupAll(".plugin-row").iterator().next().lookup(".check-box").lookup(".box");
             assertThat(headerBox.localToScene(headerBox.getBoundsInLocal()).getMinX())
                     .as("header checkbox of %s", stage.getHeaderText())
                     .isCloseTo(rowBox.localToScene(rowBox.getBoundsInLocal()).getMinX(), Offset.offset(0.5));
         }
+    }
+
+    @Test
+    void filtersAndSortersCannotBeReorderedButEnrichersCan() {
+        dataModel.getEnrichers().add(new TestPlugins.TestEnricher());
+
+        for (var stage : List.of(pipeline.getFilterStage(), pipeline.getSorterStage())) {
+            Node row = stage.lookupAll(".plugin-row").iterator().next();
+            assertThat(row.lookup(".grip").isVisible()).isFalse();
+            assertThat(row.lookupAll(".button").stream().map(button -> ((javafx.scene.control.Button) button).getTooltip())
+                    .filter(java.util.Objects::nonNull).map(javafx.scene.control.Tooltip::getText))
+                    .doesNotContain("Move up", "Move down");
+        }
+        Node enricherRow = pipeline.getEnricherStage().lookupAll(".plugin-row").iterator().next();
+        assertThat(enricherRow.lookup(".grip").isVisible()).isTrue();
+    }
+
+    @Test
+    void enablingASorterDisablesTheOtherOnes() {
+        NameSorter other = new NameSorter();
+        dataModel.getSorters().add(other);
+        sorter.getEnabled().set(true);
+
+        other.getEnabled().set(true);
+
+        assertThat(sorter.getEnabled().get()).isFalse();
+        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("one at a time");
     }
 
     @Test
@@ -304,7 +332,7 @@ class PipelineControllerTest {
 
         assertThat(pipeline.getInputStage().getHeaderText()).isEqualTo("1 input, 4 entries");
         assertThat(pipeline.getFilterStage().getHeaderText()).isEqualTo("1 of 2 enabled, −2 entries");
-        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("1 of 1 enabled, ⇅ 1 entry");
+        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("Name Sorter, ⇅ 1 entry");
         assertThat(pipeline.getOutputStage().getHeaderText()).isEqualTo("no output");
 
         // the status follows the enabled filters

@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -177,6 +178,12 @@ public class DataModel {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ListChangeListener<Input> inputsRecomputeListener;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient ChangeListener<Boolean> sorterEnabledListener;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient ListChangeListener<Sorter> sorterListListener;
 
     public DataModel(String name) {
         this(name, null, null, null, null, null, null, null);
@@ -197,7 +204,9 @@ public class DataModel {
         this.name = name;
         this.inputs = observableListOf(inputs);
         this.filters = observableListOf(filters);
+        sortFilters(this.filters);
         this.sorters = observableListOf(sorters);
+        keepOneSorterEnabled(this.sorters);
         this.enrichers = observableListOf(enrichers);
         this.outputs = observableListOf(outputs);
         this.epgUrls = observableListOf(epgUrls);
@@ -225,9 +234,23 @@ public class DataModel {
         pluginEnabledListener = (observable, oldValue, newValue) -> changed = true;
         pluginListListener = this::onPluginListChanged;
         inputsRecomputeListener = change -> reloadInputs();
+        sorterEnabledListener = (observable, wasEnabled, enabled) -> {
+            if (enabled) {
+                sorters.stream().filter(sorter -> sorter.getEnabled() == observable).findFirst()
+                        .ifPresent(this::onSorterEnabled);
+            }
+        };
+        sorterListListener = change -> {
+            while (change.next()) {
+                change.getRemoved().forEach(sorter -> sorter.getEnabled().removeListener(sorterEnabledListener));
+                change.getAddedSubList().forEach(sorter -> sorter.getEnabled().addListener(sorterEnabledListener));
+            }
+            keepOneSorterEnabled(sorters);
+        };
         observePluginList(inputs);
         observePluginList(filters);
         observePluginList(sorters);
+        observeSorters();
         observePluginList(enrichers);
         observePluginList(outputs);
         initRecomputeListeners();
@@ -265,13 +288,68 @@ public class DataModel {
     public void setFilters(ObservableList<Filter> filters) {
         stopObservingPluginList(this.filters);
         this.filters = filters;
+        sortFilters(this.filters);
         observePluginList(this.filters);
     }
 
     public void setSorters(ObservableList<Sorter> sorters) {
         stopObservingPluginList(this.sorters);
+        this.sorters.removeListener(sorterListListener);
+        this.sorters.forEach(sorter -> sorter.getEnabled().removeListener(sorterEnabledListener));
         this.sorters = sorters;
+        keepOneSorterEnabled(this.sorters);
         observePluginList(this.sorters);
+        observeSorters();
+    }
+
+    /**
+     * Brings the filters into the order they are applied in, see {@link Filter#order()}; filters of the same order
+     * keep their relative order.
+     */
+    public static void sortFilters(List<Filter> filters) {
+        List<Filter> sorted = filters.stream().sorted(Comparator.comparingInt(Filter::order)).toList();
+        if (!sorted.equals(filters)) {
+            if (filters instanceof ObservableList<Filter> observable) {
+                observable.setAll(sorted);
+            } else {
+                filters.clear();
+                filters.addAll(sorted);
+            }
+        }
+    }
+
+    /**
+     * Sorters sort completely, so only the last one applied would take effect: at most one sorter is enabled.
+     * Of several enabled sorters (e.g. in older project files) the last one is kept, as it took effect.
+     */
+    private static void keepOneSorterEnabled(List<Sorter> sorters) {
+        Sorter last = null;
+        for (Sorter sorter : sorters) {
+            if (sorter.getEnabled().get()) {
+                last = sorter;
+            }
+        }
+        for (Sorter sorter : sorters) {
+            if (sorter != last) {
+                sorter.getEnabled().set(false);
+            }
+        }
+    }
+
+    /**
+     * Enabling a sorter disables the other ones.
+     */
+    private void observeSorters() {
+        sorters.forEach(sorter -> sorter.getEnabled().addListener(sorterEnabledListener));
+        sorters.addListener(sorterListListener);
+    }
+
+    private void onSorterEnabled(Sorter enabledSorter) {
+        for (Sorter sorter : sorters) {
+            if (sorter != enabledSorter) {
+                sorter.getEnabled().set(false);
+            }
+        }
     }
 
     public void setEnrichers(ObservableList<Enricher> enrichers) {
@@ -362,7 +440,8 @@ public class DataModel {
 
         // take snapshots on the calling (JavaFX) thread, the background thread must not access the observable lists
         List<Input> inputsSnapshot = new ArrayList<>(inputs);
-        List<Filter> enabledFilters = filters.stream().filter(filter -> filter.getEnabled().get()).toList();
+        List<Filter> enabledFilters = filters.stream().filter(filter -> filter.getEnabled().get())
+                .sorted(Comparator.comparingInt(Filter::order)).toList();
         List<Sorter> enabledSorters = sorters.stream().filter(sorter -> sorter.getEnabled().get()).toList();
         List<Enricher> enabledEnrichers = enrichers.stream().filter(enricher -> enricher.getEnabled().get()).toList();
         List<Entry> rawSnapshot = new ArrayList<>(rawEntryList);

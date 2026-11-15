@@ -85,6 +85,11 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     }
 
     @Override
+    public int order() {
+        return ORDER_PROBING;
+    }
+
+    @Override
     public List<Entry> filter(List<Entry> list) {
         int timeoutMillis = getTimeoutMillis();
         log.debug("checking playability of {} entries using a timeout of {} ms", list.size(), timeoutMillis);
