@@ -1,16 +1,27 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
+import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
+import org.bitpunk.m3uedit.plugins.enricher.Programme;
+import org.bitpunk.m3uedit.plugins.enricher.epg.model.EpgEnricherConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,7 +29,7 @@ class EpgEnricherTest {
     /**
      * The test guide contains a programme on 2026-11-13 20:00 (+0100).
      */
-    static final Clock NOW = Clock.fixed(java.time.Instant.parse("2026-11-13T18:00:00Z"), java.time.ZoneId.of("Europe/Berlin"));
+    static final Clock NOW = Clock.fixed(Instant.parse("2026-11-13T18:00:00Z"), ZoneId.of("Europe/Berlin"));
 
     @TempDir
     Path tempDir;
@@ -156,13 +167,13 @@ class EpgEnricherTest {
     }
 
     private static String compile(Enrichment enrichment, List<Entry> playlist) throws IOException {
-        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         enrichment.attachments().getFirst().content().write(playlist, outputStream);
         byte[] bytes = outputStream.toByteArray();
         if (bytes.length > 1 && bytes[0] == 0x1f && (bytes[1] & 0xff) == 0x8b) {
-            bytes = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(bytes)).readAllBytes();
+            bytes = new GZIPInputStream(new ByteArrayInputStream(bytes)).readAllBytes();
         }
-        return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     @Test
@@ -215,7 +226,7 @@ class EpgEnricherTest {
         assertThat(compile(enrichment, enrichment.entries())).as("programme in 1 hour").contains("Tagesschau");
 
         EpgEnricher later = new EpgEnricher(new EpgSourceCache(tempDir.resolve("cache"), HttpClient.newHttpClient(),
-                Clock.systemUTC()), Clock.offset(NOW, java.time.Duration.ofHours(3)));
+                Clock.systemUTC()), Clock.offset(NOW, Duration.ofHours(3)));
         later.setSources(List.of(source));
         later.setCompressGuide(false);
         later.setGuideHoursPast(1);
@@ -230,7 +241,7 @@ class EpgEnricherTest {
         Entry zdf = entry("ZDF HD", "ZDF.de", "http://e/2");
         Entry unknown = entry("Unknown", null, "http://e/3");
 
-        List<org.bitpunk.m3uedit.plugins.enricher.Programme> programmes = enricher.readProgrammes(List.of(erste, zdf, unknown));
+        List<Programme> programmes = enricher.readProgrammes(List.of(erste, zdf, unknown));
 
         assertThat(programmes).singleElement().satisfies(programme -> {
             assertThat(programme.channelId()).as("as used by the playlist").isEqualTo("daserste.de");
@@ -252,5 +263,35 @@ class EpgEnricherTest {
         // the defaults are copied, changing the sources of one enricher does not change them
         enricher.getSources().clear();
         assertThat(new EpgEnricher().getSources()).hasSize(3);
+    }
+
+    private static YamlConfigManager<EpgEnricherConfig>
+    configManager(Path file) {
+        return new YamlConfigManager<>(file, EpgEnricher.CONFIG_RESOURCE,
+                EpgEnricherConfig.class,
+                EpgEnricherConfig::new);
+    }
+
+    @Test
+    void testDefaultSourcesAreReadFromTheConfigurationFile() throws IOException {
+        Path file = tempDir.resolve("plugins").resolve("epg_enricher.yaml");
+
+        // created from the defaults of the application on first use
+        assertThat(EpgEnricher.defaultSources(configManager(file))).hasSize(3)
+                .allSatisfy(url -> assertThat(url).startsWith("https://epgshare01.online/"));
+        assertThat(file).exists().content().contains("epg_ripper_DE1.xml.gz");
+
+        Files.writeString(file, """
+                defaultSources:
+                  - "https://epg.example.org/uk.xml.gz"
+                  - " "
+                  - "file:///home/user/guide.xml"
+                  - "https://epg.example.org/uk.xml.gz"
+                """);
+        assertThat(EpgEnricher.defaultSources(configManager(file)))
+                .containsExactly("https://epg.example.org/uk.xml.gz", "file:///home/user/guide.xml");
+
+        Files.writeString(file, "otherSetting: 1\n");
+        assertThat(EpgEnricher.defaultSources(configManager(file))).as("no sources configured").isEmpty();
     }
 }

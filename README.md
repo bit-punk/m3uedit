@@ -69,6 +69,7 @@ default values on first use and can be edited by hand:
 |----------------------------------------|------------------------------------------------------------|
 | `external_player.yaml`                 | command and arguments of the external player (vlc)          |
 | `plugins/channel_name_filter.yaml`     | regular expressions of channel names to filter             |
+| `plugins/epg_enricher.yaml`            | EPG sources a new EPG Enricher starts with                 |
 | `plugins/preferred_channel_order.yaml` | profiles with the preferred order of channels              |
 | `plugins/reachable_url_filter.yaml`    | connect-timeout used to check whether a stream is reachable |
 | `plugins/sftp_recent_servers.yaml`     | recently used SFTP servers (passwords are never stored)    |
