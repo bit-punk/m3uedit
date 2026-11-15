@@ -176,9 +176,31 @@ class PipelineControllerTest {
     }
 
     @Test
+    void writeButtonIsOnlyEnabledWithAnOutputAndEntries() {
+        assertThat(dataModel.getSortedEntryList()).isNotEmpty();
+        assertThat(pipeline.getWriteButton().isDisabled()).as("no output").isTrue();
+        assertThat(pipeline.getWriteHint().isVisible()).isTrue();
+        assertThat(pipeline.getWriteHint().getText()).isEqualTo("Add an output to write the playlist");
+
+        dataModel.getOutputs().add(new org.bitpunk.m3uedit.plugins.output.file.FileOutput());
+        assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
+        assertThat(pipeline.getWriteHint().isVisible()).isFalse();
+
+        dataModel.getInputs().clear();
+        assertThat(dataModel.getSortedEntryList()).isEmpty();
+        assertThat(pipeline.getWriteButton().isDisabled()).as("no entries").isTrue();
+        assertThat(pipeline.getWriteHint().getText()).isEqualTo("The playlist is empty, there is nothing to write");
+
+        dataModel.getOutputs().clear();
+        assertThat(pipeline.getWriteHint().getText()).as("the output is missing first").isEqualTo("Add an output to write the playlist");
+    }
+
+    @Test
     void writeButtonIsDisabledWhileSaving() {
         List<Runnable> background = new ArrayList<>();
         dataModel.setBackgroundExecutor(background::add);
+        dataModel.getOutputs().add(new org.bitpunk.m3uedit.plugins.output.file.FileOutput());
+        assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
 
         pipeline.getWriteButton().fire();
 

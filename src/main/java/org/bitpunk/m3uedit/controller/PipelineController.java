@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
@@ -11,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
@@ -70,6 +72,11 @@ public class PipelineController extends VBox implements ModelAware {
     private PluginStageView<Output> outputStage;
     @Getter
     private final Button writeButton = new Button("Write playlist");
+    /**
+     * Tells why the playlist cannot be written (a disabled button shows no tooltip).
+     */
+    @Getter
+    private final Label writeHint = flowLabel();
     private final Label loadedLabel = flowLabel();
     private final Label filteredLabel = flowLabel();
     private final Label sortedLabel = flowLabel();
@@ -125,13 +132,22 @@ public class PipelineController extends VBox implements ModelAware {
         writeButton.getStyleClass().add("write-button");
         writeButton.setMaxWidth(Double.MAX_VALUE);
         writeButton.setOnAction(event -> dataModel.saveEntries());
-        // writing to the outputs runs in the background, prevent starting it twice
-        writeButton.disableProperty().bind(dataModel.savingProperty());
+        // writing needs an output and entries; it runs in the background, so starting it twice is prevented
+        BooleanBinding noOutput = Bindings.isEmpty(dataModel.getOutputs());
+        BooleanBinding noEntries = Bindings.isEmpty(dataModel.getSortedEntryList());
+        writeButton.disableProperty().bind(dataModel.savingProperty().or(noOutput).or(noEntries));
+        writeHint.textProperty().bind(Bindings.when(noOutput).then("Add an output to write the playlist")
+                .otherwise(Bindings.when(noEntries).then("The playlist is empty, there is nothing to write")
+                        .otherwise("")));
+        writeHint.getStyleClass().add("write-hint");
+        writeHint.setWrapText(true);
+        writeHint.visibleProperty().bind(noOutput.or(noEntries));
+        writeHint.managedProperty().bind(writeHint.visibleProperty());
 
         HBox sortedConnector = connector(sortedLabel);
         getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
                 sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage, epgRow(),
-                writeButton);
+                writeButton, writeHint);
         // the stage is only shown if there are enrichers (none are installed yet in older setups)
         for (Node node : List.of(sortedConnector, enricherStage)) {
             node.visibleProperty().bind(Bindings.isNotEmpty(dataModel.getEnrichers()));
@@ -159,6 +175,9 @@ public class PipelineController extends VBox implements ModelAware {
         epgLabel.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(epgLabel, Priority.ALWAYS);
         epgButton.setAccessibleText("Edit EPG URLs");
+        // only the urls are shortened if the pipeline is narrow
+        title.setMinWidth(Region.USE_PREF_SIZE);
+        epgButton.setMinWidth(Region.USE_PREF_SIZE);
         epgButton.setOnAction(event -> editEpgUrls());
         HBox row = new HBox(6, icon(ICON_EPG), title, epgLabel, epgButton);
         row.setAlignment(Pos.CENTER_LEFT);
