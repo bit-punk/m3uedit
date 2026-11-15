@@ -200,11 +200,17 @@
     -fx-font-size: 0.9em;
 }
 
+.write-bar {
+    -fx-background-color: -m3u-panel;
+    -fx-border-color: -m3u-line transparent transparent transparent;
+    -fx-padding: 10;
+    -fx-spacing: 2;
+}
+
 .write-button {
     -fx-base: -fx-accent;
     -fx-font-weight: bold;
     -fx-padding: 7;
-    -fx-translate-y: 10;
 }
 
 .write-button .icon {

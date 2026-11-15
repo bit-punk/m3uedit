@@ -10,6 +10,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
@@ -28,6 +29,8 @@ public class ProjectController extends AbstractController implements Initializab
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     @FXML
     public SplitPane splitPane;
+    @FXML
+    public VBox pipelinePane;
     @FXML
     public ScrollPane pipelineScrollPane;
     @FXML
@@ -58,7 +61,7 @@ public class ProjectController extends AbstractController implements Initializab
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         // the pipeline keeps its width when the window is resized
-        SplitPane.setResizableWithParent(pipelineScrollPane, false);
+        SplitPane.setResizableWithParent(pipelinePane, false);
     }
 
     public void setStatusLabel(Label statusLabel) {
@@ -146,6 +149,8 @@ public class ProjectController extends AbstractController implements Initializab
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
         pipelineController.initModel(dataModel);
+        // fixed below the scrolled pipeline, so it is always visible
+        pipelinePane.getChildren().add(pipelineController.getWriteBar());
         summaryView.initModel(dataModel, pipelineController.getSelectedStep());
         diffController.initModel(dataModel, pipelineController.getSelectedStep());
         entryListController.initModel(dataModel);

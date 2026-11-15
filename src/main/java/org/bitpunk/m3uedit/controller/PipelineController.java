@@ -77,6 +77,12 @@ public class PipelineController extends VBox implements ModelAware {
      */
     @Getter
     private final Label writeHint = flowLabel();
+    /**
+     * The button to write the playlist with its hint; not part of the pipeline, so it can stay visible while the
+     * pipeline is scrolled.
+     */
+    @Getter
+    private final VBox writeBar = new VBox(writeButton, writeHint);
     private final Label loadedLabel = flowLabel();
     private final Label filteredLabel = flowLabel();
     private final Label sortedLabel = flowLabel();
@@ -146,8 +152,8 @@ public class PipelineController extends VBox implements ModelAware {
 
         HBox sortedConnector = connector(sortedLabel);
         getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
-                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage, epgRow(),
-                writeButton, writeHint);
+                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage, epgRow());
+        writeBar.getStyleClass().add("write-bar");
         // the stage is only shown if there are enrichers (none are installed yet in older setups)
         for (Node node : List.of(sortedConnector, enricherStage)) {
             node.visibleProperty().bind(Bindings.isNotEmpty(dataModel.getEnrichers()));
