@@ -1,21 +1,31 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.application.Platform;
+import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.VBox;
+import org.assertj.core.data.Offset;
 import org.bitpunk.m3uedit.controller.TestPlugins.NameSorter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestEnricher;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestFilter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestInput;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.bitpunk.m3uedit.controller.TestPlugins.entry;
@@ -100,7 +110,7 @@ class PipelineControllerTest {
         List<List<String>> shown = new ArrayList<>();
         pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> {
             shown.add(epgUrls);
-            return java.util.Optional.of(List.of("http://epg/new.xml"));
+            return Optional.of(List.of("http://epg/new.xml"));
         });
 
         pipeline.getEpgButton().fire();
@@ -112,7 +122,7 @@ class PipelineControllerTest {
     @Test
     void cancellingTheEpgDialogKeepsTheUrls() {
         dataModel.getEpgUrls().setAll("http://epg/a.xml");
-        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> java.util.Optional.empty());
+        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> Optional.empty());
 
         pipeline.getEpgButton().fire();
 
@@ -156,8 +166,8 @@ class PipelineControllerTest {
         dataModel.getSortedEntryList().clear();
 
         Node row = pipeline.getFilterStage().rowOf(hdFilter).orElseThrow();
-        javafx.event.Event.fireEvent(row, new javafx.scene.input.MouseEvent(javafx.scene.input.MouseEvent.MOUSE_CLICKED,
-                0, 0, 0, 0, javafx.scene.input.MouseButton.PRIMARY, 2,
+        Event.fireEvent(row, new MouseEvent(MouseEvent.MOUSE_CLICKED,
+                0, 0, 0, 0, MouseButton.PRIMARY, 2,
                 false, false, false, false, false, false, false, false, false, false, null));
 
         assertThat(hdFilter.configured).hasValue(1);
@@ -186,8 +196,29 @@ class PipelineControllerTest {
     }
 
     @Test
+    void enableAllCheckBoxIsAlignedWithTheCheckBoxesOfTheRows() {
+        dataModel.getEnrichers().add(new TestPlugins.TestEnricher());
+        // styled like in a project: its style class defines the colours (e.g. of the borders)
+        VBox root = new VBox(pipeline);
+        root.getStyleClass().add("project");
+        Scene scene = new Scene(root, 420, 1200);
+        scene.getStylesheets().add(Objects.requireNonNull(
+                getClass().getClassLoader().getResource("fxml/css/project.css")).toExternalForm());
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+
+        for (var stage : List.of(pipeline.getFilterStage(), pipeline.getSorterStage(), pipeline.getEnricherStage())) {
+            Node headerBox = stage.getEnableAllCheckBox().lookup(".box");
+            Node rowBox = stage.lookupAll(".plugin-row").iterator().next().lookup(".check-box").lookup(".box");
+            assertThat(headerBox.localToScene(headerBox.getBoundsInLocal()).getMinX())
+                    .as("header checkbox of %s", stage.getHeaderText())
+                    .isCloseTo(rowBox.localToScene(rowBox.getBoundsInLocal()).getMinX(), Offset.offset(0.5));
+        }
+    }
+
+    @Test
     void enableAllCheckBoxShowsWhetherAllSomeOrNoneAreEnabled() {
-        javafx.scene.control.CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
+        CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
         assertThat(all.isSelected()).isFalse();
         assertThat(all.isIndeterminate()).isFalse();
         assertThat(all.getTooltip().getText()).isEqualTo("Enable all filters");
@@ -203,7 +234,7 @@ class PipelineControllerTest {
 
     @Test
     void enableAllEnablesAllIfSomeAreDisabledAndDisablesAllOtherwise() {
-        javafx.scene.control.CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
+        CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
         hdFilter.getEnabled().set(true);
 
         all.fire();
@@ -237,7 +268,7 @@ class PipelineControllerTest {
         assertThat(pipeline.getWriteHint().isVisible()).isTrue();
         assertThat(pipeline.getWriteHint().getText()).isEqualTo("Add an output to write the playlist");
 
-        dataModel.getOutputs().add(new org.bitpunk.m3uedit.plugins.output.file.FileOutput());
+        dataModel.getOutputs().add(new FileOutput());
         assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
         assertThat(pipeline.getWriteHint().isVisible()).isFalse();
 
@@ -254,7 +285,7 @@ class PipelineControllerTest {
     void writeButtonIsDisabledWhileSaving() {
         List<Runnable> background = new ArrayList<>();
         dataModel.setBackgroundExecutor(background::add);
-        dataModel.getOutputs().add(new org.bitpunk.m3uedit.plugins.output.file.FileOutput());
+        dataModel.getOutputs().add(new FileOutput());
         assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
 
         pipeline.getWriteButton().fire();

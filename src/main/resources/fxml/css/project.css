@@ -33,7 +33,7 @@
 }
 
 .stage-header {
-    -fx-padding: 6 6 6 10;
+    -fx-padding: 6 6 6 6;
     -fx-border-color: transparent transparent -m3u-line transparent;
     -fx-min-height: 34;
 }
@@ -51,7 +51,7 @@
 }
 
 .stage-collapse {
-    -fx-padding: 2;
+    -fx-padding: 1;
 }
 
 .stage-title {
@@ -124,9 +124,15 @@
     -fx-font-weight: bold;
 }
 
+/* as wide as the button collapsing the stage, so the checkboxes of the rows are aligned with the one of the header */
 .grip {
-    -fx-fill: -m3u-muted;
+    -fx-min-width: 15;
+    -fx-pref-width: 15;
     -fx-cursor: move;
+}
+
+.grip .icon {
+    -fx-fill: -m3u-muted;
 }
 
 .icon {

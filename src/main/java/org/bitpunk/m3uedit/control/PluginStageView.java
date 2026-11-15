@@ -27,6 +27,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
@@ -412,7 +413,9 @@ public class PluginStageView<T extends Plugin> extends VBox {
             badgeLabel.setMinWidth(Region.USE_PREF_SIZE);
 
             if (orderable) {
-                Node grip = icon(ICON_GRIP);
+                // the width of the grip is set by the style sheet, so the checkboxes of the rows are aligned with
+                // the one of the header (which follows the button collapsing the stage)
+                StackPane grip = new StackPane(icon(ICON_GRIP));
                 grip.getStyleClass().add("grip");
                 enabledCheckBox = new CheckBox();
                 enabledCheckBox.selectedProperty().bindBidirectional(plugin.getEnabled());
