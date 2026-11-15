@@ -176,6 +176,61 @@ class PipelineControllerTest {
     }
 
     @Test
+    void filtersSortersAndEnrichersCanBeEnabledAllAtOnce() {
+        assertThat(pipeline.getFilterStage().getEnableAllCheckBox()).isNotNull();
+        assertThat(pipeline.getSorterStage().getEnableAllCheckBox()).isNotNull();
+        assertThat(pipeline.getEnricherStage().getEnableAllCheckBox()).isNotNull();
+        // inputs and outputs are always used
+        assertThat(pipeline.getInputStage().getEnableAllCheckBox()).isNull();
+        assertThat(pipeline.getOutputStage().getEnableAllCheckBox()).isNull();
+    }
+
+    @Test
+    void enableAllCheckBoxShowsWhetherAllSomeOrNoneAreEnabled() {
+        javafx.scene.control.CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
+        assertThat(all.isSelected()).isFalse();
+        assertThat(all.isIndeterminate()).isFalse();
+        assertThat(all.getTooltip().getText()).isEqualTo("Enable all filters");
+
+        hdFilter.getEnabled().set(true);
+        assertThat(all.isIndeterminate()).isTrue();
+
+        shopFilter.getEnabled().set(true);
+        assertThat(all.isSelected()).isTrue();
+        assertThat(all.isIndeterminate()).isFalse();
+        assertThat(all.getTooltip().getText()).isEqualTo("Disable all filters");
+    }
+
+    @Test
+    void enableAllEnablesAllIfSomeAreDisabledAndDisablesAllOtherwise() {
+        javafx.scene.control.CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
+        hdFilter.getEnabled().set(true);
+
+        all.fire();
+        assertThat(dataModel.getFilters()).allMatch(filter -> filter.getEnabled().get());
+        assertThat(all.isSelected()).isTrue();
+        assertThat(texts(pipeline)).contains("2 left after filtering");
+
+        all.fire();
+        assertThat(dataModel.getFilters()).noneMatch(filter -> filter.getEnabled().get());
+        assertThat(all.isSelected()).isFalse();
+        assertThat(texts(pipeline)).contains("4 left after filtering");
+    }
+
+    @Test
+    void enablingAllRecomputesTheEntriesOnce() {
+        List<Runnable> background = new ArrayList<>();
+        dataModel.setBackgroundExecutor(background::add);
+
+        pipeline.getFilterStage().getEnableAllCheckBox().fire();
+
+        assertThat(background).hasSize(1);
+        background.forEach(Runnable::run);
+        // the HD filter keeps the HD channels only, the shop filter removes QVC
+        assertThat(dataModel.getFilteredEntryList()).extracting(Entry::getName).containsExactly("ZDF HD", "Das Erste HD");
+    }
+
+    @Test
     void writeButtonIsOnlyEnabledWithAnOutputAndEntries() {
         assertThat(dataModel.getSortedEntryList()).isNotEmpty();
         assertThat(pipeline.getWriteButton().isDisabled()).as("no output").isTrue();

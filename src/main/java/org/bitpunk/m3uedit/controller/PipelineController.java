@@ -99,6 +99,10 @@ public class PipelineController extends VBox implements ModelAware {
     private BiFunction<List<String>, List<String>, Optional<List<String>>> epgUrlEditor =
             (epgUrls, inputEpgUrls) -> new EpgUrlDialog(epgUrls, inputEpgUrls).showAndWait();
     private DataModel dataModel;
+    /**
+     * Set while all plugins of a stage are enabled or disabled at once, so the entries are re-computed only once.
+     */
+    private boolean changingAll;
 
     public PipelineController() {
         getStyleClass().add("pipeline");
@@ -129,6 +133,13 @@ public class PipelineController extends VBox implements ModelAware {
         enricherStage = new PluginStageView<>("Enrichers", "complete the entries, add files", dataModel.getEnrichers(),
                 selectedStep, true, Plugin::getDescription);
         enricherStage.setOnConfigured(enricher -> dataModel.enrichSortedEntries());
+
+        filterStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getFilters(), enabled,
+                dataModel::filterRawEntries));
+        sorterStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getSorters(), enabled,
+                dataModel::sortFilteredEntries));
+        enricherStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getEnrichers(), enabled,
+                dataModel::enrichSortedEntries));
 
         outputStage = new PluginStageView<>("Outputs", "receive the same playlist", dataModel.getOutputs(),
                 selectedStep, false, output -> describe(output.getOutput()));
@@ -216,16 +227,38 @@ public class PipelineController extends VBox implements ModelAware {
                 : "Written to the playlist header (x-tvg-url):\n" + String.join("\n", urls)));
     }
 
+    /**
+     * Enables or disables all given plugins and re-computes the entries once.
+     */
+    private void setAllEnabled(List<? extends Plugin> plugins, boolean enabled, Runnable recompute) {
+        changingAll = true;
+        try {
+            plugins.forEach(plugin -> plugin.getEnabled().set(enabled));
+        } finally {
+            changingAll = false;
+        }
+        recompute.run();
+    }
+
+    private void recomputeUnlessChangingAll(Runnable recompute) {
+        if (!changingAll) {
+            recompute.run();
+        }
+    }
+
     private void initRecomputeListeners() {
         // re-compute the entries once per change of a filter or sorter: enabled-state or order
         for (Filter filter : dataModel.getFilters()) {
-            filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
+            filter.getEnabled().addListener((observable, oldValue, newValue) ->
+                    recomputeUnlessChangingAll(dataModel::filterRawEntries));
         }
         for (Sorter sorter : dataModel.getSorters()) {
-            sorter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.sortFilteredEntries());
+            sorter.getEnabled().addListener((observable, oldValue, newValue) ->
+                    recomputeUnlessChangingAll(dataModel::sortFilteredEntries));
         }
         for (Enricher enricher : dataModel.getEnrichers()) {
-            enricher.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.enrichSortedEntries());
+            enricher.getEnabled().addListener((observable, oldValue, newValue) ->
+                    recomputeUnlessChangingAll(dataModel::enrichSortedEntries));
         }
         dataModel.getFilters().addListener((ListChangeListener<Filter>) change -> dataModel.filterRawEntries());
         dataModel.getSorters().addListener((ListChangeListener<Sorter>) change -> dataModel.sortFilteredEntries());

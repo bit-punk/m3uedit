@@ -106,6 +106,13 @@ public class PluginStageView<T extends Plugin> extends VBox {
     private Function<T, Boolean> removeConfirmation = PluginStageView::confirmRemoval;
     @Getter
     private MenuButton addButton;
+    /**
+     * Enables or disables all plugins of the stage at once: checked if all are enabled, unchecked if none,
+     * indeterminate otherwise. Only shown if an action is set, see {@link #setEnableAllAction(Consumer)}.
+     */
+    @Getter
+    private CheckBox enableAllCheckBox;
+    private Consumer<Boolean> enableAllAction;
     private PluginRow draggedRow;
 
     /**
@@ -199,6 +206,48 @@ public class PluginStageView<T extends Plugin> extends VBox {
     }
 
     /**
+     * Shows a checkbox in the header enabling or disabling all plugins of this (orderable) stage at once. A click
+     * disables all plugins if all are enabled, and enables all otherwise.
+     *
+     * @param action enables ({@code true}) or disables ({@code false}) all plugins, so the caller can re-compute
+     *               once instead of once per plugin
+     */
+    public void setEnableAllAction(Consumer<Boolean> action) {
+        if (!orderable) {
+            throw new IllegalStateException("Plugins of the stage %s cannot be enabled".formatted(title));
+        }
+        enableAllAction = action;
+        if (enableAllCheckBox == null) {
+            enableAllCheckBox = new CheckBox();
+            enableAllCheckBox.getStyleClass().add("stage-enable-all");
+            enableAllCheckBox.setTooltip(new Tooltip());
+            enableAllCheckBox.setOnAction(event -> {
+                enableAllAction.accept(!areAllEnabled());
+                updateEnableAll();
+            });
+            header.getChildren().add(header.getChildren().indexOf(collapseButton) + 1, enableAllCheckBox);
+        }
+        updateEnableAll();
+    }
+
+    private boolean areAllEnabled() {
+        return !plugins.isEmpty() && plugins.stream().allMatch(plugin -> plugin.getEnabled().get());
+    }
+
+    private void updateEnableAll() {
+        if (enableAllCheckBox == null) {
+            return;
+        }
+        long enabled = plugins.stream().filter(plugin -> plugin.getEnabled().get()).count();
+        enableAllCheckBox.setIndeterminate(enabled > 0 && enabled < plugins.size());
+        enableAllCheckBox.setSelected(!plugins.isEmpty() && enabled == plugins.size());
+        enableAllCheckBox.setDisable(plugins.isEmpty());
+        String action = areAllEnabled() ? "Disable all " : "Enable all ";
+        enableAllCheckBox.getTooltip().setText(action + title.toLowerCase());
+        enableAllCheckBox.setAccessibleText(action + title.toLowerCase());
+    }
+
+    /**
      * Shows an add-button with the given plugin names; the selected name is passed to {@code onAdd}.
      * Plugins of a stage with an add-button can be removed as well.
      */
@@ -253,6 +302,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
         }
         rowBox.getChildren().setAll(children);
         updateStatus();
+        updateEnableAll();
     }
 
     private void select(T plugin) {
@@ -371,7 +421,10 @@ public class PluginStageView<T extends Plugin> extends VBox {
                 tools.getChildren().addAll(upButton, downButton);
                 upButton.setOnAction(event -> move(plugin, indexOf(plugin) - 1));
                 downButton.setOnAction(event -> move(plugin, indexOf(plugin) + 1));
-                plugin.getEnabled().addListener((observable, oldValue, newValue) -> updateEnabled());
+                plugin.getEnabled().addListener((observable, oldValue, newValue) -> {
+                    updateEnabled();
+                    updateEnableAll();
+                });
                 initDragAndDrop();
             } else {
                 enabledCheckBox = null;
