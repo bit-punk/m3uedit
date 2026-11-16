@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,8 @@ class EntryListControllerTest {
         } catch (IllegalStateException ignored) {
             // Platform already started
         }
+        // closing the last window must not end the toolkit for the following tests
+        Platform.setImplicitExit(false);
     }
 
     private void runOnFxThread(Runnable action) throws Exception {
@@ -133,6 +136,27 @@ class EntryListControllerTest {
         runOnFxThread(() -> {
             assertThat(controller.epgButton().isDisable()).isTrue();
             assertThat(controller.programmeGuideProviders()).isEmpty();
+        });
+    }
+
+    @Test
+    void testOnlyOneEpgWindowIsOpenAtATime() throws Exception {
+        EntryListController controller = controllerWith(entry("ZDF"));
+        List<ProgrammeGuideProvider> providers = List.of(playlist -> List.of());
+
+        runOnFxThread(() -> {
+            controller.showEpg(providers);
+            EpgWindow first = controller.epgWindow();
+            controller.showEpg(providers);
+            assertThat(controller.epgWindow()).isSameAs(first);
+            assertThat(first.isShowing()).isTrue();
+
+            // once closed, a new window is opened
+            first.close();
+            assertThat(controller.epgWindow()).isNull();
+            controller.showEpg(providers);
+            assertThat(controller.epgWindow()).isNotNull().isNotSameAs(first);
+            controller.epgWindow().close();
         });
     }
 }
