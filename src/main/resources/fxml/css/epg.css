@@ -1,26 +1,69 @@
-/* programme guide window: a dark TV-like look */
+/*
+ * Programme guide window. All colours are defined as variables on .guide-window: the light theme is the default and
+ * matches the rest of the application (Modena); adding the style class "dark" to the window switches to the dark one.
+ */
 .guide-window {
+    -guide-background: -fx-background;
+    -guide-channels: #ececee;
+    -guide-channel-odd: #e4e4e8;
+    -guide-channel-hover: #d6e4fa;
+    -guide-channel-line: #d4d4da;
+    -guide-row: #ffffff;
+    -guide-row-odd: #f6f7f9;
+    -guide-programme: #dde8fb;
+    -guide-programme-odd: #d3e1f8;
+    -guide-programme-past: #eef0f4;
+    -guide-programme-past-odd: #e7eaef;
+    -guide-programme-border: #b7c9e8;
+    -guide-programme-past-border: #d5d9e1;
+    -guide-programme-running: #c5d9fa;
+    -guide-programme-selected: #3b73d1;
+    -guide-programme-selected-border: #1f4f9f;
+    -guide-programme-selected-text: #ffffff;
+    -guide-progress: #2f6fdc;
+    -guide-now: #d93636;
+    -guide-text: #1f2329;
+    -guide-muted: #6b7180;
+    -guide-details: #ffffff;
+    -guide-details-border: #d4d4da;
+    -guide-image: #ececee;
+    -fx-background-color: -guide-background;
+}
+
+.guide-window.dark {
     -fx-base: #2a2c33;
     -fx-background: #1b1c21;
     -fx-control-inner-background: #24262d;
     -fx-accent: #3d7be0;
     -fx-focus-color: #5b93ef;
     -fx-faint-focus-color: transparent;
+    -guide-channels: #15161a;
+    -guide-channel-odd: #101114;
+    -guide-channel-hover: #262a3a;
+    -guide-channel-line: #24262d;
+    -guide-row: #202128;
+    -guide-row-odd: #17181c;
     -guide-programme: #22308a;
     -guide-programme-odd: #1c2770;
     -guide-programme-past: #1c2142;
     -guide-programme-past-odd: #181c38;
     -guide-programme-border: #2c3a95;
+    -guide-programme-past-border: #262c55;
     -guide-programme-running: #24339a;
     -guide-programme-selected: #3b73d1;
+    -guide-programme-selected-border: white;
+    -guide-programme-selected-text: #e8eaf2;
     -guide-progress: #59a8f5;
+    -guide-now: rgba(255, 255, 255, 0.85);
     -guide-text: #e8eaf2;
     -guide-muted: #9aa0b4;
-    -fx-background-color: -fx-background;
+    -guide-details: #23252c;
+    -guide-details-border: #23252c;
+    -guide-image: #15161a;
 }
 
 .guide-toolbar {
-    -fx-background-color: -fx-background;
+    -fx-background-color: -guide-background;
 }
 
 .guide-toolbar .text-field {
@@ -33,7 +76,7 @@
 }
 
 .guide {
-    -fx-background-color: -fx-background;
+    -fx-background-color: -guide-background;
 }
 
 .guide:focused {
@@ -56,21 +99,25 @@
 }
 
 .guide-time-header {
-    -fx-background-color: -fx-background;
+    -fx-background-color: -guide-background;
 }
 
 .guide-now-marker,
 .guide-now-line {
-    -fx-background-color: rgba(255, 255, 255, 0.85);
+    -fx-background-color: -guide-now;
 }
 
 .guide-channels {
-    -fx-background-color: #15161a;
+    -fx-background-color: -guide-channels;
 }
 
 .guide-channel {
     -fx-padding: 0 8 0 10;
-    -fx-border-color: transparent transparent #24262d transparent;
+    -fx-border-color: transparent transparent -guide-channel-line transparent;
+}
+
+.guide-channel-index {
+    -fx-text-fill: -guide-muted;
 }
 
 .guide-channel-name {
@@ -82,11 +129,11 @@
 }
 
 .guide-channel:odd {
-    -fx-background-color: #101114;
+    -fx-background-color: -guide-channel-odd;
 }
 
 .guide-channel-playable:hover {
-    -fx-background-color: #262a3a;
+    -fx-background-color: -guide-channel-hover;
 }
 
 .guide-channel-playable:hover .guide-channel-name {
@@ -96,22 +143,22 @@
 .guide-scroll,
 .guide-scroll:focused,
 .guide-scroll > .viewport {
-    -fx-background-color: -fx-background;
+    -fx-background-color: -guide-background;
     -fx-background-insets: 0;
     -fx-background-radius: 0;
     -fx-padding: 0;
 }
 
 .guide-grid {
-    -fx-background-color: -fx-background;
+    -fx-background-color: -guide-background;
 }
 
 .guide-row {
-    -fx-background-color: #202128;
+    -fx-background-color: -guide-row;
 }
 
 .guide-row:odd {
-    -fx-background-color: #17181c;
+    -fx-background-color: -guide-row-odd;
 }
 
 .guide-programme {
@@ -128,7 +175,7 @@
 
 .guide-programme:past {
     -fx-background-color: -guide-programme-past;
-    -fx-border-color: #262c55;
+    -fx-border-color: -guide-programme-past-border;
 }
 
 .guide-programme:past:odd {
@@ -145,14 +192,24 @@
 
 .guide-programme:hover,
 .guide-programme:past:hover {
+    -fx-background-color: derive(-guide-programme-running, -6%);
+}
+
+.guide-window.dark .guide-programme:hover,
+.guide-window.dark .guide-programme:past:hover {
     -fx-background-color: derive(-guide-programme-running, 15%);
 }
 
 .guide-programme:selected,
 .guide-programme:past:selected {
     -fx-background-color: -guide-programme-selected;
-    -fx-border-color: white;
+    -fx-border-color: -guide-programme-selected-border;
     -fx-border-width: 0 0 2 0;
+}
+
+.guide-programme:selected .guide-programme-title,
+.guide-programme:past:selected .guide-programme-title {
+    -fx-text-fill: -guide-programme-selected-text;
 }
 
 .guide-programme:dimmed {
@@ -174,11 +231,12 @@
 }
 
 .guide-details {
-    -fx-background-color: #23252c;
+    -fx-background-color: -guide-details;
+    -fx-border-color: -guide-details-border transparent transparent transparent;
 }
 
 .guide-image {
-    -fx-background-color: #15161a;
+    -fx-background-color: -guide-image;
 }
 
 .guide-details-title {

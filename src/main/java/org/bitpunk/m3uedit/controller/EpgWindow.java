@@ -35,7 +35,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -246,31 +247,35 @@ public class EpgWindow extends Stage {
     }
 
     /**
-     * Shows the programmes, a row for each channel of the playlist with programmes, in the order of the playlist.
+     * Shows the programmes, a row for each entry of the playlist in its order, also without programmes.
      */
     void showProgrammes(List<Programme> read) {
         programmes = List.copyOf(read);
         loadingLabel.setVisible(read.isEmpty());
         loadingLabel.setText("No programmes for the channels of the playlist.");
-        Map<String, List<Programme>> byChannel = new LinkedHashMap<>();
-        Map<String, ProgrammeGuideView.Channel> channels = new LinkedHashMap<>();
-        for (Entry entry : playlist) {
-            String id = entry.getTvgId() == null ? null : entry.getTvgId().strip();
-            if (id != null && !channels.containsKey(id)) {
-                channels.put(id, new ProgrammeGuideView.Channel(entry.getName(), entry.getTvgLogo(), entry));
-                byChannel.put(id, new ArrayList<>());
+        Map<String, List<Programme>> byChannel = new HashMap<>();
+        read.forEach(programme -> byChannel.computeIfAbsent(programme.channelId(), id -> new ArrayList<>()).add(programme));
+        List<ProgrammeGuideView.Channel> channels = new ArrayList<>();
+        List<List<Programme>> rows = new ArrayList<>();
+        Set<String> shownIds = new HashSet<>();
+        int channelsWithProgrammes = 0;
+        for (int i = 0; i < playlist.size(); i++) {
+            Entry entry = playlist.get(i);
+            String id = entry.getTvgId() == null || entry.getTvgId().isBlank() ? null : entry.getTvgId().strip();
+            List<Programme> row = id == null ? List.of() : byChannel.getOrDefault(id, List.of());
+            if (id != null && !shownIds.add(id)) {
+                // another entry of the same channel: its own programmes, each block is selected on its own
+                row = row.stream().map(programme -> copy(programme, entry.getName())).toList();
             }
+            if (!row.isEmpty()) {
+                channelsWithProgrammes++;
+            }
+            // numbered like the rows of the playlist table
+            channels.add(new ProgrammeGuideView.Channel(entry.getName(), entry.getTvgLogo(), entry, i + 1));
+            rows.add(row);
         }
-        read.forEach(programme -> {
-            List<Programme> channel = byChannel.get(programme.channelId());
-            if (channel != null) {
-                channel.add(programme);
-            }
-        });
-        byChannel.values().removeIf(List::isEmpty);
-        channels.keySet().retainAll(byChannel.keySet());
         Instant now = clock.instant();
-        guide.setChannels(List.copyOf(channels.values()), List.copyOf(byChannel.values()), now);
+        guide.setChannels(channels, rows, now);
 
         Set<LocalDate> dates = new TreeSet<>();
         guide.getRows().forEach(row -> row.forEach(slot -> {
@@ -281,9 +286,15 @@ public class EpgWindow extends Stage {
         updatingChoices = true;
         dayComboBox.getItems().setAll(dates.stream().map(date -> new Day(date, label(date, today))).toList());
         updatingChoices = false;
-        statusLabel.setText("%d programmes of %d channels".formatted(read.size(), channels.size()));
+        statusLabel.setText("%d programmes, %d of %d channels with programmes".formatted(read.size(),
+                channelsWithProgrammes, channels.size()));
         // the viewport has its size after the next layout
         Platform.runLater(this::showNow);
+    }
+
+    private static Programme copy(Programme programme, String channelName) {
+        return new Programme(programme.channelId(), channelName, programme.start(), programme.stop(), programme.title(),
+                programme.subTitle(), programme.description(), programme.category(), programme.icon());
     }
 
     private static String label(LocalDate date, LocalDate today) {

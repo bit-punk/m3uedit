@@ -46,7 +46,7 @@ import java.util.function.Consumer;
  * {@link #setOnPlay(Consumer)}.
  */
 public class ProgrammeGuideView extends VBox {
-    static final double CHANNEL_WIDTH = 170;
+    static final double CHANNEL_WIDTH = 200;
     static final double ROW_HEIGHT = 34;
     static final double HEADER_HEIGHT = 28;
     static final double PIXELS_PER_MINUTE = 3.5;
@@ -63,11 +63,12 @@ public class ProgrammeGuideView extends VBox {
      *
      * @param name  the name shown
      * @param logo  the url of its logo, null if none
-     * @param entry the entry of the playlist played for this channel, null if none
+     * @param entry  the entry of the playlist played for this channel, null if none
+     * @param number the number of the entry in the playlist, as the table shows it; 0 if none
      */
-    public record Channel(String name, String logo, Entry entry) {
+    public record Channel(String name, String logo, Entry entry, int number) {
         public Channel(String name, String logo) {
-            this(name, logo, null);
+            this(name, logo, null, 0);
         }
     }
 
@@ -128,12 +129,16 @@ public class ProgrammeGuideView extends VBox {
         cornerLabel.getStyleClass().add("guide-corner");
         cornerLabel.setMinWidth(CHANNEL_WIDTH);
         cornerLabel.setPrefWidth(CHANNEL_WIDTH);
+        cornerLabel.setMinHeight(HEADER_HEIGHT);
         cornerLabel.setPrefHeight(HEADER_HEIGHT);
         timeHeader.getStyleClass().add("guide-time-header");
         Pane headerClip = clipped(timeHeader);
+        // the header keeps its height: the guide below shrinks instead, so the times are never cut off
+        headerClip.setMinHeight(HEADER_HEIGHT);
         headerClip.setPrefHeight(HEADER_HEIGHT);
         HBox.setHgrow(headerClip, Priority.ALWAYS);
         HBox header = new HBox(cornerLabel, headerClip);
+        header.setMinHeight(HEADER_HEIGHT);
 
         channelColumn.getStyleClass().add("guide-channels");
         Pane channelClip = clipped(channelColumn);
@@ -276,6 +281,14 @@ public class ProgrammeGuideView extends VBox {
         cell.setMinSize(CHANNEL_WIDTH, ROW_HEIGHT);
         cell.setPrefSize(CHANNEL_WIDTH, ROW_HEIGHT);
         cell.setMaxSize(CHANNEL_WIDTH, ROW_HEIGHT);
+        if (channel.number() > 0) {
+            Label index = new Label(Integer.toString(channel.number()));
+            index.getStyleClass().add("guide-channel-index");
+            index.setMinWidth(Region.USE_PREF_SIZE);
+            index.setPrefWidth(28);
+            index.setAlignment(Pos.CENTER_RIGHT);
+            cell.getChildren().add(index);
+        }
         if (channel.logo() != null && !channel.logo().isBlank()) {
             ImageView logo = new ImageView(new Image(channel.logo(), 40, 24, true, true, true));
             logo.setFitWidth(40);
@@ -438,10 +451,10 @@ public class ProgrammeGuideView extends VBox {
         Slot target = switch (event.getCode()) {
             case LEFT -> neighbour(block, -1);
             case RIGHT -> neighbour(block, 1);
-            case UP -> slotInRow(block.row - 1, block.slot);
-            case DOWN -> slotInRow(block.row + 1, block.slot);
-            case PAGE_UP -> slotInRow(Math.max(0, block.row - visibleRowCount()), block.slot);
-            case PAGE_DOWN -> slotInRow(Math.min(rows.size() - 1, block.row + visibleRowCount()), block.slot);
+            case UP -> slotNear(block.row - 1, -1, block.slot);
+            case DOWN -> slotNear(block.row + 1, 1, block.slot);
+            case PAGE_UP -> slotNear(Math.max(0, block.row - visibleRowCount()), -1, block.slot);
+            case PAGE_DOWN -> slotNear(Math.min(rows.size() - 1, block.row + visibleRowCount()), 1, block.slot);
             default -> null;
         };
         if (target != null) {
@@ -458,6 +471,26 @@ public class ProgrammeGuideView extends VBox {
         List<Slot> row = rows.get(block.row);
         int index = row.indexOf(block.slot) + direction;
         return index >= 0 && index < row.size() ? row.get(index) : null;
+    }
+
+    /**
+     * @return the slot in the given row as {@link #slotInRow}; rows without programmes are skipped in the given
+     * direction, then back towards the row of the selection (a page may end on rows without programmes)
+     */
+    private Slot slotNear(int row, int direction, Slot from) {
+        for (int candidate = row; candidate >= 0 && candidate < rows.size(); candidate += direction) {
+            Slot slot = slotInRow(candidate, from);
+            if (slot != null) {
+                return slot;
+            }
+        }
+        for (int candidate = row - direction; candidate >= 0 && candidate < rows.size(); candidate -= direction) {
+            Slot slot = slotInRow(candidate, from);
+            if (slot != null) {
+                return slot;
+            }
+        }
+        return null;
     }
 
     /**

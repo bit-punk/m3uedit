@@ -9,6 +9,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
+import javafx.stage.WindowEvent;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
@@ -49,6 +50,7 @@ public class EntryListController extends AbstractController  implements Initiali
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private Button epgButton;
+    private EpgWindow epgWindow;
     private DataModel dataModel;
 
     public EntryListController() {
@@ -273,13 +275,39 @@ public class EntryListController extends AbstractController  implements Initiali
      * Opens a window with the programmes of the playlist, read in the background.
      */
     void showEpg() {
-        List<ProgrammeGuideProvider> providers = programmeGuideProviders();
+        showEpg(programmeGuideProviders());
+    }
+
+    /**
+     * Opens a window with the programmes of the playlist; only one is open at a time: while it is, it is brought
+     * to the front instead.
+     */
+    void showEpg(List<ProgrammeGuideProvider> providers) {
+        if (epgWindow != null && epgWindow.isShowing()) {
+            epgWindow.setIconified(false);
+            epgWindow.toFront();
+            return;
+        }
         if (providers.isEmpty()) {
             return;
         }
         EpgWindow window = createEpgWindow(providers);
+        // the next click opens a new window with the playlist as it is then
+        window.addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            if (epgWindow == window) {
+                epgWindow = null;
+            }
+        });
+        epgWindow = window;
         window.show();
         window.load();
+    }
+
+    /**
+     * @return the open programme guide window, null if none
+     */
+    EpgWindow epgWindow() {
+        return epgWindow;
     }
 
     EpgWindow createEpgWindow(List<ProgrammeGuideProvider> providers) {
