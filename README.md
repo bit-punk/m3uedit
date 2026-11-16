@@ -20,8 +20,7 @@ M3UEditor is a small editor written in Java based on JavaFX for managing m3u-pla
   [epgshare01](https://epgshare01.online)) by setting their `tvg-id` - matched by `tvg-id`, URL rules (regular
   expressions on the stream URL), name or the first words of the name - and writes a guide containing only the
   channels of the playlist next to it (`tv.m3u` &rarr; `tv.xml.gz`), referenced by the playlist header; sources are
-  cached in `~/.m3uedit/cache/epg`. Without enricher, the EPG URLs of the inputs (`x-tvg-url` / `url-tvg`) are kept,
-  or replaced by the URLs set for the project
+  cached in `~/.m3uedit/cache/epg`. Without enricher, the EPG URLs of the inputs (`x-tvg-url` / `url-tvg`) are kept
 * save your inputs, filters, sorters and outputs as project (`*.m3uproj`) to re-create the playlist later on
 
 ## Prerequisites

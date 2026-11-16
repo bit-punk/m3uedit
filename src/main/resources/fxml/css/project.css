@@ -193,14 +193,6 @@
     -fx-fill: -m3u-line;
 }
 
-.epg-row {
-    -fx-padding: 6 4 8 12;
-}
-
-.epg-row .icon {
-    -fx-fill: -m3u-muted;
-}
-
 .write-hint {
     -fx-padding: 4 2 0 2;
     -fx-font-size: 0.9em;

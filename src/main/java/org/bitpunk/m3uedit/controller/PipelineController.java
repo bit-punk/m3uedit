@@ -9,14 +9,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
@@ -40,8 +36,6 @@ import java.net.URI;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -52,7 +46,6 @@ import java.util.function.Function;
 @Slf4j
 public class PipelineController extends VBox implements ModelAware {
     private static final String ICON_WRITE = "M7 2h2v6.2l2.3-2.3 1.4 1.4L8 12 3.3 7.3l1.4-1.4L7 8.2zM2 13h12v1.5H2z";
-    private static final String ICON_EPG = "M2 3h12v8H2zm1.5 1.5v5h9v-5zM5 12.5h6V14H5z";
     private static final String ICON_FLOW = "M7 1h2v10.2l2.3-2.3 1.4 1.4L8 15 3.3 10.3l1.4-1.4L7 11.2z";
 
     /**
@@ -87,17 +80,6 @@ public class PipelineController extends VBox implements ModelAware {
     private final Label filteredLabel = flowLabel();
     private final Label sortedLabel = flowLabel();
     private final Label playlistLabel = flowLabel();
-    @Getter
-    private final Label epgLabel = new Label();
-    @Getter
-    private final Button epgButton = new Button("Edit");
-    /**
-     * Asks the user for the EPG urls of the project, given the current ones and those of the inputs;
-     * empty if cancelled.
-     */
-    @Setter
-    private BiFunction<List<String>, List<String>, Optional<List<String>>> epgUrlEditor =
-            (epgUrls, inputEpgUrls) -> new EpgUrlDialog(epgUrls, inputEpgUrls).showAndWait();
     private DataModel dataModel;
     /**
      * Set while all plugins of a stage are enabled or disabled at once, so the entries are re-computed only once.
@@ -162,7 +144,7 @@ public class PipelineController extends VBox implements ModelAware {
 
         HBox sortedConnector = connector(sortedLabel);
         getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
-                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage, epgRow());
+                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage);
         writeBar.getStyleClass().add("write-bar");
         // the stage is only shown if there are enrichers (none are installed yet in older setups)
         for (Node node : List.of(sortedConnector, enricherStage)) {
@@ -173,57 +155,7 @@ public class PipelineController extends VBox implements ModelAware {
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
         dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> updateFlowLabels());
-        dataModel.getEpgUrls().addListener((ListChangeListener<String>) change -> updateEpgLabel());
-        dataModel.inputEpgUrlsProperty().addListener((observable, oldUrls, newUrls) -> updateEpgLabel());
-        dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> updateEpgLabel());
         refresh();
-        updateEpgLabel();
-    }
-
-    /**
-     * The EPG urls written to the header of the playlist, the same for all outputs.
-     */
-    private HBox epgRow() {
-        Label title = new Label("EPG");
-        title.getStyleClass().add("stage-title");
-        epgLabel.getStyleClass().add("plugin-detail");
-        epgLabel.setMinWidth(0);
-        epgLabel.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(epgLabel, Priority.ALWAYS);
-        epgButton.setAccessibleText("Edit EPG URLs");
-        // only the urls are shortened if the pipeline is narrow
-        title.setMinWidth(Region.USE_PREF_SIZE);
-        epgButton.setMinWidth(Region.USE_PREF_SIZE);
-        epgButton.setOnAction(event -> editEpgUrls());
-        HBox row = new HBox(6, icon(ICON_EPG), title, epgLabel, epgButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("epg-row");
-        return row;
-    }
-
-    private void editEpgUrls() {
-        List<String> enricherEpgUrls = dataModel.getPipelineResult().epgUrls();
-        epgUrlEditor.apply(List.copyOf(dataModel.getEpgUrls()),
-                        enricherEpgUrls.isEmpty() ? dataModel.getInputEpgUrls() : enricherEpgUrls)
-                .filter(urls -> !urls.equals(dataModel.getEpgUrls()))
-                .ifPresent(urls -> dataModel.getEpgUrls().setAll(urls));
-    }
-
-    private void updateEpgLabel() {
-        List<String> urls = dataModel.getEffectiveEpgUrls();
-        String text;
-        if (urls.isEmpty()) {
-            text = "none";
-        } else if (dataModel.getEpgUrls().isEmpty()) {
-            boolean fromEnrichers = !dataModel.getPipelineResult().epgUrls().isEmpty();
-            text = (fromEnrichers ? "from enrichers: " : "from inputs: ") + String.join(", ", urls);
-        } else {
-            text = String.join(", ", urls);
-        }
-        epgLabel.setText(text);
-        epgLabel.setTooltip(new Tooltip(urls.isEmpty()
-                ? "No EPG URL is written to the playlist, players show no programme guide."
-                : "Written to the playlist header (x-tvg-url):\n" + String.join("\n", urls)));
     }
 
     /**
