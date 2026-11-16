@@ -77,6 +77,10 @@
     -fx-text-fill: -guide-text;
 }
 
+.guide-channel-index {
+    -fx-text-fill: -guide-muted;
+}
+
 .guide-channel-playable {
     -fx-cursor: hand;
 }

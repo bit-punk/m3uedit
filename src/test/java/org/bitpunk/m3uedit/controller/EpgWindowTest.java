@@ -84,15 +84,27 @@ class EpgWindowTest {
     }
 
     @Test
-    void testChannelsWithProgrammesAreShownInTheOrderOfThePlaylist() throws Exception {
+    void testEveryEntryIsShownInTheOrderOfThePlaylist() throws Exception {
         List<Object> state = onFxThread(window -> List.of(
-                window.getGuide().getRows().stream().map(row -> row.getFirst().programme().channelName()).toList(),
+                window.getGuide().getChannels().stream().map(ProgrammeGuideView.Channel::name).toList(),
+                window.getGuide().getRows().stream().map(row -> row.stream().map(slot -> slot.programme().title()).toList()).toList(),
                 window.getDayComboBox().getItems().stream().map(EpgWindow.Day::label).toList(),
                 window.getStatusLabel().getText()));
 
-        assertThat(state.get(0)).isEqualTo(List.of("ARD", "ZDF"));
-        assertThat(state.get(1)).isEqualTo(List.of("Today", "Tomorrow"));
-        assertThat(state.get(2)).isEqualTo("5 programmes of 2 channels");
+        assertThat(state.get(0)).isEqualTo(List.of("ARD", "No EPG", "ZDF", "ZDF again"));
+        // an entry without programmes has an empty row, another entry of the same channel its programmes
+        assertThat(state.get(1)).isEqualTo(List.of(List.of("Tagesschau", "Tatort"), List.of(),
+                List.of("heute", "Show", "Morgen"), List.of("heute", "Show", "Morgen")));
+        assertThat(state.get(2)).isEqualTo(List.of("Today", "Tomorrow"));
+        assertThat(state.get(3)).isEqualTo("5 programmes, 3 of 4 channels with programmes");
+    }
+
+    @Test
+    void testChannelsAreNumberedLikeTheRowsOfThePlaylist() throws Exception {
+        List<Integer> numbers = onFxThread(window -> window.getGuide().getChannels().stream()
+                .map(ProgrammeGuideView.Channel::number).toList());
+
+        assertThat(numbers).containsExactly(1, 2, 3, 4);
     }
 
     @Test
@@ -124,7 +136,7 @@ class EpgWindowTest {
             return path;
         });
 
-        // the last programme of a row and the first row stop the selection
+        // the last programme of a row and the first row stop the selection, the row without programmes is skipped
         assertThat(selected).containsExactly(ARD_CRIME, ARD_CRIME, ZDF_SHOW, ZDF_EARLY, ARD_NEWS, ARD_NEWS);
     }
 
@@ -168,8 +180,8 @@ class EpgWindowTest {
             return names;
         });
 
-        // the second channel is played as the first entry with its tvg-id
-        assertThat(played).containsExactly("ZDF", "ARD", "ZDF");
+        // a channel without programmes is played too; DOWN skips its empty row
+        assertThat(played).containsExactly("No EPG", "ARD", "ZDF");
     }
 
     @Test
