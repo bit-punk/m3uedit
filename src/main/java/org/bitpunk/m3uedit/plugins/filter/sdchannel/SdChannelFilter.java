@@ -36,6 +36,11 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
     private final String description = "Filters for SD channels (criteria: the same channelName exists with a 'HD' suffix)";
 
     @Override
+    public int order() {
+        return ORDER_VARIANTS;
+    }
+
+    @Override
     public List<Entry> filter(List<Entry> list) {
         Set<String> namesWithHdVariant = new HashSet<>();
         for (Entry entry : list) {

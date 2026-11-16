@@ -110,8 +110,8 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         int row = 0;
         defaultSourcesButton = new Button("Default sources");
         defaultSourcesButton.setTooltip(new javafx.scene.control.Tooltip(
-                "The free programme guides of epgshare01 for Germany, Austria and Switzerland"));
-        defaultSourcesButton.setOnAction(event -> sourcesTextArea.setText(String.join("\n", EpgEnricher.DEFAULT_SOURCES)));
+                "The sources configured in ~/.m3uedit/plugins/" + EpgEnricher.CONFIG_FILE_NAME));
+        defaultSourcesButton.setOnAction(event -> sourcesTextArea.setText(String.join("\n", EpgEnricher.defaultSources())));
         javafx.scene.layout.VBox sourcesLabel = new javafx.scene.layout.VBox(6, new Label("Sources:"), defaultSourcesButton);
         sourcesLabel.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         grid.add(sourcesLabel, 0, row);

@@ -81,6 +81,6 @@ class EpgEnricherConfigDialogTest {
             return dialog.toConfig();
         }, enricher);
 
-        assertThat(config.sources()).containsExactlyElementsOf(EpgEnricher.DEFAULT_SOURCES);
+        assertThat(config.sources()).hasSize(3).containsExactlyElementsOf(EpgEnricher.defaultSources());
     }
 }

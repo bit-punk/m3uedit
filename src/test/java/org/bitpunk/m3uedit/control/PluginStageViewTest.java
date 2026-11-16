@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PluginStageViewTest {
 
@@ -259,5 +260,34 @@ class PluginStageViewTest {
         plugins.remove(third);
 
         assertThat(stage.getHeaderText()).isEqualTo("2 plugins");
+    }
+
+    @Test
+    void enableAllCheckBoxIsOnlyAvailableForStagesWithEnabledPlugins() {
+        ObservableList<TestPlugin> inputs = FXCollections.observableArrayList(new TestPlugin("a"));
+        PluginStageView<TestPlugin> inputStage = new PluginStageView<>("Inputs", "hint", inputs,
+                new SimpleObjectProperty<>(), false, Plugin::getDescription);
+
+        assertThatThrownBy(() -> inputStage.setEnableAllAction(enabled -> {}))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(inputStage.getEnableAllCheckBox()).isNull();
+    }
+
+    @Test
+    void enableAllCheckBoxFollowsTheListOfPlugins() {
+        ObservableList<TestPlugin> plugins = FXCollections.observableArrayList();
+        PluginStageView<TestPlugin> stage = new PluginStageView<>("Filters", "hint", plugins,
+                new SimpleObjectProperty<>(), true, Plugin::getDescription);
+        stage.setEnableAllAction(enabled -> plugins.forEach(plugin -> plugin.getEnabled().set(enabled)));
+        assertThat(stage.getEnableAllCheckBox().isDisabled()).as("nothing to enable").isTrue();
+
+        TestPlugin plugin = new TestPlugin("a");
+        plugin.getEnabled().set(true);
+        plugins.add(plugin);
+        assertThat(stage.getEnableAllCheckBox().isDisabled()).isFalse();
+        assertThat(stage.getEnableAllCheckBox().isSelected()).isTrue();
+
+        plugins.add(new TestPlugin("b"));
+        assertThat(stage.getEnableAllCheckBox().isIndeterminate()).isTrue();
     }
 }

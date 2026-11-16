@@ -35,6 +35,7 @@ public class DataModelFactory {
      */
     public static void completePlugins(DataModel dataModel) {
         completePlugins(dataModel.getFilters(), FilterPluginService.getInstance().getAllPlugins());
+        DataModel.sortFilters(dataModel.getFilters());
         completePlugins(dataModel.getSorters(), SorterPluginService.getInstance().getAllPlugins());
         completePlugins(dataModel.getEnrichers(), EnricherPluginService.getInstance().getAllPlugins());
     }

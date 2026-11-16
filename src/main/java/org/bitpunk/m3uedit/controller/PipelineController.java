@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
@@ -8,13 +9,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
@@ -38,8 +36,6 @@ import java.net.URI;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -50,7 +46,6 @@ import java.util.function.Function;
 @Slf4j
 public class PipelineController extends VBox implements ModelAware {
     private static final String ICON_WRITE = "M7 2h2v6.2l2.3-2.3 1.4 1.4L8 12 3.3 7.3l1.4-1.4L7 8.2zM2 13h12v1.5H2z";
-    private static final String ICON_EPG = "M2 3h12v8H2zm1.5 1.5v5h9v-5zM5 12.5h6V14H5z";
     private static final String ICON_FLOW = "M7 1h2v10.2l2.3-2.3 1.4 1.4L8 15 3.3 10.3l1.4-1.4L7 11.2z";
 
     /**
@@ -70,22 +65,26 @@ public class PipelineController extends VBox implements ModelAware {
     private PluginStageView<Output> outputStage;
     @Getter
     private final Button writeButton = new Button("Write playlist");
+    /**
+     * Tells why the playlist cannot be written (a disabled button shows no tooltip).
+     */
+    @Getter
+    private final Label writeHint = flowLabel();
+    /**
+     * The button to write the playlist with its hint; not part of the pipeline, so it can stay visible while the
+     * pipeline is scrolled.
+     */
+    @Getter
+    private final VBox writeBar = new VBox(writeButton, writeHint);
     private final Label loadedLabel = flowLabel();
     private final Label filteredLabel = flowLabel();
     private final Label sortedLabel = flowLabel();
     private final Label playlistLabel = flowLabel();
-    @Getter
-    private final Label epgLabel = new Label();
-    @Getter
-    private final Button epgButton = new Button("Edit");
-    /**
-     * Asks the user for the EPG urls of the project, given the current ones and those of the inputs;
-     * empty if cancelled.
-     */
-    @Setter
-    private BiFunction<List<String>, List<String>, Optional<List<String>>> epgUrlEditor =
-            (epgUrls, inputEpgUrls) -> new EpgUrlDialog(epgUrls, inputEpgUrls).showAndWait();
     private DataModel dataModel;
+    /**
+     * Set while all plugins of a stage are enabled or disabled at once, so the entries are re-computed only once.
+     */
+    private boolean changingAll;
 
     public PipelineController() {
         getStyleClass().add("pipeline");
@@ -105,17 +104,23 @@ public class PipelineController extends VBox implements ModelAware {
         // the inputs are reloaded by the data model with each change of its list
         inputStage.setOnConfigured(input -> dataModel.reloadInputs());
 
+        // the order of filters is fixed (see Filter#order), sorters sort completely, so only one is enabled
         filterStage = new PluginStageView<>("Filters", "applied top to bottom", dataModel.getFilters(), selectedStep,
-                true, Plugin::getDescription);
+                true, false, Plugin::getDescription);
         filterStage.setOnConfigured(filter -> dataModel.filterRawEntries());
 
-        sorterStage = new PluginStageView<>("Sorters", "the last one decides", dataModel.getSorters(), selectedStep,
-                true, Plugin::getDescription);
+        sorterStage = new PluginStageView<>("Sorters", "one at a time", dataModel.getSorters(), selectedStep,
+                true, false, Plugin::getDescription);
         sorterStage.setOnConfigured(sorter -> dataModel.sortFilteredEntries());
 
         enricherStage = new PluginStageView<>("Enrichers", "complete the entries, add files", dataModel.getEnrichers(),
                 selectedStep, true, Plugin::getDescription);
         enricherStage.setOnConfigured(enricher -> dataModel.enrichSortedEntries());
+
+        filterStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getFilters(), enabled,
+                dataModel::filterRawEntries));
+        enricherStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getEnrichers(), enabled,
+                dataModel::enrichSortedEntries));
 
         outputStage = new PluginStageView<>("Outputs", "receive the same playlist", dataModel.getOutputs(),
                 selectedStep, false, output -> describe(output.getOutput()));
@@ -125,13 +130,22 @@ public class PipelineController extends VBox implements ModelAware {
         writeButton.getStyleClass().add("write-button");
         writeButton.setMaxWidth(Double.MAX_VALUE);
         writeButton.setOnAction(event -> dataModel.saveEntries());
-        // writing to the outputs runs in the background, prevent starting it twice
-        writeButton.disableProperty().bind(dataModel.savingProperty());
+        // writing needs an output and entries; it runs in the background, so starting it twice is prevented
+        BooleanBinding noOutput = Bindings.isEmpty(dataModel.getOutputs());
+        BooleanBinding noEntries = Bindings.isEmpty(dataModel.getSortedEntryList());
+        writeButton.disableProperty().bind(dataModel.savingProperty().or(noOutput).or(noEntries));
+        writeHint.textProperty().bind(Bindings.when(noOutput).then("Add an output to write the playlist")
+                .otherwise(Bindings.when(noEntries).then("The playlist is empty, there is nothing to write")
+                        .otherwise("")));
+        writeHint.getStyleClass().add("write-hint");
+        writeHint.setWrapText(true);
+        writeHint.visibleProperty().bind(noOutput.or(noEntries));
+        writeHint.managedProperty().bind(writeHint.visibleProperty());
 
         HBox sortedConnector = connector(sortedLabel);
         getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
-                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage, epgRow(),
-                writeButton);
+                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage);
+        writeBar.getStyleClass().add("write-bar");
         // the stage is only shown if there are enrichers (none are installed yet in older setups)
         for (Node node : List.of(sortedConnector, enricherStage)) {
             node.visibleProperty().bind(Bindings.isNotEmpty(dataModel.getEnrichers()));
@@ -141,66 +155,41 @@ public class PipelineController extends VBox implements ModelAware {
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
         dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> updateFlowLabels());
-        dataModel.getEpgUrls().addListener((ListChangeListener<String>) change -> updateEpgLabel());
-        dataModel.inputEpgUrlsProperty().addListener((observable, oldUrls, newUrls) -> updateEpgLabel());
-        dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> updateEpgLabel());
         refresh();
-        updateEpgLabel();
     }
 
     /**
-     * The EPG urls written to the header of the playlist, the same for all outputs.
+     * Enables or disables all given plugins and re-computes the entries once.
      */
-    private HBox epgRow() {
-        Label title = new Label("EPG");
-        title.getStyleClass().add("stage-title");
-        epgLabel.getStyleClass().add("plugin-detail");
-        epgLabel.setMinWidth(0);
-        epgLabel.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(epgLabel, Priority.ALWAYS);
-        epgButton.setAccessibleText("Edit EPG URLs");
-        epgButton.setOnAction(event -> editEpgUrls());
-        HBox row = new HBox(6, icon(ICON_EPG), title, epgLabel, epgButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("epg-row");
-        return row;
-    }
-
-    private void editEpgUrls() {
-        List<String> enricherEpgUrls = dataModel.getPipelineResult().epgUrls();
-        epgUrlEditor.apply(List.copyOf(dataModel.getEpgUrls()),
-                        enricherEpgUrls.isEmpty() ? dataModel.getInputEpgUrls() : enricherEpgUrls)
-                .filter(urls -> !urls.equals(dataModel.getEpgUrls()))
-                .ifPresent(urls -> dataModel.getEpgUrls().setAll(urls));
-    }
-
-    private void updateEpgLabel() {
-        List<String> urls = dataModel.getEffectiveEpgUrls();
-        String text;
-        if (urls.isEmpty()) {
-            text = "none";
-        } else if (dataModel.getEpgUrls().isEmpty()) {
-            boolean fromEnrichers = !dataModel.getPipelineResult().epgUrls().isEmpty();
-            text = (fromEnrichers ? "from enrichers: " : "from inputs: ") + String.join(", ", urls);
-        } else {
-            text = String.join(", ", urls);
+    private void setAllEnabled(List<? extends Plugin> plugins, boolean enabled, Runnable recompute) {
+        changingAll = true;
+        try {
+            plugins.forEach(plugin -> plugin.getEnabled().set(enabled));
+        } finally {
+            changingAll = false;
         }
-        epgLabel.setText(text);
-        epgLabel.setTooltip(new Tooltip(urls.isEmpty()
-                ? "No EPG URL is written to the playlist, players show no programme guide."
-                : "Written to the playlist header (x-tvg-url):\n" + String.join("\n", urls)));
+        recompute.run();
+    }
+
+    private void recomputeUnlessChangingAll(Runnable recompute) {
+        if (!changingAll) {
+            recompute.run();
+        }
     }
 
     private void initRecomputeListeners() {
         // re-compute the entries once per change of a filter or sorter: enabled-state or order
         for (Filter filter : dataModel.getFilters()) {
-            filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
+            filter.getEnabled().addListener((observable, oldValue, newValue) ->
+                    recomputeUnlessChangingAll(dataModel::filterRawEntries));
         }
         for (Sorter sorter : dataModel.getSorters()) {
-            sorter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.sortFilteredEntries());
+            sorter.getEnabled().addListener((observable, oldValue, newValue) ->
+                    recomputeUnlessChangingAll(dataModel::sortFilteredEntries));
         }
         for (Enricher enricher : dataModel.getEnrichers()) {
-            enricher.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.enrichSortedEntries());
+            enricher.getEnabled().addListener((observable, oldValue, newValue) ->
+                    recomputeUnlessChangingAll(dataModel::enrichSortedEntries));
         }
         dataModel.getFilters().addListener((ListChangeListener<Filter>) change -> dataModel.filterRawEntries());
         dataModel.getSorters().addListener((ListChangeListener<Sorter>) change -> dataModel.sortFilteredEntries());
@@ -236,8 +225,9 @@ public class PipelineController extends VBox implements ModelAware {
         filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
                 dataModel.getFilters().size(), count(loaded - result.filtered().size(), "entry", "entries")));
         int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
-        sorterStage.setStatusProvider(() -> "%d of %d enabled, ⇅ %s".formatted(enabledCount(dataModel.getSorters()),
-                dataModel.getSorters().size(), count(reordered, "entry", "entries")));
+        sorterStage.setStatusProvider(() -> dataModel.getSorters().stream().filter(sorter -> sorter.getEnabled().get())
+                .findFirst().map(sorter -> "%s, ⇅ %s".formatted(sorter.getName(), count(reordered, "entry", "entries")))
+                .orElse("not sorted"));
         int changed = result.origins().size();
         enricherStage.setStatusProvider(() -> "%d of %d enabled, ✎ %s".formatted(enabledCount(dataModel.getEnrichers()),
                 dataModel.getEnrichers().size(), count(changed, "entry", "entries")));

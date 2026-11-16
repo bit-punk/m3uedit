@@ -1,0 +1,7 @@
+# Sources (XMLTV, .xml or .xml.gz) a new EPG Enricher starts with, in the order of their priority:
+# if several sources contain a channel, the first one wins.
+# Projects keep their own sources; this list is only used for new projects (and the "Default sources" button).
+defaultSources:
+  - "https://epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz"
+  - "https://epgshare01.online/epgshare01/epg_ripper_AT1.xml.gz"
+  - "https://epgshare01.online/epgshare01/epg_ripper_CH1.xml.gz"

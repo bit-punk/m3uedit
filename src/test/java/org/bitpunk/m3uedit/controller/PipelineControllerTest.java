@@ -1,21 +1,31 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.application.Platform;
+import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.VBox;
+import org.assertj.core.data.Offset;
 import org.bitpunk.m3uedit.controller.TestPlugins.NameSorter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestEnricher;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestFilter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestInput;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.bitpunk.m3uedit.controller.TestPlugins.entry;
@@ -87,39 +97,6 @@ class PipelineControllerTest {
     }
 
     @Test
-    void epgRowShowsTheUrlsWrittenToThePlaylist() {
-        assertThat(pipeline.getEpgLabel().getText()).isEqualTo("none");
-
-        dataModel.getEpgUrls().setAll("http://epg/a.xml", "http://epg/b.xml");
-
-        assertThat(pipeline.getEpgLabel().getText()).isEqualTo("http://epg/a.xml, http://epg/b.xml");
-    }
-
-    @Test
-    void editingTheEpgUrlsUpdatesTheProject() {
-        List<List<String>> shown = new ArrayList<>();
-        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> {
-            shown.add(epgUrls);
-            return java.util.Optional.of(List.of("http://epg/new.xml"));
-        });
-
-        pipeline.getEpgButton().fire();
-
-        assertThat(shown).containsExactly(List.of());
-        assertThat(dataModel.getEpgUrls()).containsExactly("http://epg/new.xml");
-    }
-
-    @Test
-    void cancellingTheEpgDialogKeepsTheUrls() {
-        dataModel.getEpgUrls().setAll("http://epg/a.xml");
-        pipeline.setEpgUrlEditor((epgUrls, inputEpgUrls) -> java.util.Optional.empty());
-
-        pipeline.getEpgButton().fire();
-
-        assertThat(dataModel.getEpgUrls()).containsExactly("http://epg/a.xml");
-    }
-
-    @Test
     void connectorsShowTheNumberOfEntriesPassedOn() {
         hdFilter.getEnabled().set(true);
 
@@ -156,8 +133,8 @@ class PipelineControllerTest {
         dataModel.getSortedEntryList().clear();
 
         Node row = pipeline.getFilterStage().rowOf(hdFilter).orElseThrow();
-        javafx.event.Event.fireEvent(row, new javafx.scene.input.MouseEvent(javafx.scene.input.MouseEvent.MOUSE_CLICKED,
-                0, 0, 0, 0, javafx.scene.input.MouseButton.PRIMARY, 2,
+        Event.fireEvent(row, new MouseEvent(MouseEvent.MOUSE_CLICKED,
+                0, 0, 0, 0, MouseButton.PRIMARY, 2,
                 false, false, false, false, false, false, false, false, false, false, null));
 
         assertThat(hdFilter.configured).hasValue(1);
@@ -176,9 +153,135 @@ class PipelineControllerTest {
     }
 
     @Test
+    void filtersSortersAndEnrichersCanBeEnabledAllAtOnce() {
+        assertThat(pipeline.getFilterStage().getEnableAllCheckBox()).isNotNull();
+        assertThat(pipeline.getEnricherStage().getEnableAllCheckBox()).isNotNull();
+        // only one sorter is enabled at a time
+        assertThat(pipeline.getSorterStage().getEnableAllCheckBox()).isNull();
+        // inputs and outputs are always used
+        assertThat(pipeline.getInputStage().getEnableAllCheckBox()).isNull();
+        assertThat(pipeline.getOutputStage().getEnableAllCheckBox()).isNull();
+    }
+
+    @Test
+    void enableAllCheckBoxIsAlignedWithTheCheckBoxesOfTheRows() {
+        dataModel.getEnrichers().add(new TestPlugins.TestEnricher());
+        // styled like in a project: its style class defines the colours (e.g. of the borders)
+        VBox root = new VBox(pipeline);
+        root.getStyleClass().add("project");
+        Scene scene = new Scene(root, 420, 1200);
+        scene.getStylesheets().add(Objects.requireNonNull(
+                getClass().getClassLoader().getResource("fxml/css/project.css")).toExternalForm());
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+
+        for (var stage : List.of(pipeline.getFilterStage(), pipeline.getEnricherStage())) {
+            Node headerBox = stage.getEnableAllCheckBox().lookup(".box");
+            Node rowBox = stage.lookupAll(".plugin-row").iterator().next().lookup(".check-box").lookup(".box");
+            assertThat(headerBox.localToScene(headerBox.getBoundsInLocal()).getMinX())
+                    .as("header checkbox of %s", stage.getHeaderText())
+                    .isCloseTo(rowBox.localToScene(rowBox.getBoundsInLocal()).getMinX(), Offset.offset(0.5));
+        }
+    }
+
+    @Test
+    void filtersAndSortersCannotBeReorderedButEnrichersCan() {
+        dataModel.getEnrichers().add(new TestPlugins.TestEnricher());
+
+        for (var stage : List.of(pipeline.getFilterStage(), pipeline.getSorterStage())) {
+            Node row = stage.lookupAll(".plugin-row").iterator().next();
+            assertThat(row.lookup(".grip").isVisible()).isFalse();
+            assertThat(row.lookupAll(".button").stream().map(button -> ((javafx.scene.control.Button) button).getTooltip())
+                    .filter(java.util.Objects::nonNull).map(javafx.scene.control.Tooltip::getText))
+                    .doesNotContain("Move up", "Move down");
+        }
+        Node enricherRow = pipeline.getEnricherStage().lookupAll(".plugin-row").iterator().next();
+        assertThat(enricherRow.lookup(".grip").isVisible()).isTrue();
+    }
+
+    @Test
+    void enablingASorterDisablesTheOtherOnes() {
+        NameSorter other = new NameSorter();
+        dataModel.getSorters().add(other);
+        sorter.getEnabled().set(true);
+
+        other.getEnabled().set(true);
+
+        assertThat(sorter.getEnabled().get()).isFalse();
+        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("one at a time");
+    }
+
+    @Test
+    void enableAllCheckBoxShowsWhetherAllSomeOrNoneAreEnabled() {
+        CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
+        assertThat(all.isSelected()).isFalse();
+        assertThat(all.isIndeterminate()).isFalse();
+        assertThat(all.getTooltip().getText()).isEqualTo("Enable all filters");
+
+        hdFilter.getEnabled().set(true);
+        assertThat(all.isIndeterminate()).isTrue();
+
+        shopFilter.getEnabled().set(true);
+        assertThat(all.isSelected()).isTrue();
+        assertThat(all.isIndeterminate()).isFalse();
+        assertThat(all.getTooltip().getText()).isEqualTo("Disable all filters");
+    }
+
+    @Test
+    void enableAllEnablesAllIfSomeAreDisabledAndDisablesAllOtherwise() {
+        CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
+        hdFilter.getEnabled().set(true);
+
+        all.fire();
+        assertThat(dataModel.getFilters()).allMatch(filter -> filter.getEnabled().get());
+        assertThat(all.isSelected()).isTrue();
+        assertThat(texts(pipeline)).contains("2 left after filtering");
+
+        all.fire();
+        assertThat(dataModel.getFilters()).noneMatch(filter -> filter.getEnabled().get());
+        assertThat(all.isSelected()).isFalse();
+        assertThat(texts(pipeline)).contains("4 left after filtering");
+    }
+
+    @Test
+    void enablingAllRecomputesTheEntriesOnce() {
+        List<Runnable> background = new ArrayList<>();
+        dataModel.setBackgroundExecutor(background::add);
+
+        pipeline.getFilterStage().getEnableAllCheckBox().fire();
+
+        assertThat(background).hasSize(1);
+        background.forEach(Runnable::run);
+        // the HD filter keeps the HD channels only, the shop filter removes QVC
+        assertThat(dataModel.getFilteredEntryList()).extracting(Entry::getName).containsExactly("ZDF HD", "Das Erste HD");
+    }
+
+    @Test
+    void writeButtonIsOnlyEnabledWithAnOutputAndEntries() {
+        assertThat(dataModel.getSortedEntryList()).isNotEmpty();
+        assertThat(pipeline.getWriteButton().isDisabled()).as("no output").isTrue();
+        assertThat(pipeline.getWriteHint().isVisible()).isTrue();
+        assertThat(pipeline.getWriteHint().getText()).isEqualTo("Add an output to write the playlist");
+
+        dataModel.getOutputs().add(new FileOutput());
+        assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
+        assertThat(pipeline.getWriteHint().isVisible()).isFalse();
+
+        dataModel.getInputs().clear();
+        assertThat(dataModel.getSortedEntryList()).isEmpty();
+        assertThat(pipeline.getWriteButton().isDisabled()).as("no entries").isTrue();
+        assertThat(pipeline.getWriteHint().getText()).isEqualTo("The playlist is empty, there is nothing to write");
+
+        dataModel.getOutputs().clear();
+        assertThat(pipeline.getWriteHint().getText()).as("the output is missing first").isEqualTo("Add an output to write the playlist");
+    }
+
+    @Test
     void writeButtonIsDisabledWhileSaving() {
         List<Runnable> background = new ArrayList<>();
         dataModel.setBackgroundExecutor(background::add);
+        dataModel.getOutputs().add(new FileOutput());
+        assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
 
         pipeline.getWriteButton().fire();
 
@@ -196,7 +299,7 @@ class PipelineControllerTest {
 
         assertThat(pipeline.getInputStage().getHeaderText()).isEqualTo("1 input, 4 entries");
         assertThat(pipeline.getFilterStage().getHeaderText()).isEqualTo("1 of 2 enabled, −2 entries");
-        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("1 of 1 enabled, ⇅ 1 entry");
+        assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("Name Sorter, ⇅ 1 entry");
         assertThat(pipeline.getOutputStage().getHeaderText()).isEqualTo("no output");
 
         // the status follows the enabled filters

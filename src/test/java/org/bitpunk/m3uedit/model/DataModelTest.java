@@ -960,4 +960,90 @@ class DataModelTest {
         assertThat(names(dataModel.getPipelineResult().sorted())).containsExactly("a", "b", "c");
         assertThat(dataModel.getPipelineResult().step(channelNameSorter).orElseThrow().output()).hasSize(3);
     }
+
+    /**
+     * Removes the given entries, like a filter requesting their (dead) streams.
+     */
+    private static class ProbingFilter extends org.bitpunk.m3uedit.plugins.filter.uniqueuri.UniqueUriFilter {
+        private final List<Entry> dead;
+
+        ProbingFilter(List<Entry> dead) {
+            this.dead = dead;
+            getEnabled().set(true);
+        }
+
+        @Override
+        public int order() {
+            return ORDER_PROBING;
+        }
+
+        @Override
+        public List<Entry> filter(List<Entry> list) {
+            return list.stream().filter(entry -> dead.stream().noneMatch(d -> d == entry)).toList();
+        }
+
+        @Override
+        public String getName() {
+            return "Probing Filter";
+        }
+    }
+
+    @Test
+    void testFiltersAreAppliedInTheirOrderNotInTheOrderOfTheProject() {
+        // two entries of the same channel, the stream of the first one is dead
+        Entry dead = entry("ZDF");
+        Entry alive = entry("ZDF");
+        alive.setChannelUri("http://example.com/ZDF-backup");
+        ProbingFilter probing = new ProbingFilter(List.of(dead));
+        uniqueNameFilter.getEnabled().set(true);
+        // removing the duplicates first would keep the dead entry, which is removed afterwards: the channel is lost
+        dataModel.getFilters().add(probing);
+        dataModel.getInputs().add(new TestInput("in", List.of(dead, alive)));
+        runAll();
+
+        assertThat(dataModel.getFilteredEntryList()).containsExactly(alive);
+    }
+
+    @Test
+    void testFiltersAreShownInTheOrderTheyAreApplied() {
+        List<org.bitpunk.m3uedit.plugins.filter.Filter> filters = new ArrayList<>(List.of(
+                new org.bitpunk.m3uedit.plugins.filter.sdchannel.SdChannelFilter(),
+                new org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter(),
+                new org.bitpunk.m3uedit.plugins.filter.reachableurl.ReachableUrlFilter(),
+                new org.bitpunk.m3uedit.plugins.filter.uniqueuri.UniqueUriFilter(),
+                new org.bitpunk.m3uedit.plugins.filter.channelname.ChannelNameFilter()));
+
+        DataModel model = new DataModel("order", null, filters, null, null, null, null, null);
+
+        assertThat(model.getFilters()).extracting(filter -> filter.getClass().getSimpleName()).containsExactly(
+                "ChannelNameFilter", "ReachableUrlFilter", "UniqueUriFilter", "UniqueNameFilter", "SdChannelFilter");
+    }
+
+    @Test
+    void testOnlyOneSorterIsEnabled() {
+        ChannelNameSorter second = new ChannelNameSorter();
+        dataModel.getSorters().add(second);
+        channelNameSorter.getEnabled().set(true);
+
+        second.getEnabled().set(true);
+
+        assertThat(channelNameSorter.getEnabled().get()).isFalse();
+        assertThat(second.getEnabled().get()).isTrue();
+        second.getEnabled().set(false);
+        assertThat(dataModel.getSorters()).noneMatch(sorter -> sorter.getEnabled().get());
+    }
+
+    @Test
+    void testOfSeveralEnabledSortersInAProjectTheLastOneIsKept() {
+        ChannelNameSorter first = new ChannelNameSorter();
+        ChannelNameSorter last = new ChannelNameSorter();
+        first.getEnabled().set(true);
+        last.getEnabled().set(true);
+
+        DataModel model = new DataModel("sorters", null, null, List.of(first, last), null, null, null, null);
+
+        assertThat(first.getEnabled().get()).isFalse();
+        assertThat(last.getEnabled().get()).isTrue();
+        assertThat(model.getSorters()).containsExactly(first, last);
+    }
 }

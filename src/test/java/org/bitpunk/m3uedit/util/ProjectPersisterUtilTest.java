@@ -625,7 +625,7 @@ class ProjectPersisterUtilTest {
 
         assertThat(((org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher) ProjectPersisterUtil.loadProject(withoutSources)
                 .getEnrichers().getFirst()).getSources())
-                .containsExactlyElementsOf(org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher.DEFAULT_SOURCES);
+                .containsExactlyElementsOf(org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher.defaultSources());
         assertThat(((org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher) ProjectPersisterUtil.loadProject(emptySources)
                 .getEnrichers().getFirst()).getSources()).as("cleared by the user").isEmpty();
     }

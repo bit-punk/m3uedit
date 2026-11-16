@@ -6,10 +6,13 @@
 <fx:root stylesheets="@css/project.css" styleClass="project" type="javafx.scene.layout.VBox"
          xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.2-ea">
     <SplitPane fx:id="splitPane" dividerPositions="0.3" VBox.vgrow="ALWAYS">
-        <ScrollPane fx:id="pipelineScrollPane" fitToWidth="true" hbarPolicy="NEVER" minWidth="300"
-                    styleClass="pipeline-scroll-pane">
-            <PipelineController fx:id="pipelineController"/>
-        </ScrollPane>
+        <!-- the pipeline scrolls, the bar to write the playlist stays at the bottom (added by the controller) -->
+        <VBox fx:id="pipelinePane" minWidth="300" styleClass="pipeline-pane">
+            <ScrollPane fx:id="pipelineScrollPane" fitToWidth="true" hbarPolicy="NEVER"
+                        styleClass="pipeline-scroll-pane" VBox.vgrow="ALWAYS">
+                <PipelineController fx:id="pipelineController"/>
+            </ScrollPane>
+        </VBox>
         <VBox minWidth="400">
             <PipelineSummaryView fx:id="summaryView"/>
             <TabPane fx:id="resultTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="result-tabs">

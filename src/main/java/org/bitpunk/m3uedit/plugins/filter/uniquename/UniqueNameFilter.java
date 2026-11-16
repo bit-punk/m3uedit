@@ -18,6 +18,11 @@ public class UniqueNameFilter extends AbstractUniqueFilter implements Filter {
     private final String description = "Filters for unique entries (criteria: channelName)";
 
     @Override
+    public int order() {
+        return ORDER_DEDUPLICATION + 10;
+    }
+
+    @Override
     public List<Entry> filter(List<Entry> list) {
         return list.stream()
                 .filter(distinctByKey(Entry::getName))
