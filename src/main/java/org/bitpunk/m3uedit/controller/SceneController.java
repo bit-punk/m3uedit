@@ -8,12 +8,24 @@ import javafx.collections.ListChangeListener;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
+import org.bitpunk.m3uedit.config.RecentProject;
+import org.bitpunk.m3uedit.config.RecentProjects;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
@@ -21,7 +33,11 @@ import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.bitpunk.m3uedit.util.SvgUtil;
 
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -37,6 +53,7 @@ public class SceneController implements Initializable {
     private static final String NEW_PROJECT_ICON_RESOURCE = "/icons/new_project.svg";
     private static final String OPEN_PROJECT_ICON_RESOURCE = "/icons/open_project.svg";
     private static final String ABOUT_ICON_RESOURCE = "/icons/about.svg";
+    private static final DateTimeFormatter LAST_OPENED = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     /**
      * Asks the user whether the project with the given name may be closed despite unsaved changes.
@@ -66,8 +83,24 @@ public class SceneController implements Initializable {
      * Shows an error message to the user.
      */
     Consumer<String> errorReporter = DialogUtil::showError;
+    /**
+     * The recently used project-files, shown in the file-menu and on the start screen.
+     */
+    private RecentProjects recentProjects;
     @FXML
     private Label statusLabel;
+    @FXML
+    private Menu recentProjectsMenu;
+    @FXML
+    private VBox recentProjectsBox;
+    @FXML
+    private TableView<RecentProject> recentProjectsTable;
+    @FXML
+    private TableColumn<RecentProject, String> recentProjectNameColumn;
+    @FXML
+    private TableColumn<RecentProject, String> recentProjectFolderColumn;
+    @FXML
+    private TableColumn<RecentProject, Instant> recentProjectLastOpenedColumn;
     @FXML
     private MenuItem saveProjectMenuItem;
     @FXML
@@ -172,6 +205,79 @@ public class SceneController implements Initializable {
         initMenuItemDisableListeners();
         initTabPane();
         initStartScreen();
+        initRecentProjectsTable();
+        setRecentProjects(new RecentProjects());
+    }
+
+    /**
+     * Shows the given recently used project-files in the file-menu and on the start screen.
+     */
+    void setRecentProjects(RecentProjects recentProjects) {
+        this.recentProjects = recentProjects;
+        recentProjectsTable.setItems(recentProjects.getProjects());
+        recentProjectsBox.visibleProperty().bind(Bindings.isNotEmpty(recentProjects.getProjects()));
+        recentProjectsBox.managedProperty().bind(recentProjectsBox.visibleProperty());
+        recentProjects.getProjects().addListener((ListChangeListener<RecentProject>) change -> updateRecentProjectsMenu());
+        updateRecentProjectsMenu();
+    }
+
+    private void initRecentProjectsTable() {
+        recentProjectNameColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().name()));
+        recentProjectFolderColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().folder()));
+        recentProjectLastOpenedColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().lastOpened()));
+        recentProjectLastOpenedColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Instant lastOpened, boolean empty) {
+                super.updateItem(lastOpened, empty);
+                setText(empty || lastOpened == null ? null : LAST_OPENED.format(lastOpened.atZone(ZoneId.systemDefault())));
+            }
+        });
+        recentProjectsTable.setRowFactory(table -> {
+            TableRow<RecentProject> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !row.isEmpty()) {
+                    openRecentProject(row.getItem());
+                }
+            });
+            return row;
+        });
+        recentProjectsTable.setOnKeyPressed(event -> {
+            RecentProject selected = recentProjectsTable.getSelectionModel().getSelectedItem();
+            if (event.getCode() == KeyCode.ENTER && selected != null) {
+                openRecentProject(selected);
+                event.consume();
+            }
+        });
+    }
+
+    private void updateRecentProjectsMenu() {
+        recentProjectsMenu.getItems().clear();
+        for (RecentProject project : recentProjects.getProjects()) {
+            MenuItem item = new MenuItem("%s  –  %s".formatted(project.name(), project.folder()));
+            item.setMnemonicParsing(false);
+            item.setOnAction(event -> openRecentProject(project));
+            recentProjectsMenu.getItems().add(item);
+        }
+        if (!recentProjectsMenu.getItems().isEmpty()) {
+            MenuItem clear = new MenuItem("Clear List");
+            clear.setOnAction(event -> recentProjects.clear());
+            recentProjectsMenu.getItems().addAll(new SeparatorMenuItem(), clear);
+        }
+        recentProjectsMenu.setDisable(recentProjectsMenu.getItems().isEmpty());
+    }
+
+    /**
+     * Opens a recently used project-file; one that no longer exists is removed from the list.
+     */
+    void openRecentProject(RecentProject project) {
+        Path projectFile = project.file();
+        if (!Files.isRegularFile(projectFile)) {
+            recentProjects.remove(projectFile);
+            errorReporter.accept("Project-file '%s' no longer exists, it has been removed from the recent projects."
+                    .formatted(projectFile));
+            return;
+        }
+        openProject(projectFile);
     }
 
     private void initIcons() {
@@ -223,13 +329,20 @@ public class SceneController implements Initializable {
     void handleOpenProjectAction() {
         log.debug("Loading new Project ...");
         Path projectFile = projectFileChooser.get();
-        if (projectFile == null) {
-            return;
+        if (projectFile != null) {
+            openProject(projectFile);
         }
+    }
+
+    /**
+     * Opens the given project-file in a new tab, or selects its tab if it is already open.
+     */
+    void openProject(Path projectFile) {
         Optional<Tab> alreadyOpen = findProjectTab(projectFile);
         if (alreadyOpen.isPresent()) {
             log.debug("project-file {} is already open", projectFile);
             tabPane.getSelectionModel().select(alreadyOpen.get());
+            recentProjects.add(projectFile);
             return;
         }
         DataModel dataModel = projectLoader.apply(projectFile);
@@ -240,6 +353,7 @@ public class SceneController implements Initializable {
         DataModelFactory.completePlugins(dataModel);    // each filter and sorter is shown exactly once
         dataModel.setChanged(false);    // clear dirty-flag
         addNewProjectTab(dataModel);
+        recentProjects.add(projectFile);
         dataModel.reloadInputs();       // entries are not persisted, so they are loaded from the inputs
     }
 
@@ -269,7 +383,12 @@ public class SceneController implements Initializable {
         }
         DataModel dataModel = ((ProjectController) selectedTab.getContent()).getDataModel();
         switch (saver.apply(dataModel)) {
-            case SAVED -> dataModel.setChanged(false);  // clear dirty-flag
+            case SAVED -> {
+                dataModel.setChanged(false);  // clear dirty-flag
+                if (dataModel.getProjectFile() != null) {
+                    recentProjects.add(dataModel.getProjectFile());
+                }
+            }
             case FAILED -> errorReporter.accept("Project '%s' could not be saved, see the log for details.".formatted(dataModel.getName()));
             case CANCELLED -> log.debug("saving project '{}' cancelled", dataModel.getName());
         }

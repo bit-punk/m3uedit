@@ -44,3 +44,25 @@
 .start-screen-button:hover .start-screen-icon {
     -fx-fill: -fx-accent;
 }
+
+.recent-projects {
+    -fx-spacing: 8px;
+    -fx-max-width: 760px;
+}
+
+.recent-projects-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-base-color;
+    -fx-opacity: 0.85;
+}
+
+.recent-projects-table {
+    -fx-fixed-cell-size: 26px;
+    /* header and up to 10 rows */
+    -fx-pref-height: 292px;
+}
+
+.recent-projects-table .table-row-cell:filled {
+    -fx-cursor: hand;
+}
