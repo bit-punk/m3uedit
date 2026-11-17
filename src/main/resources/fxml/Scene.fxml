@@ -22,6 +22,7 @@
                             <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                         </accelerator>
                     </MenuItem>
+                    <Menu fx:id="recentProjectsMenu" text="Open Recent Projects"/>
                     <MenuItem fx:id="saveProjectMenuItem" disable="true" onAction="#handleSaveProjectAction" text="Save Project">
                         <accelerator>
                             <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
@@ -72,6 +73,19 @@
                             </graphic>
                         </Button>
                     </HBox>
+                    <VBox fx:id="recentProjectsBox" styleClass="recent-projects">
+                        <Label text="Zuletzt verwendete Projekte" styleClass="recent-projects-title"/>
+                        <TableView fx:id="recentProjectsTable" styleClass="recent-projects-table">
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+                            </columnResizePolicy>
+                            <columns>
+                                <TableColumn fx:id="recentProjectNameColumn" text="Name" prefWidth="180"/>
+                                <TableColumn fx:id="recentProjectFolderColumn" text="Verzeichnis" prefWidth="400"/>
+                                <TableColumn fx:id="recentProjectLastOpenedColumn" text="Zuletzt geöffnet" prefWidth="130"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
                 </VBox>
                 <TabPane fx:id="tabPane"/>
             </StackPane>
