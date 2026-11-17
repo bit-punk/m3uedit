@@ -159,4 +159,36 @@ class EntryListControllerTest {
             controller.epgWindow().close();
         });
     }
+
+    @Test
+    void testTheLogoIsShownBeforeTheChannelName(@org.junit.jupiter.api.io.TempDir java.nio.file.Path tempDir) throws Exception {
+        java.nio.file.Path logoFile = tempDir.resolve("zdf.png");
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_ARGB),
+                "png", logoFile.toFile());
+        Entry zdf = entry("ZDF");
+        zdf.setTvgLogo(logoFile.toUri().toString());
+        Entry plain = entry("Plain");
+        EntryListController controller = controllerWith(zdf, plain);
+
+        runOnFxThread(() -> {
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setScene(new javafx.scene.Scene(new javafx.scene.Group(controller), 600, 300));
+            stage.show();
+            controller.entryTableView().layout();
+            java.util.Map<String, EntryListController.ChannelNameCell> cells = new java.util.HashMap<>();
+            controller.entryTableView().lookupAll(".table-cell").stream()
+                    .filter(EntryListController.ChannelNameCell.class::isInstance)
+                    .map(EntryListController.ChannelNameCell.class::cast)
+                    .filter(cell -> !cell.isEmpty())
+                    .forEach(cell -> cells.put(cell.getText(), cell));
+            stage.close();
+
+            assertThat(cells.keySet()).containsExactlyInAnyOrder("ZDF", "Plain");
+            assertThat(cells.get("ZDF").logo().getImage()).isNotNull();
+            assertThat(cells.get("ZDF").logo().getImage().getUrl()).endsWith("/zdf.png");
+            // without a logo the space stays empty, so the names are aligned
+            assertThat(cells.get("Plain").logo().getImage()).isNull();
+            assertThat(cells.get("Plain").getGraphic()).isNotNull();
+        });
+    }
 }
