@@ -9,7 +9,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -25,6 +24,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.controller.GuideTimeline.Slot;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.util.ChannelLogos;
 import org.bitpunk.m3uedit.plugins.enricher.Programme;
 
 import java.time.Instant;
@@ -290,7 +290,7 @@ public class ProgrammeGuideView extends VBox {
             cell.getChildren().add(index);
         }
         if (channel.logo() != null && !channel.logo().isBlank()) {
-            ImageView logo = new ImageView(new Image(channel.logo(), 40, 24, true, true, true));
+            ImageView logo = new ImageView(ChannelLogos.get(channel.logo(), 40, 24));
             logo.setFitWidth(40);
             logo.setFitHeight(24);
             logo.setPreserveRatio(true);

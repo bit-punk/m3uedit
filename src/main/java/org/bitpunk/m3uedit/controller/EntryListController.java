@@ -8,12 +8,15 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
+import javafx.scene.layout.StackPane;
 import javafx.stage.WindowEvent;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.util.ChannelLogos;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 
@@ -82,6 +85,7 @@ public class EntryListController extends AbstractController  implements Initiali
         ListControllerUtil.addPlayColumn(entryTableView);
 
         channelNameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        channelNameColumn.setCellFactory(column -> new ChannelNameCell());
         // e.g. set by the EPG enricher, players match the channels of the programme guide by it
         tvgIdColumn.setCellValueFactory(new PropertyValueFactory<>("tvgId"));
         channelUriColumn.setCellValueFactory(new PropertyValueFactory<>("channelUri"));
@@ -336,4 +340,45 @@ public class EntryListController extends AbstractController  implements Initiali
         }
     }
 
+    
+    /**
+     * Shows the name of the channel after its logo (tvg-logo). Without a logo the space stays empty, so the names
+     * are aligned.
+     */
+    static class ChannelNameCell extends TableCell<Entry, String> {
+        static final double LOGO_WIDTH = 32;
+        static final double LOGO_HEIGHT = 20;
+
+        private final ImageView logo = new ImageView();
+        private final StackPane logoBox = new StackPane(logo);
+
+        ChannelNameCell() {
+            logo.setFitWidth(LOGO_WIDTH);
+            logo.setFitHeight(LOGO_HEIGHT);
+            logo.setPreserveRatio(true);
+            logoBox.setMinSize(LOGO_WIDTH, LOGO_HEIGHT);
+            logoBox.setPrefSize(LOGO_WIDTH, LOGO_HEIGHT);
+            logoBox.setMaxSize(LOGO_WIDTH, LOGO_HEIGHT);
+            setGraphicTextGap(6);
+        }
+
+        @Override
+        protected void updateItem(String name, boolean empty) {
+            super.updateItem(name, empty);
+            Entry entry = getTableRow() != null ? getTableRow().getItem() : null;
+            if (empty || entry == null) {
+                setText(null);
+                setGraphic(null);
+                logo.setImage(null);
+                return;
+            }
+            setText(name);
+            logo.setImage(ChannelLogos.get(entry.getTvgLogo(), LOGO_WIDTH, LOGO_HEIGHT));
+            setGraphic(logoBox);
+        }
+
+        ImageView logo() {
+            return logo;
+        }
     }
+}
