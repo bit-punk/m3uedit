@@ -18,6 +18,8 @@ jobs:
     # pull requests of dependabot only get a read-only token and are labelled by dependabot itself
     if: github.actor != 'dependabot[bot]'
     permissions:
+      # to read .github/release-drafter.yml (the permissions of a job replace those of the workflow)
+      contents: read
       # to label the pull request
       pull-requests: write
     runs-on: ubuntu-latest
