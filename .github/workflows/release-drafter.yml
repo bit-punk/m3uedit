@@ -1,35 +1,24 @@
 name: Release Drafter
 
+# updates the draft of the next release with the pull requests merged into develop (.github/release-drafter.yml)
 on:
-  # updates the draft of the next release with the pull requests merged into develop
   push:
     branches: [ "develop" ]
-  # labels pull requests by their branch name (autolabeler in .github/release-drafter.yml)
-  pull_request:
-    types: [ opened, reopened, synchronize, edited ]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   update_release_draft:
-    # pull requests of dependabot only get a read-only token and are labelled by dependabot itself
-    if: github.event_name == 'push' || github.actor != 'dependabot[bot]'
     permissions:
       # to create and update the draft release
       contents: write
-      # to label pull requests
-      pull-requests: write
+      # to read the merged pull requests
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v6
-        with:
-          # pull requests are only labelled, the draft is updated once they are merged
-          disable-releaser: ${{ github.event_name == 'pull_request' }}
-          disable-autolabeler: ${{ github.event_name == 'push' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: release-drafter/release-drafter@v7
