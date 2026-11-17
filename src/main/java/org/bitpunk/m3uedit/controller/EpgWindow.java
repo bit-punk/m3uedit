@@ -98,8 +98,12 @@ public class EpgWindow extends Stage {
         }
     }
 
-    private final List<Entry> playlist;
-    private final List<ProgrammeGuideProvider> providers;
+    private List<Entry> playlist;
+    private List<ProgrammeGuideProvider> providers;
+    /**
+     * Counts the loads, so the result of a load replaced by a newer one is discarded.
+     */
+    private long loadGeneration;
     private final Clock clock;
     private final ZoneId zone;
     @Getter
@@ -218,31 +222,74 @@ public class EpgWindow extends Stage {
      * Reads the programmes in the background.
      */
     public void load() {
-        load(runnable -> {
-            Thread thread = new Thread(runnable, "epg-window");
-            thread.setDaemon(true);
-            thread.start();
-        });
+        load(DEFAULT_EXECUTOR);
     }
 
+    private static final Executor DEFAULT_EXECUTOR = runnable -> {
+        Thread thread = new Thread(runnable, "epg-window");
+        thread.setDaemon(true);
+        thread.start();
+    };
+
     void load(Executor executor) {
+        load(executor, false);
+    }
+
+    /**
+     * Shows the given playlist with the programmes of the given providers, e.g. after the pipeline has been
+     * re-computed. The programmes are read again in the background; meanwhile the programmes read before stay
+     * visible, and afterwards the time shown and the selected programme are kept.
+     *
+     * @param playlist  the playlist, a copy is taken
+     * @param providers the enrichers providing the programmes, empty if the EPG enricher has been disabled
+     */
+    public void refresh(List<Entry> playlist, List<ProgrammeGuideProvider> providers) {
+        refresh(playlist, providers, DEFAULT_EXECUTOR);
+    }
+
+    void refresh(List<Entry> playlist, List<ProgrammeGuideProvider> providers, Executor executor) {
+        this.playlist = List.copyOf(playlist);
+        this.providers = List.copyOf(providers);
+        if (this.providers.isEmpty()) {
+            loadGeneration++;
+            showProgrammes(List.of(), true);
+            loadingLabel.setText("Enable the EPG Enricher to see the programmes of the channels.");
+            statusLabel.setText(loadingLabel.getText());
+            return;
+        }
+        load(executor, true);
+    }
+
+    private void load(Executor executor, boolean refreshing) {
+        long generation = ++loadGeneration;
+        List<Entry> playlistToRead = playlist;
+        List<ProgrammeGuideProvider> providersToRead = providers;
         Task<List<Programme>> task = new Task<>() {
             @Override
             protected List<Programme> call() throws Exception {
                 List<Programme> read = new ArrayList<>();
-                for (ProgrammeGuideProvider provider : providers) {
-                    read.addAll(provider.readProgrammes(playlist));
+                for (ProgrammeGuideProvider provider : providersToRead) {
+                    read.addAll(provider.readProgrammes(playlistToRead));
                 }
                 return read;
             }
         };
-        task.setOnSucceeded(event -> showProgrammes(task.getValue()));
+        task.setOnSucceeded(event -> {
+            if (generation == loadGeneration) {
+                showProgrammes(task.getValue(), refreshing);
+            }
+        });
         task.setOnFailed(event -> {
+            if (generation != loadGeneration) {
+                return;
+            }
             log.error("The programmes could not be read", task.getException());
             statusLabel.setText("The programme guides could not be read: " + task.getException().getMessage());
-            loadingLabel.setText(statusLabel.getText());
+            if (!refreshing) {
+                loadingLabel.setText(statusLabel.getText());
+            }
         });
-        statusLabel.setText("Reading the programme guides …");
+        statusLabel.setText(refreshing ? "Updating the programme guides …" : "Reading the programme guides …");
         executor.execute(task);
     }
 
@@ -250,6 +297,16 @@ public class EpgWindow extends Stage {
      * Shows the programmes, a row for each entry of the playlist in its order, also without programmes.
      */
     void showProgrammes(List<Programme> read) {
+        showProgrammes(read, false);
+    }
+
+    /**
+     * @param refreshing true to keep the time shown and the selected programme, false to show the current time
+     */
+    private void showProgrammes(List<Programme> read, boolean refreshing) {
+        Programme selected = guide.getSelectedProgramme().get();
+        Instant shownTime = guide.getTimeline() == null ? null : guide.getTimeline().timeAt(guide.scrollX() + 60);
+        double vvalue = guide.getScrollPane().getVvalue();
         programmes = List.copyOf(read);
         loadingLabel.setVisible(read.isEmpty());
         loadingLabel.setText("No programmes for the channels of the playlist.");
@@ -288,8 +345,37 @@ public class EpgWindow extends Stage {
         updatingChoices = false;
         statusLabel.setText("%d programmes, %d of %d channels with programmes".formatted(read.size(),
                 channelsWithProgrammes, channels.size()));
-        // the viewport has its size after the next layout
-        Platform.runLater(this::showNow);
+        // the search applies to the new blocks as well
+        guide.setSearch(searchField.getText());
+        if (refreshing && shownTime != null) {
+            // the viewport has its new size after the next layout
+            Platform.runLater(() -> keepView(shownTime, vvalue, selected));
+        } else {
+            // the viewport has its size after the next layout
+            Platform.runLater(this::showNow);
+        }
+    }
+
+    /**
+     * Shows the given time again and selects the programme selected before, if it is still shown.
+     */
+    private void keepView(Instant shownTime, double vvalue, Programme selected) {
+        guide.setNow(clock.instant());
+        guide.scrollTo(shownTime);
+        guide.getScrollPane().setVvalue(vvalue);
+        Programme same = selected == null ? null : guide.getRows().stream().flatMap(List::stream)
+                .map(GuideTimeline.Slot::programme)
+                .filter(programme -> sameProgramme(programme, selected))
+                .findFirst().orElse(null);
+        guide.getSelectedProgramme().set(same);
+        updateChoices(shownTime);
+    }
+
+    private static boolean sameProgramme(Programme programme, Programme other) {
+        return Objects.equals(programme.channelId(), other.channelId())
+                && Objects.equals(programme.channelName(), other.channelName())
+                && Objects.equals(programme.start(), other.start())
+                && Objects.equals(programme.title(), other.title());
     }
 
     private static Programme copy(Programme programme, String channelName) {

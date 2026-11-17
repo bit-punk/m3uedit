@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -12,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.StackPane;
 import javafx.stage.WindowEvent;
+import javafx.util.Duration;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
@@ -54,6 +56,11 @@ public class EntryListController extends AbstractController  implements Initiali
     @SuppressWarnings({"UnusedDeclaration"})
     private Button epgButton;
     private EpgWindow epgWindow;
+    /**
+     * Updates an open programme guide window once the playlist has not changed for a moment: a re-computation of
+     * the pipeline changes it several times, and reading the programme guides takes a while.
+     */
+    private final PauseTransition epgRefresh = new PauseTransition(Duration.millis(500));
     private DataModel dataModel;
 
     public EntryListController() {
@@ -329,9 +336,30 @@ public class EntryListController extends AbstractController  implements Initiali
         entryTableView.setItems(this.dataModel.getSortedEntryList());
         resetManualChangesButton.disableProperty().bind(Bindings.isEmpty(this.dataModel.getManualChanges()));
         // enabling an enricher re-computes the pipeline
-        this.dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> updateEpgButton());
+        this.dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> {
+            updateEpgButton();
+            scheduleEpgRefresh();
+        });
         this.dataModel.getEnrichers().addListener((ListChangeListener<Enricher>) change -> updateEpgButton());
+        // changes of the user, e.g. entries moved or removed
+        this.dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> scheduleEpgRefresh());
+        epgRefresh.setOnFinished(event -> refreshEpgWindow());
         updateEpgButton();
+    }
+
+    private void scheduleEpgRefresh() {
+        if (epgWindow != null && epgWindow.isShowing()) {
+            epgRefresh.playFromStart();
+        }
+    }
+
+    /**
+     * Shows the current playlist and the programmes of the enabled enrichers in the open programme guide window.
+     */
+    void refreshEpgWindow() {
+        if (epgWindow != null && epgWindow.isShowing()) {
+            epgWindow.refresh(dataModel.getSortedEntryList(), programmeGuideProviders());
+        }
     }
 
     private static class IndicesList extends ArrayList<Integer> {

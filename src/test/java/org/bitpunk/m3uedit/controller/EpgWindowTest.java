@@ -194,4 +194,81 @@ class EpgWindowTest {
 
         assertThat(focusOwner).isInstanceOf(ProgrammeGuideView.class);
     }
+
+    /**
+     * Runs the action on the JavaFX thread after the pending events (results of tasks, layouts) have been processed.
+     */
+    private static <T> T later(java.util.concurrent.Callable<T> action) throws Exception {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        Platform.runLater(() -> Platform.runLater(() -> Platform.runLater(() -> {
+            try {
+                result.complete(action.call());
+            } catch (Exception | AssertionError e) {
+                result.completeExceptionally(e);
+            }
+        })));
+        return result.get(10, TimeUnit.SECONDS);
+    }
+
+    private static List<String> channelNames(EpgWindow window) {
+        return window.getGuide().getChannels().stream().map(ProgrammeGuideView.Channel::name).toList();
+    }
+
+    @Test
+    void testARefreshShowsTheNewPlaylistAndKeepsTheSelectionAndTheSearch() throws Exception {
+        List<ProgrammeGuideProvider> providers = List.of(playlist -> List.of(ARD_NEWS, ARD_CRIME, ZDF_EARLY, ZDF_SHOW, ZDF_TOMORROW));
+        EpgWindow window = onFxThread(providers, opened -> {
+            opened.getGuide().getSelectedProgramme().set(ZDF_SHOW);
+            opened.getSearchField().setText("Tatort");
+            return opened;
+        });
+
+        later(() -> {
+            // e.g. a sorter moved ZDF to the top and a filter removed the entry without EPG
+            window.refresh(List.of(entry("ZDF", "ZDF.de"), entry("ARD", "ARD.de")), providers, Runnable::run);
+            return null;
+        });
+        List<Object> state = later(() -> List.of(
+                channelNames(window),
+                window.getGuide().getSelectedProgramme().get(),
+                window.getGuide().blockOf(ARD_NEWS).getPseudoClassStates().stream().map(Object::toString).toList(),
+                window.getStatusLabel().getText()));
+
+        assertThat(state.get(0)).isEqualTo(List.of("ZDF", "ARD"));
+        assertThat(state.get(1)).isEqualTo(ZDF_SHOW);
+        assertThat((List<?>) state.get(2)).asString().contains("dimmed");
+        assertThat(state.get(3)).isEqualTo("5 programmes, 2 of 2 channels with programmes");
+    }
+
+    @Test
+    void testARefreshWithoutProvidersShowsAHint() throws Exception {
+        EpgWindow window = onFxThread(opened -> opened);
+
+        String status = later(() -> {
+            window.refresh(List.of(entry("ARD", "ARD.de")), List.of(), Runnable::run);
+            return window.getStatusLabel().getText();
+        });
+
+        assertThat(status).contains("Enable the EPG Enricher");
+        assertThat(later(() -> window.getGuide().getRows())).singleElement().asList().isEmpty();
+    }
+
+    @Test
+    void testTheResultOfAnOutdatedRefreshIsDiscarded() throws Exception {
+        EpgWindow window = onFxThread(opened -> opened);
+        List<Runnable> slowLoad = new java.util.ArrayList<>();
+
+        later(() -> {
+            window.refresh(List.of(entry("Old", "ARD.de")), List.of(playlist -> List.of(ARD_NEWS)), slowLoad::add);
+            window.refresh(List.of(entry("New", "ZDF.de")), List.of(playlist -> List.of(ZDF_SHOW)), Runnable::run);
+            return null;
+        });
+        // the older load finishes last
+        later(() -> {
+            slowLoad.getFirst().run();
+            return null;
+        });
+
+        assertThat(later(() -> channelNames(window))).containsExactly("New");
+    }
 }
