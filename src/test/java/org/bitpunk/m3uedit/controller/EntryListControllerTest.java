@@ -191,4 +191,32 @@ class EntryListControllerTest {
             assertThat(cells.get("Plain").getGraphic()).isNotNull();
         });
     }
+
+    @Test
+    void testAnOpenEpgWindowShowsTheChangedPlaylist() throws Exception {
+        Entry ard = entry("ARD");
+        ard.setTvgId("ARD.de");
+        EntryListController controller = controllerWith(ard);
+        List<ProgrammeGuideProvider> providers = List.of(playlist -> List.of());
+        runOnFxThread(() -> {
+            controller.showEpg(providers);
+            Entry zdf = entry("ZDF");
+            zdf.setTvgId("ZDF.de");
+            controller.entryTableView().getItems().add(zdf);
+        });
+
+        // the window is updated once the playlist has not changed for a moment
+        long deadline = System.currentTimeMillis() + 5000;
+        List<String> channels = List.of();
+        while (!channels.contains("ZDF") && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100);
+            AtomicReference<List<String>> shown = new AtomicReference<>();
+            runOnFxThread(() -> shown.set(controller.epgWindow().getGuide().getChannels().stream()
+                    .map(ProgrammeGuideView.Channel::name).toList()));
+            channels = shown.get();
+        }
+
+        assertThat(channels).containsExactly("ARD", "ZDF");
+        runOnFxThread(() -> controller.epgWindow().close());
+    }
 }
