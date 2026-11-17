@@ -1,0 +1,76 @@
+name: Release Artifacts
+
+# Builds the application for Linux, Windows and macOS once a release is published (e.g. the draft of Release Drafter)
+# and attaches the archives to the release.
+on:
+  release:
+    types: [ published ]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+    runs-on: ${{ matrix.os }}
+    permissions:
+      # to attach the archives to the release
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Determine the version
+        id: version
+        shell: bash
+        # jpackage only accepts numbers (v1.2.0-rc1 => 1.2.0); on macOS the first one must not be 0
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=${version%%-*}" >> "$GITHUB_OUTPUT"
+      - name: Build the application image
+        env:
+          # the tests ran before the release in the CI build
+          MAVEN_ARGS: -B --no-transfer-progress -DskipTests -Pjpackage -Djpackage.app.version=${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cmd //c mvnw.cmd package
+          else
+            ./mvnw package
+          fi
+      - name: Archive the application image
+        shell: bash
+        run: |
+          name="m3uedit-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            archive="$name.zip"
+            (cd target/dist && 7z a -tzip "../../$archive" .)
+          else
+            archive="$name.tar.gz"
+            tar -czf "$archive" -C target/dist .
+          fi
+          files=("$archive")
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            # the shaded jar contains the javafx libraries of the platform it was built on
+            cp target/m3uedit-*.jar "$name.jar"
+            files+=("$name.jar")
+          fi
+          echo "FILES=${files[*]}" >> "$GITHUB_ENV"
+      - name: Attach the archives to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" $FILES --clobber

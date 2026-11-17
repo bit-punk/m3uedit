@@ -1,11 +1,33 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# Keeps the dependencies up to date, see
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
 updates:
-  - package-ecosystem: "maven" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "maven"
+    directory: "/"
     schedule:
       interval: "weekly"
+    # one pull request per group instead of one per dependency; major updates of libraries still get their own
+    # pull request, as they may need changes of the code
+    groups:
+      maven-build:
+        patterns:
+          - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "*:*-maven-plugin"
+      libraries:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # the actions used by the workflows in .github/workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -1,4 +1,8 @@
-name-template: 'v$RESOLVED_VERSION 🌈'
+# Release Drafter keeps a draft of the next release (GitHub: Releases) up to date: every pull request merged into
+# develop is added to the draft, sorted into the categories below by its labels. Publishing the draft creates the
+# release and its tag; the next draft starts empty again.
+# https://github.com/release-drafter/release-drafter
+name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 categories:
   - title: '🚀 Features'
@@ -11,9 +15,18 @@ categories:
       - 'bugfix'
       - 'bug'
   - title: '🧰 Maintenance'
-    label: 'chore'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+    labels:
+      - 'chore'
+      - 'documentation'
+  - title: '📦 Dependencies'
+    labels:
+      - 'dependencies'
+    # the many version bumps would hide the other changes
+    collapse-after: 3
+change-template: '- $TITLE (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+# the labels of the pull requests determine the next version: a feature raises the minor version, everything else
+# the patch version; "major" has to be set by hand
 version-resolver:
   major:
     labels:
@@ -21,10 +34,23 @@ version-resolver:
   minor:
     labels:
       - 'minor'
+      - 'feature'
+      - 'enhancement'
   patch:
     labels:
       - 'patch'
   default: patch
+# labels pull requests by the name of their branch (dependabot labels its pull requests itself)
+autolabeler:
+  - label: 'feature'
+    branch:
+      - '/^feature\/.+/'
+  - label: 'bug'
+    branch:
+      - '/^(fix|bugfix|hotfix)\/.+/'
+  - label: 'chore'
+    branch:
+      - '/^(chore|cleanup)\/.+/'
 template: |
   ## Changes
 
