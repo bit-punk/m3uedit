@@ -1,0 +1,27 @@
+name: Autolabeler
+
+# labels pull requests by the name of their branch (autolabeler in .github/release-drafter.yml), so Release Drafter
+# sorts them into the right category of the release notes
+on:
+  pull_request:
+    types: [ opened, reopened, synchronize, edited ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  auto_label:
+    # pull requests of dependabot only get a read-only token and are labelled by dependabot itself
+    if: github.actor != 'dependabot[bot]'
+    permissions:
+      # to read .github/release-drafter.yml (the permissions of a job replace those of the workflow)
+      contents: read
+      # to label the pull request
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter/autolabeler@v7
