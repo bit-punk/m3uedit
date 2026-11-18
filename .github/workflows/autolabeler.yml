@@ -3,14 +3,17 @@ name: Autolabeler
 # labels pull requests by the name of their branch (autolabeler in .github/release-drafter.yml), so Release Drafter
 # sorts them into the right category of the release notes
 on:
-  pull_request:
+  # pull_request_target also gets a token allowed to label pull requests from forks; this is safe here, as the job
+  # neither checks out nor runs code of the pull request
+  pull_request_target:
     types: [ opened, reopened, synchronize, edited ]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # per pull request: with pull_request_target, github.ref is the target branch of all pull requests
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
