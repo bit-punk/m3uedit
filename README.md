@@ -4,7 +4,7 @@
 
 # M3UEditor
 
-<img height="400" src="./images/m3uedit_main.png" width="600"/>
+<img height="400" src="./images/m3uedit_main.png" width="600" alt="m3uedit_main"/>
 
 M3UEditor is a small desktop editor written in Java based on JavaFX for managing m3u-playlist files: it collects the
 entries of several sources, filters, sorts and enriches them and writes the resulting playlist.
@@ -35,7 +35,7 @@ entries of several sources, filters, sorts and enriches them and writes the resu
 M3UEditor does not provide any streams or programme guides itself: it only edits playlists of sources you choose.
 Please make sure you are allowed to use the streams of your playlists.
 
-<img height="400" src="./images/m3uedit_epg.png" width="600"/>
+<img height="400" src="./images/m3uedit_epg.png" width="600" alt="m3uedit_epg"/>
 
 ## Download
 
