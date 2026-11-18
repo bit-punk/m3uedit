@@ -1,8 +1,11 @@
 ![maven workflow](https://github.com/bit-punk/m3uedit/actions/workflows/maven.yml/badge.svg)
+![latest release](https://img.shields.io/github/v/release/bit-punk/m3uedit)
+![license](https://img.shields.io/github/license/bit-punk/m3uedit)
 
 # M3UEditor
 
-M3UEditor is a small editor written in Java based on JavaFX for managing m3u-playlist files.
+M3UEditor is a small desktop editor written in Java based on JavaFX for managing m3u-playlist files: it collects the
+entries of several sources, filters, sorts and enriches them and writes the resulting playlist.
 
 * load m3u-playlists from various sources: local files, URLs, a FritzBox, [iptv-org](https://github.com/iptv-org/iptv)
   (by country, category, language, region or single channels) and SFTP servers
@@ -14,40 +17,92 @@ M3UEditor is a small editor written in Java based on JavaFX for managing m3u-pla
   removed or moved; filters and sorters are enabled and reordered right there
 * compare the entries before and after each step in a side-by-side diff, including the reason why a filter removed
   an entry (e.g. `"ZDF HD" exists` or `same URL as "Das Erste HD"`)
-* edit, add, remove and reorder single entries of the playlist and play them in an external player (vlc by default)
+* edit, add, remove and reorder single entries of the playlist, shown with the logos of the channels, and play them
+  in an external player (vlc by default)
 * save the resulting playlist to a local file or an SFTP server
 * add a programme guide (EPG) with the EPG Enricher: it assigns the entries to the channels of XMLTV sources (e.g.
   [epgshare01](https://epgshare01.online)) by setting their `tvg-id` - matched by `tvg-id`, URL rules (regular
   expressions on the stream URL), name or the first words of the name - and writes a guide containing only the
   channels of the playlist next to it (`tv.m3u` &rarr; `tv.xml.gz`), referenced by the playlist header; sources are
   cached in `~/.m3uedit/cache/epg`. Without enricher, the EPG URLs of the inputs (`x-tvg-url` / `url-tvg`) are kept
-* save your inputs, filters, sorters and outputs as project (`*.m3uproj`) to re-create the playlist later on
+* browse the programmes of all channels of the playlist in a TV-like programme guide, which follows the changes of
+  the playlist; channels are played from there as well
+* save your inputs, filters, sorters, enrichers and outputs as project (`*.m3uproj`) to re-create the playlist later
+  on; recently used projects are listed on the start screen and in the file menu
 
-## Prerequisites
+M3UEditor does not provide any streams or programme guides itself: it only edits playlists of sources you choose.
+Please make sure you are allowed to use the streams of your playlists.
+
+## Download
+
+Ready-to-run application images for Linux, Windows and macOS are attached to each
+[release](https://github.com/bit-punk/m3uedit/releases). They include a Java runtime, so neither Java nor JavaFX has
+to be installed:
+
+| Platform | File                           | Start                                     |
+|----------|--------------------------------|-------------------------------------------|
+| Linux    | `m3uedit-<version>-linux.tar.gz` | `m3uedit/bin/m3uedit`                   |
+| Windows  | `m3uedit-<version>-windows.zip`  | `m3uedit\m3uedit.exe`                   |
+| macOS    | `m3uedit-<version>-macos.tar.gz` | `m3uedit.app` (built for Apple Silicon) |
+
+The applications are not signed: Windows asks for confirmation on the first start ("More info" &rarr; "Run anyway"),
+on macOS open the application via the context menu ("Open") or remove the quarantine flag using
+`xattr -dr com.apple.quarantine m3uedit.app`.
+
+## Getting started
+
+1. Create a new project on the start screen.
+2. Add one or more inputs, e.g. the playlist of your FritzBox or the channels of a country from iptv-org.
+3. Enable the filters and the sorter you need; the pipeline shows how many entries each step removes or moves, and
+   the diff shows which ones.
+4. Optionally enable the EPG Enricher to get a programme guide for your channels.
+5. Add an output (a local file or an SFTP server) and save the playlist.
+6. Save the project, so the playlist can be re-created with the current channels of your inputs later on.
+
+## Configuration
+
+Besides the project files, the configuration is stored in the directory `~/.m3uedit`. The files are created with
+default values on first use and can be edited by hand:
+
+| File                                   | Content                                                     |
+|----------------------------------------|-------------------------------------------------------------|
+| `external_player.yaml`                 | command and arguments of the external player (vlc)          |
+| `recent_projects.yaml`                 | recently used projects, `maxEntries` sets how many (10)     |
+| `plugins/channel_name_filter.yaml`     | regular expressions of channel names to filter              |
+| `plugins/epg_enricher.yaml`            | EPG sources a new EPG Enricher starts with                  |
+| `plugins/preferred_channel_order.yaml` | profiles with the preferred order of channels               |
+| `plugins/reachable_url_filter.yaml`    | connect-timeout used to check whether a stream is reachable |
+| `plugins/sftp_recent_servers.yaml`     | recently used SFTP servers (passwords are never stored)     |
+| `cache/epg/`                           | downloaded EPG sources                                      |
+
+A different directory can be used by setting the system property `m3uedit.config.dir`, e.g.
+`java -Dm3uedit.config.dir=/tmp/m3uedit -jar target/m3uedit-1.0-SNAPSHOT.jar`.
+
+## Building
+
+Prerequisites:
 
 * JDK 25+
 * Linux, Windows, macOS
 
 JavaFX is pulled in by Maven, a separate JavaFX SDK is not needed.
 
-## Building
-
-To build the m3uedit binaries, you should open a terminal-window, navigate to the directory where you have checked out the
-sources and invoke the [maven-wrapper](https://maven.apache.org/wrapper/):
+To build m3uedit, open a terminal, navigate to the directory where you have checked out the sources and invoke the
+[maven-wrapper](https://maven.apache.org/wrapper/):
 
 ```bash
 ./mvnw clean install
 ```
 
-To run the application using the _javafx-maven-plugin_, you should use:
+To run the application using the _javafx-maven-plugin_, use:
 
 ```bash
 ./mvnw javafx:run
 ```
 
-After a successful build you will find the resulting _m3uedit_ binary under `./target/m3uedit-1.0-SNAPSHOT.jar`, which
-can be started using `java -jar target/m3uedit-1.0-SNAPSHOT.jar`. The jar contains the JavaFX libraries of the platform
-it has been built on, so it only runs on that platform.
+After a successful build you will find the resulting jar under `./target/m3uedit-1.0-SNAPSHOT.jar`, which can be
+started using `java -jar target/m3uedit-1.0-SNAPSHOT.jar`. The jar contains the JavaFX libraries of the platform it
+has been built on, so it only runs on that platform.
 
 To create a self-contained application image for your current platform (including a java runtime, no separate JDK
 or JavaFX installation needed), use the `jpackage` profile:
@@ -59,76 +114,28 @@ or JavaFX installation needed), use the `jpackage` profile:
 The application can then be started using `./target/dist/m3uedit/bin/m3uedit` (Linux) or the corresponding launcher
 on Windows/macOS.
 
-## Configuration
-
-Besides the project files, the configuration is stored in the directory `~/.m3uedit`. The files are created with
-default values on first use and can be edited by hand:
-
-| File                                   | Content                                                    |
-|----------------------------------------|------------------------------------------------------------|
-| `external_player.yaml`                 | command and arguments of the external player (vlc)          |
-| `plugins/channel_name_filter.yaml`     | regular expressions of channel names to filter             |
-| `plugins/epg_enricher.yaml`            | EPG sources a new EPG Enricher starts with                 |
-| `plugins/preferred_channel_order.yaml` | profiles with the preferred order of channels              |
-| `plugins/reachable_url_filter.yaml`    | connect-timeout used to check whether a stream is reachable |
-| `plugins/sftp_recent_servers.yaml`     | recently used SFTP servers (passwords are never stored)    |
-
-A different directory can be used by setting the system property `m3uedit.config.dir`, e.g.
-`java -Dm3uedit.config.dir=/tmp/m3uedit -jar target/m3uedit-1.0-SNAPSHOT.jar`.
-
 ## Developing
 
-### IntelliJ
-
-* To run the application from IntelliJ, create a run-configuration for the class `org.bitpunk.m3uedit.Main`. It does not
-  extend `javafx.application.Application`, so the JavaFX libraries can be used from the classpath and no module path is
-  needed.
+* To run the application from the IDE, create a run-configuration for the class `org.bitpunk.m3uedit.Main`. It does
+  not extend `javafx.application.Application`, so the JavaFX libraries can be used from the classpath and no module
+  path is needed.
+* Inputs, filters, sorters, enrichers and outputs are plugins, found by the Java
+  [ServiceLoader](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ServiceLoader.html) via the
+  files in `src/main/resources/META-INF/services`. The pipeline they form is described in
+  [src/main/doc/Playlist.md](src/main/doc/Playlist.md).
 * Tests use a temporary configuration directory instead of `~/.m3uedit`
   (see `src/test/java/org/bitpunk/m3uedit/testsupport/TestConfigDirListener.java`), in Maven as well as in the IDE.
+  Some tests show windows, so on a machine without display run them using `xvfb-run ./mvnw package`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
 ### Links
 
-* [JavaFX official Homepage](https://openjfx.io/)
-* [JavaFX Downloads](https://gluonhq.com/products/javafx/)
-* [Getting Started with JavaFX](https://openjfx.io/openjfx-docs/#introduction)
-* [Jenkov.com - JavaFX FXML](https://jenkov.com/tutorials/javafx/fxml.html)
-* [Wikipedia M3U](https://en.wikipedia.org/wiki/M3U)
-* [Oracle TableView example](https://docs.oracle.com/javafx/2/ui_controls/table-view.htm)
-* [sort tableview with drag and drop (rows)](https://stackoverflow.com/questions/28603224/sort-tableview-with-drag-and-drop-rows)
-* [JavaFX tableview resize to fit window](https://stackoverflow.com/questions/23687836/javafx-tableview-resize-to-fit-window)
-* [Implementing Plugins with Java’s Service Provider Interface](https://reflectoring.io/service-provider-interface/)
-* [Baeldung: Java Service Provider Interface](https://www.baeldung.com/java-spi)
-* [Class ServiceLoader](https://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html)
-* [Fritz DVB to VLC](https://github.com/passing/fritz-dvb-to-vlc)
+* [JavaFX](https://openjfx.io/) and its [documentation](https://openjfx.io/openjfx-docs/)
+* [M3U](https://en.wikipedia.org/wiki/M3U) and the [XMLTV format](https://github.com/XMLTV/xmltv/blob/master/xmltv.dtd)
+* [Fritz DVB to VLC](https://github.com/passing/fritz-dvb-to-vlc): the playlists of a FritzBox
+* [Java Service Provider Interface](https://www.baeldung.com/java-spi)
 
-#### Creating JavaFX Custom-Dialogs
+## License
 
-* [JavaFX Dialogs (official)](https://code.makery.ch/blog/javafx-dialogs-official/)
-* [JavaFX Dialog Example](https://examples.javacodegeeks.com/java-development/desktop-java/javafx/dialog-javafx/javafx-dialog-example/)
-* [Accessing the OK button from inside the dialog controller - javaFX](https://stackoverflow.com/questions/49072726/accessing-the-ok-button-from-inside-the-dialog-controller-javafx)
-* [Java FX create Custom Dialog with fxml file. How to set or get result from it?](https://stackoverflow.com/questions/64964471/java-fx-create-custom-dialog-with-fxml-file-how-to-set-or-get-result-from-it)
-* [Creating a Custom Control with FXML](https://docs.oracle.com/javafx/2/fxml_get_started/custom_control.htm#BABDAAHE)
-
-#### MVC in JavaFx
-
-* [Applying MVC With JavaFx](https://stackoverflow.com/questions/32342864/applying-mvc-with-javafx)
-* [How to apply MVC in JavaFX](https://edencoding.com/mvc-in-javafx/)
-
-#### Packaging JavaFX applications
-
-* [JavaFX, JLink and JPackage](https://dev.to/cherrychain/javafx-jlink-and-jpackage-h9)
-* [Creating Fat JARs for JavaFX Applications](http://fxapps.blogspot.com/2020/11/creating-fat-jars-for-javafx.html)
-* [JavaFX 11 : Create a jar file with Gradle](https://stackoverflow.com/questions/52569724/javafx-11-create-a-jar-file-with-gradle)
-
-#### SFTP-Output
-
-* [com.jcraft.jsch.JSchException: UnknownHostKey](https://stackoverflow.com/questions/2003419/com-jcraft-jsch-jschexception-unknownhostkey)
-
-#### JSR303
-
-* [JSR 303 Annotations List](https://howtodoinjava.com/spring-mvc/spring-bean-validation-example-with-jsr-303-annotations/#6-jsr-303-annotations-list)
-
-#### TableView validation
-
-* [ListView validate edit and prevent commit](https://stackoverflow.com/questions/35281105/listview-validate-edit-and-prevent-commit)
-* [JavaFX 8 TableView Cell Renderer](https://code.makery.ch/blog/javafx-8-tableview-cell-renderer/)
+M3UEditor is licensed under the [MIT License](LICENSE.md).

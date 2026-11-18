@@ -5,3 +5,5 @@
 **/log/
 **/*.log
 /dependency-reduced-pom.xml
+/test*
+/*.m3uproj
