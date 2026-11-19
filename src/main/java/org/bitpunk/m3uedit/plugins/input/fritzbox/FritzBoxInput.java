@@ -47,15 +47,24 @@ public class FritzBoxInput extends AbstractInput implements Input {
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
+        boolean allRead = selectedStreamSources != null && !selectedStreamSources.isEmpty();
         if (selectedStreamSources != null) {
             for (StreamSource selectedStreamSource : selectedStreamSources) {
                 URI uri = resolveStreamSourceUri(selectedStreamSource);
                 try (InputStream playlist = fetch(uri)) {
                     entriesRead.addAll(readData(playlist));
                 } catch (IOException e) {
+                    allRead = false;
                     log.error("Error reading playlist {} from FritzBox: {}", uri, e.getMessage(), e);
                 }
             }
+        }
+        // offered by the dialog as recently used connection, only if it works
+        if (allRead && fritzBoxConnection != null) {
+            FritzBoxConnection used = new FritzBoxConnection();
+            used.setBaseUrl(fritzBoxConnection.getBaseUrl());
+            used.setSelectedStreamSources(new ArrayList<>(selectedStreamSources));
+            createRecentConnections().recordSuccess(used);
         }
         return entriesRead;
     }
@@ -85,8 +94,15 @@ public class FritzBoxInput extends AbstractInput implements Input {
                 .disableProperty()
                 .bind(fritzboxInputDialogController.getInputsFull().not());
         // @formatter:on
-        fritzboxInputDialogController.showAndWait().ifPresent(con -> fritzBoxConnection = con);
-        selectedStreamSources = fritzboxInputDialogController.getFritzBoxConnection().getSelectedStreamSources();
+        // a cancelled dialog changes nothing
+        fritzboxInputDialogController.showAndWait().ifPresent(connection -> {
+            fritzBoxConnection = connection;
+            selectedStreamSources = new ArrayList<>(connection.getSelectedStreamSources());
+        });
+    }
+
+    protected RecentFritzBoxConnections createRecentConnections() {
+        return new RecentFritzBoxConnections();
     }
 
     private InputStream fetch(URI uri) throws IOException {

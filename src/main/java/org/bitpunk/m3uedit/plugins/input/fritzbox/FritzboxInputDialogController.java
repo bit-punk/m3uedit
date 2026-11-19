@@ -1,20 +1,27 @@
 package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
 import jakarta.validation.ConstraintViolation;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.util.Callback;
-import lombok.extern.slf4j.Slf4j;
+import javafx.util.StringConverter;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.util.PojoValidator;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -35,6 +42,16 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private ListView<StreamSource> availableStreamSources;
+    @FXML
+    private ComboBox<FritzBoxConnection> recentConnectionsComboBox;
+    @FXML
+    private Button removeRecentConnectionButton;
+    /**
+     * Whether a stream is imported, per stream shown (all by default). Kept here, not in the cells, which are re-used.
+     * Created by {@link #initialize}, which the FXML loader calls before the fields of this class are initialized.
+     */
+    private Map<StreamSource, BooleanProperty> streamSelected;
+    private RecentFritzBoxConnections recentConnections;
 
     public FritzboxInputDialogController() {
         super(FXML_PLUGIN_INPUT_FRITZBOX, FRITZBOX_DIALOG_TITLE);
@@ -57,12 +74,82 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     public void initialize(URL location, ResourceBundle resources) {
         initializeStreamSourceView();
         initializeBinding();
+        initializeRecentConnections(new RecentFritzBoxConnections());
     }
 
     private void initializeStreamSourceView() {
+        streamSelected = new LinkedHashMap<>();
+        for (StreamSource streamSource : List.of(new StreamSource("tvsd.m3u", "SD streams"),
+                new StreamSource("tvhd.m3u", "HD streams"))) {
+            // import all streams per default
+            streamSelected.put(streamSource, new SimpleBooleanProperty(true));
+            availableStreamSources.getItems().add(streamSource);
+        }
         setCellFactory(availableStreamSources);
-        availableStreamSources.getItems().add(new StreamSource("tvsd.m3u", "SD streams"));
-        availableStreamSources.getItems().add(new StreamSource("tvhd.m3u", "HD streams"));
+    }
+
+    /**
+     * Offers the FritzBox connections read successfully before, see {@link RecentFritzBoxConnections}.
+     */
+    void initializeRecentConnections(RecentFritzBoxConnections recent) {
+        recentConnections = recent;
+        recentConnectionsComboBox.getItems().setAll(recent.getConnections());
+        recentConnectionsComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(FritzBoxConnection connection) {
+                return connection == null ? null : describe(connection);
+            }
+
+            @Override
+            public FritzBoxConnection fromString(String text) {
+                return recentConnectionsComboBox.getValue();
+            }
+        });
+        recentConnectionsComboBox.disableProperty().bind(Bindings.isEmpty(recentConnectionsComboBox.getItems()));
+        recentConnectionsComboBox.setOnAction(event -> applyRecentConnection(recentConnectionsComboBox.getValue()));
+        removeRecentConnectionButton.disableProperty().bind(recentConnectionsComboBox.valueProperty().isNull());
+    }
+
+    /**
+     * @return e.g. "http://fritz.box/dvb/m3u/  (SD, HD)"
+     */
+    private String describe(FritzBoxConnection connection) {
+        List<String> streams = connection.getSelectedStreamSources() == null ? List.of()
+                : connection.getSelectedStreamSources().stream().map(StreamSource::getDescription)
+                .filter(Objects::nonNull).map(description -> description.replace(" streams", "")).distinct().toList();
+        return streams.isEmpty() ? connection.getBaseUrl()
+                : "%s  (%s)".formatted(connection.getBaseUrl(), String.join(", ", streams));
+    }
+
+    /**
+     * Fills in the base url and the streams of a recently used connection.
+     */
+    private void applyRecentConnection(FritzBoxConnection connection) {
+        if (connection == null) {
+            return;
+        }
+        baseUrlTextField.setText(connection.getBaseUrl());
+        List<String> names = connection.getSelectedStreamSources() == null ? List.of()
+                : connection.getSelectedStreamSources().stream().map(StreamSource::getName).toList();
+        streamSelected.forEach((streamSource, selected) -> selected.set(names.contains(streamSource.getName())));
+    }
+
+    @FXML
+    private void handleRemoveRecentConnection() {
+        FritzBoxConnection selected = recentConnectionsComboBox.getValue();
+        if (selected != null) {
+            recentConnections.remove(selected);
+            recentConnectionsComboBox.setValue(null);
+            recentConnectionsComboBox.getItems().remove(selected);
+        }
+    }
+
+    /**
+     * @return the streams to import, in the order shown
+     */
+    List<StreamSource> getSelectedStreamSources() {
+        return streamSelected.entrySet().stream().filter(entry -> entry.getValue().get()).map(Map.Entry::getKey)
+                .toList();
     }
 
     private void initializeBinding() {
@@ -91,6 +178,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
 
     private FritzBoxConnection createFritzboxConnectionFromInput() {
         fritzBoxConnection.setBaseUrl(baseUrlTextField.getText());
+        fritzBoxConnection.setSelectedStreamSources(new ArrayList<>(getSelectedStreamSources()));
         return fritzBoxConnection;
     }
 
@@ -112,47 +200,28 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
 
     private void setCellFactory(ListView<StreamSource> availableStreamsListView) {
         availableStreamsListView.setCellFactory((ListView<StreamSource> param) -> new ListCell<>() {
-            private CheckBox checkBox;
+            private final CheckBox checkBox = new CheckBox();
+            private BooleanProperty bound;
 
             @Override
             public void updateItem(StreamSource streamSource, boolean empty) {
                 super.updateItem(streamSource, empty);
+                // the cell is re-used: the check-box shows the selection of the stream shown, it does not change it
+                if (bound != null) {
+                    checkBox.selectedProperty().unbindBidirectional(bound);
+                    bound = null;
+                }
                 if (empty || streamSource == null) {
                     setGraphic(null);
                     setText(null);
+                    setTooltip(null);
                 } else {
-                    getCheckBox().setSelected(true);    // import all streams per default
-                    setGraphic(getCheckBox());
+                    bound = streamSelected.get(streamSource);
+                    checkBox.selectedProperty().bindBidirectional(bound);
+                    setGraphic(checkBox);
                     setText(streamSource.getName());
                     setTooltip(new Tooltip(streamSource.getDescription()));
                 }
-            }
-
-            /**
-             * Returns a CheckBox object.
-             * <p>
-             * The method checks if the "checkBox" instance variable is null. If it is, a new CheckBox object is created.
-             * The method also adds a listener to the selectedProperty of the CheckBox object. This listener updates the
-             * dataModel's filters based on the selection state of the CheckBox.
-             *
-             * @return a CheckBox object.
-             */
-            private CheckBox getCheckBox() {
-                if (checkBox == null) {
-                    checkBox = new CheckBox();
-                    checkBox.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
-                        List<StreamSource> selectedStreamSources = fritzBoxConnection.getSelectedStreamSources();
-                        if (getItem() != null) {
-                            if (Boolean.TRUE.equals(isNowSelected)) {
-                                selectedStreamSources.add(getItem());
-                            } else {
-                                selectedStreamSources.remove(getItem());
-                            }
-                        }
-                        log.debug("Currently selected Filters: {}", selectedStreamSources);
-                    });
-                }
-                return checkBox;
             }
         });
     }

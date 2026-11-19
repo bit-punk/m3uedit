@@ -103,6 +103,70 @@ class FritzboxInputDialogControllerTest {
         });
     }
 
+    @Test
+    void testTheSelectedStreamsAreNotDuplicatedByRefreshingTheList() throws Exception {
+        runOnFxThread(() -> {
+            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            ListView<StreamSource> list = getField(controller, "availableStreamSources");
+            new javafx.scene.Scene(new javafx.scene.layout.StackPane(list), 300, 200).getRoot().applyCss();
+            // the cells are updated several times, e.g. while scrolling
+            for (int i = 0; i < 3; i++) {
+                list.refresh();
+                list.layout();
+            }
+
+            assertThat(controller.getSelectedStreamSources()).extracting(StreamSource::getName)
+                    .containsExactly("tvsd.m3u", "tvhd.m3u");
+            assertThat(controller.getResultConverter().call(new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE))
+                    .getSelectedStreamSources()).hasSize(2);
+        });
+    }
+
+    @Test
+    void testARecentlyUsedConnectionFillsInTheFields(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir)
+            throws Exception {
+        RecentFritzBoxConnections recent = new RecentFritzBoxConnections(dir.resolve("recent.yaml"));
+        recent.recordSuccess(RecentFritzBoxConnectionsTest.connection("http://192.168.178.1/dvb/m3u/",
+                RecentFritzBoxConnectionsTest.HD));
+        runOnFxThread(() -> {
+            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            controller.initializeRecentConnections(recent);
+            javafx.scene.control.ComboBox<FritzBoxConnection> combo = getField(controller, "recentConnectionsComboBox");
+            assertThat(combo.isDisabled()).isFalse();
+            assertThat(combo.getConverter().toString(combo.getItems().getFirst()))
+                    .isEqualTo("http://192.168.178.1/dvb/m3u/  (HD)");
+
+            combo.getSelectionModel().selectFirst();
+            combo.getOnAction().handle(new javafx.event.ActionEvent());
+
+            TextField baseUrl = getField(controller, "baseUrlTextField");
+            assertThat(baseUrl.getText()).isEqualTo("http://192.168.178.1/dvb/m3u/");
+            assertThat(controller.getSelectedStreamSources()).extracting(StreamSource::getName)
+                    .containsExactly("tvhd.m3u");
+        });
+    }
+
+    @Test
+    void testARecentlyUsedConnectionIsRemoved(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir)
+            throws Exception {
+        RecentFritzBoxConnections recent = new RecentFritzBoxConnections(dir.resolve("recent.yaml"));
+        recent.recordSuccess(RecentFritzBoxConnectionsTest.connection("http://fritz.box/dvb/m3u/"));
+        runOnFxThread(() -> {
+            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            controller.initializeRecentConnections(recent);
+            javafx.scene.control.ComboBox<FritzBoxConnection> combo = getField(controller, "recentConnectionsComboBox");
+            javafx.scene.control.Button remove = getField(controller, "removeRecentConnectionButton");
+            assertThat(remove.isDisabled()).as("nothing selected").isTrue();
+
+            combo.getSelectionModel().selectFirst();
+            remove.fire();
+
+            assertThat(combo.getItems()).isEmpty();
+            assertThat(combo.isDisabled()).isTrue();
+        });
+        assertThat(recent.getConnections()).isEmpty();
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T getField(Object target, String fieldName) {
         try {

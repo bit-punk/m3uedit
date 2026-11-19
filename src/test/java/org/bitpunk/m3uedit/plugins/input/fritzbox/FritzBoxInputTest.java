@@ -5,6 +5,7 @@ import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -13,6 +14,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +123,57 @@ class FritzBoxInputTest {
             assertThat(requestedPaths).containsExactly("/dvb/m3u/tvhd.m3u");
             assertThat(entries).extracting(Entry::getName).containsExactly("Das Erste HD", "ZDF HD");
             assertThat(entries.getFirst().getVlcOpts()).containsEntry("network-caching", "1000");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    /**
+     * Records the connections read successfully in the given directory.
+     */
+    private static FritzBoxInput createInput(Path recentDir, String baseUrl, StreamSource... streamSources) {
+        FritzBoxInput input = new FritzBoxInput() {
+            @Override
+            protected RecentFritzBoxConnections createRecentConnections() {
+                return new RecentFritzBoxConnections(recentDir.resolve(RecentFritzBoxConnections.CONFIG_FILE_NAME));
+            }
+        };
+        FritzBoxConnection connection = new FritzBoxConnection();
+        connection.setBaseUrl(baseUrl);
+        connection.setSelectedStreamSources(List.of(streamSources));
+        input.setFritzBoxConnection(connection);
+        input.setSelectedStreamSources(List.of(streamSources));
+        return input;
+    }
+
+    @Test
+    void testAConnectionReadSuccessfullyIsOfferedAsRecentlyUsed(@TempDir Path dir) throws IOException {
+        HttpServer server = startServer(Map.of("/dvb/m3u/tvhd.m3u", PLAYLIST), new CopyOnWriteArrayList<>());
+        try {
+            String baseUrl = "http://127.0.0.1:%d/dvb/m3u/".formatted(server.getAddress().getPort());
+            createInput(dir, baseUrl, new StreamSource("tvhd.m3u", "HD streams")).read();
+
+            List<FritzBoxConnection> recent = new RecentFritzBoxConnections(
+                    dir.resolve(RecentFritzBoxConnections.CONFIG_FILE_NAME)).getConnections();
+            assertThat(recent).singleElement().extracting(FritzBoxConnection::getBaseUrl).isEqualTo(baseUrl);
+            assertThat(recent.getFirst().getSelectedStreamSources()).extracting(StreamSource::getName)
+                    .containsExactly("tvhd.m3u");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void testAConnectionWithAnErrorIsNotOfferedAsRecentlyUsed(@TempDir Path dir) throws IOException {
+        HttpServer server = startServer(Map.of("/dvb/m3u/tvhd.m3u", PLAYLIST), new CopyOnWriteArrayList<>());
+        try {
+            String baseUrl = "http://127.0.0.1:%d/dvb/m3u/".formatted(server.getAddress().getPort());
+            // tvsd.m3u is not served
+            createInput(dir, baseUrl, new StreamSource("tvsd.m3u", "SD streams"),
+                    new StreamSource("tvhd.m3u", "HD streams")).read();
+
+            assertThat(new RecentFritzBoxConnections(dir.resolve(RecentFritzBoxConnections.CONFIG_FILE_NAME))
+                    .getConnections()).isEmpty();
         } finally {
             server.stop(0);
         }
