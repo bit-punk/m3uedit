@@ -95,6 +95,57 @@ class PipelineControllerTest {
     }
 
     @Test
+    void theStagesFollowingTheInputsAreInactiveWhileNoEntriesHaveBeenRead() {
+        DataModel empty = new DataModel("empty");
+        empty.setBackgroundExecutor(Runnable::run);
+        empty.setFxExecutor(Runnable::run);
+        empty.getFilters().add(new TestFilter("HD Filter", entry -> false));
+        PipelineController emptyPipeline = new PipelineController();
+        emptyPipeline.initModel(empty);
+
+        // no inputs: only the inputs are active
+        assertThat(emptyPipeline.stages()).extracting(PluginStageView::isInactive)
+                .containsExactly(false, true, true, true, true);
+        assertThat(emptyPipeline.getChildren()).filteredOn(node -> node.getStyleClass().contains("pipeline-connector"))
+                .allMatch(connector -> connector.getPseudoClassStates().contains(PluginStageView.INACTIVE));
+
+        // an input without entries changes nothing
+        empty.getInputs().add(new TestInput("Empty", List.of()));
+        assertThat(emptyPipeline.stages()).extracting(PluginStageView::isInactive)
+                .containsExactly(false, true, true, true, true);
+
+        empty.getInputs().add(new TestInput("FritzBox", List.of(entry("ZDF HD"))));
+        assertThat(emptyPipeline.stages()).extracting(PluginStageView::isInactive)
+                .containsExactly(false, false, false, false, false);
+        assertThat(emptyPipeline.getChildren()).filteredOn(node -> node.getStyleClass().contains("pipeline-connector"))
+                .noneMatch(connector -> connector.getPseudoClassStates().contains(PluginStageView.INACTIVE));
+    }
+
+    @Test
+    void inactiveStagesAreShownInGrey() {
+        DataModel empty = new DataModel("empty");
+        empty.setBackgroundExecutor(Runnable::run);
+        empty.setFxExecutor(Runnable::run);
+        empty.getEnrichers().add(new TestEnricher());
+        PipelineController emptyPipeline = new PipelineController();
+        emptyPipeline.initModel(empty);
+        // styled like in a project, the colours of the stages are defined by the style sheet
+        VBox root = new VBox(emptyPipeline);
+        root.getStyleClass().add("project");
+        Scene scene = new Scene(root, 420, 1200);
+        scene.getStylesheets().add(Objects.requireNonNull(
+                getClass().getClassLoader().getResource("fxml/css/project.css")).toExternalForm());
+        root.applyCss();
+
+        List<javafx.scene.paint.Paint> borders = emptyPipeline.stages().stream()
+                .map(stage -> stage.getBorder().getStrokes().getFirst().getTopStroke()).toList();
+
+        // the colours of the stages must not win over the grey of the inactive stages
+        assertThat(borders.getFirst()).isNotEqualTo(borders.get(1));
+        assertThat(borders.subList(1, borders.size())).containsOnly(javafx.scene.paint.Color.web("#b4b6bd"));
+    }
+
+    @Test
     void eachStageHasItsOwnStyle() {
         assertThat(pipeline.stages()).extracting(stage -> stage.getStyleClass().getLast())
                 .containsExactly("stage-inputs", "stage-filters", "stage-sorters", "stage-enrichers", "stage-outputs");
