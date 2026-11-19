@@ -58,6 +58,11 @@ public class PluginStageView<T extends Plugin> extends VBox {
     private static final PseudoClass DROP_BEFORE = PseudoClass.getPseudoClass("drop-before");
     private static final PseudoClass DROP_AFTER = PseudoClass.getPseudoClass("drop-after");
     private static final PseudoClass COLLAPSED = PseudoClass.getPseudoClass("collapsed");
+    /**
+     * Set while a number is shown: the rows are indented by its width, so their checkboxes stay aligned with the
+     * one of the header.
+     */
+    private static final PseudoClass NUMBERED = PseudoClass.getPseudoClass("numbered");
     private static final String ICON_CHEVRON = "M4.4 5.6L8 9.2l3.6-3.6L13 7l-5 5-5-5z";
     private static final String ICON_PLUS = "M7 2h2v5h5v2H9v5H7V9H2V7h5z";
     private static final String ICON_UP = "M8 4l5 5-1.4 1.4L8 6.8l-3.6 3.6L3 9z";
@@ -78,6 +83,10 @@ public class PluginStageView<T extends Plugin> extends VBox {
     private final Function<T, String> detailText;
     private final VBox rowBox = new VBox();
     private final Label emptyLabel = new Label();
+    /**
+     * The position of the stage in the pipeline, shown before its name.
+     */
+    private final Label numberLabel = new Label();
     private final HBox header;
     private final Label hintLabel;
     private final String title;
@@ -154,6 +163,8 @@ public class PluginStageView<T extends Plugin> extends VBox {
         this.hint = hint;
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("stage-title");
+        // in a narrow pipeline the hint is shortened, the name stays readable
+        titleLabel.setMinWidth(Region.USE_PREF_SIZE);
         hintLabel = new Label(hint);
         hintLabel.getStyleClass().add("stage-hint");
         hintLabel.setMinWidth(0);
@@ -162,7 +173,11 @@ public class PluginStageView<T extends Plugin> extends VBox {
         collapseButton = iconButton(ICON_CHEVRON, "Collapse " + title);
         collapseButton.getStyleClass().add("stage-collapse");
         collapseButton.setOnAction(event -> collapsed.set(!collapsed.get()));
-        header = new HBox(6, collapseButton, titleLabel, hintLabel);
+        numberLabel.getStyleClass().add("stage-number");
+        numberLabel.setMinWidth(Region.USE_PREF_SIZE);
+        setNumber(0);
+        // the number is the leftmost element, before the buttons and the check-box enabling all plugins
+        header = new HBox(6, numberLabel, collapseButton, titleLabel, hintLabel);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("stage-header");
         // clicking the header (not one of its buttons) collapses or expands the stage
@@ -187,6 +202,23 @@ public class PluginStageView<T extends Plugin> extends VBox {
     /**
      * While collapsed, only the header is shown, with the status of the stage instead of its hint.
      */
+    /**
+     * @param number the position of the stage in the pipeline, shown before its name; 0 to show none
+     */
+    public void setNumber(int number) {
+        numberLabel.setText(Integer.toString(number));
+        numberLabel.setVisible(number > 0);
+        numberLabel.setManaged(number > 0);
+        pseudoClassStateChanged(NUMBERED, number > 0);
+    }
+
+    /**
+     * @return the position of the stage in the pipeline, 0 if none is shown
+     */
+    public int getNumber() {
+        return numberLabel.isVisible() ? Integer.parseInt(numberLabel.getText()) : 0;
+    }
+
     public BooleanProperty collapsedProperty() {
         return collapsed;
     }

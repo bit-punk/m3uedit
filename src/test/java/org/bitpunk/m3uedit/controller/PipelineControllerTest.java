@@ -11,6 +11,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import org.assertj.core.data.Offset;
+import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.controller.TestPlugins.NameSorter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestEnricher;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestFilter;
@@ -81,6 +82,22 @@ class PipelineControllerTest {
         dataModel.getEnrichers().add(new TestEnricher());
 
         assertThat(pipeline.getEnricherStage().isVisible()).isTrue();
+    }
+
+    @Test
+    void stagesAreNumberedInTheOrderOfThePipelineWithoutGaps() {
+        // without enrichers their stage is hidden, the outputs follow the sorters
+        assertThat(pipeline.stages()).extracting(PluginStageView::getNumber).containsExactly(1, 2, 3, 0, 4);
+
+        dataModel.getEnrichers().add(new TestEnricher());
+
+        assertThat(pipeline.stages()).extracting(PluginStageView::getNumber).containsExactly(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    void eachStageHasItsOwnStyle() {
+        assertThat(pipeline.stages()).extracting(stage -> stage.getStyleClass().getLast())
+                .containsExactly("stage-inputs", "stage-filters", "stage-sorters", "stage-enrichers", "stage-outputs");
     }
 
     @Test

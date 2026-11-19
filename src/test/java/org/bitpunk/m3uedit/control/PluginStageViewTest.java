@@ -290,4 +290,25 @@ class PluginStageViewTest {
         plugins.add(new TestPlugin("b"));
         assertThat(stage.getEnableAllCheckBox().isIndeterminate()).isTrue();
     }
+
+    @Test
+    void theNumberOfTheStageIsShownBeforeItsName() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        javafx.scene.control.Label number = (javafx.scene.control.Label) stage.lookup(".stage-number");
+
+        assertThat(number.isVisible()).as("no number by default").isFalse();
+        assertThat(stage.getNumber()).isZero();
+
+        stage.setNumber(2);
+
+        assertThat(number.isVisible()).isTrue();
+        assertThat(number.getText()).isEqualTo("2");
+        assertThat(stage.getNumber()).isEqualTo(2);
+        // the number is the leftmost element of the header, also before the check-box enabling all plugins
+        stage.setEnableAllAction(enabled -> {
+        });
+        List<javafx.scene.Node> header = ((javafx.scene.Parent) stage.lookup(".stage-header")).getChildrenUnmodifiable();
+        assertThat(header.getFirst()).isSameAs(number);
+        assertThat(header.stream().filter(javafx.scene.control.CheckBox.class::isInstance)).isNotEmpty();
+    }
 }
