@@ -122,6 +122,36 @@ class PipelineControllerTest {
     }
 
     @Test
+    void aPlaylistCreatedByHandActivatesTheOutputsOnly() {
+        DataModel manual = new DataModel("manual");
+        manual.setBackgroundExecutor(Runnable::run);
+        manual.setFxExecutor(Runnable::run);
+        PipelineController manualPipeline = new PipelineController();
+        manualPipeline.initModel(manual);
+
+        manual.addEntry(entry("My Stream"));
+
+        // filters, sorters and enrichers only work on entries read from inputs
+        assertThat(manualPipeline.stages()).extracting(PluginStageView::isInactive)
+                .containsExactly(false, true, true, true, false);
+        assertThat(manualPipeline.getFilterStage().getInactiveReason()).isEqualTo(PluginStageView.NO_ENTRIES_READ);
+        List<Node> connectors = manualPipeline.getChildren().stream()
+                .filter(node -> node.getStyleClass().contains("pipeline-connector")).toList();
+        assertThat(connectors.getLast().getPseudoClassStates()).doesNotContain(PluginStageView.INACTIVE);
+        assertThat(connectors.getFirst().getPseudoClassStates()).contains(PluginStageView.INACTIVE);
+
+        // with an output it can be written
+        assertThat(manualPipeline.getWriteButton().isDisabled()).as("no output").isTrue();
+        manual.getOutputs().add(new FileOutput());
+        assertThat(manualPipeline.getWriteButton().isDisabled()).isFalse();
+
+        manual.removeEntries(List.copyOf(manual.getSortedEntryList()));
+
+        assertThat(manualPipeline.getOutputStage().isInactive()).isTrue();
+        assertThat(manualPipeline.getOutputStage().getInactiveReason()).contains("the playlist is empty");
+    }
+
+    @Test
     void inactiveStagesAreShownInGrey() {
         DataModel empty = new DataModel("empty");
         empty.setBackgroundExecutor(Runnable::run);

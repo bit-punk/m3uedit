@@ -147,6 +147,51 @@ class CommandLineRunnerTest {
         assertThat(output).doesNotExist();
     }
 
+    private static Entry manualEntry() {
+        Entry entry = new Entry();
+        entry.setName("My Stream");
+        entry.setChannelUri("http://example.com/my-stream");
+        return entry;
+    }
+
+    @Test
+    void testAPlaylistCreatedByHandIsWritten() throws Exception {
+        Path project = project("manual");
+        CommandLineRunner runner = runner(file -> {
+            DataModel model = ProjectPersisterUtil.loadProject(file);
+            model.addEntry(manualEntry());
+            return model;
+        });
+
+        assertThat(run(runner, "-r", project.toString())).isEqualTo(CommandLineRunner.OK);
+        assertThat(entries(output)).isEqualTo(1);
+        assertThat(Files.readString(output)).contains("My Stream", "http://example.com/my-stream");
+        assertThat(out()).contains("0 entries read, 1 written to 1 output(s)");
+    }
+
+    @Test
+    void testEntriesAddedByHandDoNotReplaceTheEntriesOfInputs() throws Exception {
+        Files.writeString(output, "the last good playlist");
+        Path empty = Files.writeString(dir.resolve("empty.m3u"), "#EXTM3U\n");
+        Path project = project("emptyinput", empty);
+        CommandLineRunner runner = runner(file -> {
+            DataModel model = ProjectPersisterUtil.loadProject(file);
+            model.addEntry(manualEntry());
+            return model;
+        });
+
+        assertThat(run(runner, "-r", project.toString())).isEqualTo(CommandLineRunner.FAILED);
+        assertThat(output).hasContent("the last good playlist");
+        assertThat(err()).contains("no entries have been read from the inputs");
+    }
+
+    @Test
+    void testAnEmptyPlaylistWithoutInputsIsNotWritten() throws Exception {
+        assertThat(run("-r", project("nothing").toString())).isEqualTo(CommandLineRunner.FAILED);
+        assertThat(err()).contains("not written, the playlist is empty").doesNotContain("after");
+        assertThat(output).doesNotExist();
+    }
+
     @Test
     void testAllProjectsAreRunTheWorstExitCodeIsReturned() throws Exception {
         int exitCode = run("-r", dir.resolve("missing.m3uproj").toString(), "-r", project("demo", playlist).toString());
