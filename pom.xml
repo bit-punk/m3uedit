@@ -13,7 +13,7 @@
 
     <properties>
         <!-- the version of local builds: the next release (the draft of Release Drafter) as snapshot -->
-        <revision>1.1.0-SNAPSHOT</revision>
+        <revision>1.2.0-SNAPSHOT</revision>
         <main.class>org.bitpunk.m3uedit.Main</main.class>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- compiles against the API of this java version, whichever JDK runs the build -->

@@ -163,7 +163,7 @@ To run the application using the _javafx-maven-plugin_, use:
 ```
 
 After a successful build you will find the resulting jar under `./target/m3uedit-<version>.jar` (e.g.
-`m3uedit-1.1.0-SNAPSHOT.jar`, see [Versions](#versions)), which can be
+`m3uedit-1.2.0-SNAPSHOT.jar`, see [Versions](#versions)), which can be
 started using `java -jar target/m3uedit-<version>.jar`. The jar contains the JavaFX libraries of the platform it
 has been built on, so it only runs on that platform.
 
@@ -194,7 +194,7 @@ on Windows/macOS.
 
 The version is defined once, by the release on GitHub: building a release (`.github/workflows/release.yml`) sets
 the version of its tag (`-Drevision=1.2.0`) for the jar, the application image and the about dialog. Local builds
-use the `revision` of the `pom.xml`, the next release as snapshot (e.g. `1.1.0-SNAPSHOT`); it only needs to be
+use the `revision` of the `pom.xml`, the next release as snapshot (e.g. `1.2.0-SNAPSHOT`); it only needs to be
 raised by a pull request when a release has been published.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
