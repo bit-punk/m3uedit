@@ -3,14 +3,12 @@ package org.bitpunk.m3uedit;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.bitpunk.m3uedit.controller.SceneController;
+import org.bitpunk.m3uedit.util.AppIcons;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 public class M3UEditor extends Application {
 
@@ -32,15 +30,10 @@ public class M3UEditor extends Application {
                 event.consume();
             }
         });
-        primaryStage.getIcons().addAll(loadAppIcons());
+        // the main window and all dialogs and other windows opened later on
+        AppIcons.applyToAllWindows();
+        primaryStage.getIcons().setAll(AppIcons.get());
         primaryStage.show();
-    }
-
-    private static List<Image> loadAppIcons() {
-        return Stream.of(16, 32, 48, 64, 128, 256)
-                .map(size -> new Image(Objects.requireNonNull(
-                        M3UEditor.class.getResourceAsStream("/icons/app/m3uedit-" + size + ".png"))))
-                .toList();
     }
 
 }
