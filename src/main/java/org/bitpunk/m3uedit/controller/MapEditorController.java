@@ -13,7 +13,7 @@ import org.bitpunk.m3uedit.control.ValidatingEditingCell;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 import java.net.URL;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -69,7 +69,8 @@ public class MapEditorController extends AbstractController implements Initializ
     }
 
     public Map<String, String> getMap() {
-        Map<String, String> vlcOptions = new HashMap<>();
+        // in the order shown
+        Map<String, String> vlcOptions = new LinkedHashMap<>();
         ObservableList<NamedEntry> items = vlcOptionsTableView.getItems();
         log.debug("getMap({})", items);
         items.forEach(e -> vlcOptions.put(e.getKey(), e.getValue()));
@@ -77,6 +78,9 @@ public class MapEditorController extends AbstractController implements Initializ
     }
 
     public void setMap(Map<String, String> map) {
+        if (map == null) {
+            map = Map.of();
+        }
         List<NamedEntry> namedEntryList = map.entrySet().stream().map(e -> new NamedEntry(e.getKey(), e.getValue())).toList();
         vlcOptionsTableView.setItems(FXCollections.observableArrayList(namedEntryList));
     }

@@ -1,37 +1,62 @@
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 <?import org.bitpunk.m3uedit.controller.MapEditorController?>
-<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="500">
+<DialogPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" prefWidth="660"
+            styleClass="entry-dialog" stylesheets="@css/entry-dialog.css">
     <content>
-        <GridPane hgap="5" vgap="5">
-            <Label fx:id="indexLabel" text="Index:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <HBox fx:id="indexHBox" GridPane.columnIndex="1" GridPane.rowIndex="0" >
-                <TextField fx:id="indexTextField" />
-                <Label fx:id="maxIndexLabel" text=" / MAX" />
-            </HBox>
-            <Label text="Duration:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-            <TextField fx:id="durationTextField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-            <Label text="GroupTitle:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-            <TextField fx:id="groupTitleTextField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-            <Label text="TvgId:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-            <TextField fx:id="tvgIdTextField" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-            <Label text="TvgName:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-            <TextField fx:id="tvgNameTextField" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-            <Label text="TvgLogo:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-            <TextField fx:id="tvgLogoTextField" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-            <Label text="TvgShift:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
-            <TextField fx:id="tvgShiftTextField" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
-            <Label text="Radio:" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
-            <TextField fx:id="radioTextField" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
-            <Label text="URI:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
-            <TextField fx:id="channelUriTextField" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
-            <Label text="Name:" GridPane.columnIndex="0" GridPane.rowIndex="9"/>
-            <TextField fx:id="nameTextField" GridPane.columnIndex="1" GridPane.rowIndex="9"/>
-            <Label text="VLC-Options:" GridPane.columnIndex="0" GridPane.rowIndex="10"/>
-            <MapEditorController fx:id="mapEditorController" GridPane.columnIndex="1" GridPane.rowIndex="10"/>
+        <!-- one grid for all sections, so the labels of all sections are aligned -->
+        <GridPane styleClass="entry-form">
             <columnConstraints>
+                <ColumnConstraints minWidth="110" prefWidth="110"/>
                 <ColumnConstraints hgrow="ALWAYS"/>
             </columnConstraints>
+
+            <Label text="Channel" styleClass="section-title" GridPane.rowIndex="0" GridPane.columnSpan="2"/>
+            <Label text="Name" styleClass="field-label" GridPane.rowIndex="1"/>
+            <TextField fx:id="nameTextField" promptText="the name shown in the player" GridPane.columnIndex="1"
+                       GridPane.rowIndex="1"/>
+            <Label text="Stream URL" styleClass="field-label" GridPane.rowIndex="2"/>
+            <TextField fx:id="channelUriTextField" promptText="e.g. http://… or rtsp://…" GridPane.columnIndex="1"
+                       GridPane.rowIndex="2"/>
+
+            <Label text="Programme guide and logo" styleClass="section-title" GridPane.rowIndex="3"
+                   GridPane.columnSpan="2"/>
+            <Label text="tvg-id" styleClass="field-label" GridPane.rowIndex="4"/>
+            <TextField fx:id="tvgIdTextField" promptText="the channel in the programme guide, e.g. DasErste.de"
+                       GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+            <Label text="tvg-name" styleClass="field-label" GridPane.rowIndex="5"/>
+            <TextField fx:id="tvgNameTextField" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+            <Label text="tvg-logo" styleClass="field-label" GridPane.rowIndex="6"/>
+            <HBox styleClass="field-row" GridPane.columnIndex="1" GridPane.rowIndex="6">
+                <TextField fx:id="tvgLogoTextField" promptText="URL of the logo" HBox.hgrow="ALWAYS"/>
+                <StackPane styleClass="logo-preview">
+                    <ImageView fx:id="logoPreview" fitWidth="48" fitHeight="28" preserveRatio="true"/>
+                </StackPane>
+            </HBox>
+            <Label text="tvg-shift" styleClass="field-label" GridPane.rowIndex="7"/>
+            <TextField fx:id="tvgShiftTextField" styleClass="short-field" promptText="hours, e.g. -1"
+                       GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+
+            <Label text="Playlist" styleClass="section-title" GridPane.rowIndex="8" GridPane.columnSpan="2"/>
+            <Label text="Group" styleClass="field-label" GridPane.rowIndex="9"/>
+            <TextField fx:id="groupTitleTextField" promptText="group-title, e.g. News" GridPane.columnIndex="1"
+                       GridPane.rowIndex="9"/>
+            <Label text="Duration" styleClass="field-label" GridPane.rowIndex="10"/>
+            <TextField fx:id="durationTextField" styleClass="short-field" promptText="-1 for streams"
+                       GridPane.columnIndex="1" GridPane.rowIndex="10"/>
+            <Label text="Radio" styleClass="field-label" GridPane.rowIndex="11"/>
+            <TextField fx:id="radioTextField" styleClass="short-field" promptText="true for radio"
+                       GridPane.columnIndex="1" GridPane.rowIndex="11"/>
+            <Label fx:id="indexLabel" text="Position" styleClass="field-label" GridPane.rowIndex="12"/>
+            <HBox fx:id="indexHBox" styleClass="field-row" GridPane.columnIndex="1" GridPane.rowIndex="12">
+                <TextField fx:id="indexTextField" styleClass="short-field"/>
+                <Label fx:id="maxIndexLabel" text="of MAX" styleClass="field-hint"/>
+            </HBox>
+
+            <Label text="VLC options" styleClass="section-title" GridPane.rowIndex="13" GridPane.columnSpan="2"/>
+            <MapEditorController fx:id="mapEditorController" GridPane.rowIndex="14" GridPane.columnSpan="2"/>
         </GridPane>
     </content>
 

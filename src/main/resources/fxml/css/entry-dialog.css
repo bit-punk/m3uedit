@@ -1,0 +1,51 @@
+/* Dialog editing a single entry of the playlist: the fields grouped in sections. */
+.entry-dialog {
+    -entry-muted: derive(-fx-text-base-color, 45%);
+    -entry-line: derive(-fx-color, -12%);
+}
+
+.entry-form {
+    -fx-hgap: 10;
+    -fx-vgap: 6;
+}
+
+.section-title {
+    -fx-font-weight: bold;
+    -fx-padding: 10 0 3 0;
+    -fx-max-width: Infinity;
+    -fx-border-color: transparent transparent -entry-line transparent;
+}
+
+/* the first section starts at the top */
+.entry-form > .section-title:first-child {
+    -fx-padding: 0 0 3 0;
+}
+
+.field-label {
+    -fx-text-fill: derive(-fx-text-base-color, 20%);
+}
+
+.field-hint {
+    -fx-text-fill: -entry-muted;
+}
+
+/* fields for short values (numbers, flags) */
+.short-field {
+    -fx-pref-width: 110;
+    -fx-max-width: 110;
+}
+
+.field-row {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.logo-preview {
+    -fx-min-width: 56;
+    -fx-min-height: 32;
+    -fx-max-height: 32;
+    -fx-background-color: -fx-control-inner-background;
+    -fx-background-radius: 4;
+    -fx-border-color: -entry-line;
+    -fx-border-radius: 4;
+}
