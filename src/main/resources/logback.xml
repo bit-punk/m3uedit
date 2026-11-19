@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false" scan="false">
 
+    <property name="detailedPattern" value="%d{ISO8601} [%t] %5p \(%C{1}:%L %M\) - %m%n"/>
+
+    <!-- the command-line mode logs less, shorter and only to stderr (see Main) -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>${m3uedit.log.target:-System.out}</target>
         <encoder>
-            <pattern>%d{ISO8601} [%t] %5p \(%C{1}:%L %M\) - %m%n</pattern>
+            <pattern>${m3uedit.log.pattern:-${detailedPattern}}</pattern>
         </encoder>
     </appender>
 
     <logger name="org.hibernate.validator" level="INFO"/>
 
-    <root level="DEBUG">
+    <root level="${m3uedit.log.level:-DEBUG}">
         <appender-ref ref="STDOUT" />
     </root>
 

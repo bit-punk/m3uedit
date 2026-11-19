@@ -82,7 +82,7 @@ public class SftpInput extends AbstractInput implements Input {
     }
 
     protected SftpUserInteraction createUserInteraction() {
-        return new SftpUserInteraction();
+        return SftpUserInteraction.create();
     }
 
     /**

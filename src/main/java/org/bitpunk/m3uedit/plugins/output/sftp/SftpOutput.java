@@ -230,7 +230,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     }
 
     protected SftpUserInteraction createUserInteraction() {
-        return new SftpUserInteraction();
+        return SftpUserInteraction.create();
     }
 
     protected String buildSftpContextDetails(ChannelSftp channelSftp, String targetPath, int playlistSize, int payloadBytes) {
