@@ -1,8 +1,12 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml" stylesheets="@css/validating-cell.css">
+<fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml" styleClass="map-editor"
+         stylesheets="@css/validating-cell.css">
     <TableView fx:id="vlcOptionsTableView" editable="true">
+        <placeholder>
+            <Label text="No options, add one below" styleClass="map-editor-empty"/>
+        </placeholder>
         <columns>
             <TableColumn fx:id="keyColumn" text="Key"/>
             <TableColumn fx:id="valueColumn" text="Value"/>
@@ -11,9 +15,9 @@
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
         </columnResizePolicy>
     </TableView>
-    <HBox>
-        <TextField fx:id="newKeyTextField" promptText="key"/>
-        <TextField fx:id="newValueTextField" promptText="value"/>
+    <HBox styleClass="map-editor-add">
+        <TextField fx:id="newKeyTextField" promptText="key, e.g. network-caching" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="newValueTextField" promptText="value, e.g. 1000" HBox.hgrow="ALWAYS"/>
         <Button fx:id="addNewPropertyButton" text="Add"/>
     </HBox>
 </fx:root>

@@ -3,3 +3,21 @@
     -fx-control-inner-background: #ffc0c0 ;
     -fx-accent: red ;
 }
+/* editor of the VLC options: a few rows, it grows with the dialog */
+.map-editor {
+    -fx-spacing: 6;
+}
+
+.map-editor .table-view {
+    -fx-fixed-cell-size: 26;
+    /* the header and four rows */
+    -fx-pref-height: 132;
+}
+
+.map-editor-empty {
+    -fx-text-fill: derive(-fx-text-base-color, 45%);
+}
+
+.map-editor-add {
+    -fx-spacing: 6;
+}

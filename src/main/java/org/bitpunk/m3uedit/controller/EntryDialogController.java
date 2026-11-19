@@ -1,5 +1,9 @@
 package org.bitpunk.m3uedit.controller;
 
+import org.bitpunk.m3uedit.util.ChannelLogos;
+import javafx.util.Duration;
+import javafx.scene.image.ImageView;
+import javafx.animation.PauseTransition;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
@@ -19,6 +23,7 @@ import java.net.URL;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class EntryDialogController<T> extends AbstractDialogController<T> {
@@ -66,6 +71,14 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private ButtonType okButtonType;
+    @FXML
+    private ImageView logoPreview;
+    /**
+     * Shows the logo once its URL has not changed for a moment, not for each character typed. Created by
+     * {@link #initialize}, which the FXML loader calls before the fields of this class are initialized, so the field
+     * must not have an initializer.
+     */
+    private PauseTransition logoPreviewDelay;
     private BooleanBinding isInputValid;
 
     public EntryDialogController() {
@@ -100,7 +113,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     private void requestFocus(DialogEvent dialogEvent) {
-        Platform.runLater(() -> durationTextField.requestFocus());
+        Platform.runLater(() -> nameTextField.requestFocus());
     }
 
     private Entry getEntry() {
@@ -131,12 +144,16 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
         channelUriTextField.setText(entry.getChannelUri());
         nameTextField.setText(entry.getName());
         mapEditorController.setMap(entry.getVlcOpts());
+        // without delay when the dialog is opened
+        logoPreviewDelay.stop();
+        updateLogoPreview();
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeBinding();
         initKeyEventHandler();
+        initLogoPreview();
         initIntegerField(indexTextField,0);
     }
 
@@ -152,6 +169,21 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
                 }
         );
         textField.setTextFormatter(formatter);
+    }
+
+    private void initLogoPreview() {
+        logoPreviewDelay = new PauseTransition(Duration.millis(400));
+        logoPreviewDelay.setOnFinished(event -> updateLogoPreview());
+        tvgLogoTextField.textProperty().addListener((observable, oldUrl, url) -> logoPreviewDelay.playFromStart());
+    }
+
+    private void updateLogoPreview() {
+        logoPreview.setImage(ChannelLogos.get(tvgLogoTextField.getText(), logoPreview.getFitWidth(),
+                logoPreview.getFitHeight()));
+    }
+
+    ImageView logoPreview() {
+        return logoPreview;
     }
 
     private void initializeBinding() {
@@ -181,6 +213,11 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     private boolean isValidBean(Entry entry) {
         PojoValidator<Entry> validator = new PojoValidator<>();
         Set<ConstraintViolation<Entry>> errors = validator.validate(entry);
+        if (!indexHBox.isVisible()) {
+            // a new entry is added at the end of the playlist, it has no position yet
+            errors = errors.stream().filter(error -> !"index".equals(error.getPropertyPath().toString()))
+                    .collect(Collectors.toSet());
+        }
         displayValidationErrors(errors);
         log.trace("Validation-errors found: {}", errors);
         return errors.isEmpty();
@@ -193,6 +230,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
             String errorMessage = error.getMessage();
             log.trace("Field: {} Message: {}", fieldName, errorMessage);
             switch (fieldName) {
+                case "index" -> markFieldInvalid(indexTextField, errorMessage);
                 case "duration" -> markFieldInvalid(durationTextField, errorMessage);
                 case "groupTitle" -> markFieldInvalid(groupTitleTextField, errorMessage);
                 case "tvgId" -> markFieldInvalid(tvgIdTextField, errorMessage);
@@ -231,7 +269,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     private void setMaxIndexLabel(int maxIndex) {
-        maxIndexLabel.setText(" / " + maxIndex);
+        maxIndexLabel.setText("of " + maxIndex);
     }
 
     private void setIndexVisible(boolean visible) {
@@ -239,9 +277,12 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
         indexLabel.setManaged(visible);
         indexHBox.setVisible(visible);
         indexHBox.setManaged(visible);
+        // the position is only validated while it is shown
+        isInputValid.invalidate();
     }
 
     private void resetTextFields() {
+        resetTextField(indexTextField);
         resetTextField(durationTextField);
         resetTextField(groupTitleTextField);
         resetTextField(tvgIdTextField);
