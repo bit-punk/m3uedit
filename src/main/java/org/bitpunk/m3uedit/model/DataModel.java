@@ -152,6 +152,10 @@ public class DataModel {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ReadOnlyBooleanWrapper saving;
+    /**
+     * The errors of the inputs that could not be read when the inputs have been read last.
+     */
+    private transient List<String> inputErrors = List.of();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ReadOnlyObjectWrapper<PipelineResult> pipelineResult;
@@ -521,6 +525,7 @@ public class DataModel {
             if (step == Step.LOAD_INPUTS) {
                 rawEntryList.setAll(pipeline.raw());
                 inputEpgUrls.set(result.inputEpgUrls());
+                inputErrors = List.copyOf(result.inputErrors());
             }
             if (step.compareTo(Step.SORT) < 0) {
                 filteredEntryList.setAll(pipeline.filtered());
@@ -812,6 +817,14 @@ public class DataModel {
 
     public boolean isSaving() {
         return saving.get();
+    }
+
+    /**
+     * @return the errors of the inputs that could not be read when the inputs have been read last, empty if all
+     * could be read
+     */
+    public List<String> getInputErrors() {
+        return inputErrors;
     }
 
     private static List<Entry> filterEntries(List<Filter> filters, List<Entry> entries,

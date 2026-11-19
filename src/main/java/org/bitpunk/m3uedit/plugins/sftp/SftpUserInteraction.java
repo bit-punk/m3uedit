@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.plugins.sftp;
 
 import lombok.extern.slf4j.Slf4j;
 import com.jcraft.jsch.UserInfo;
+import org.bitpunk.m3uedit.util.HeadlessMode;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -26,6 +27,13 @@ import java.util.function.Supplier;
  */
 @Slf4j
 public class SftpUserInteraction implements UserInfo {
+    /**
+     * @return the user interaction showing dialogs, or the one without dialogs in headless mode
+     */
+    public static SftpUserInteraction create() {
+        return HeadlessMode.isActive() ? new HeadlessSftpUserInteraction() : new SftpUserInteraction();
+    }
+
     public enum OverwriteDecision {
         CANCEL, OVERWRITE, OVERWRITE_ALWAYS
     }
