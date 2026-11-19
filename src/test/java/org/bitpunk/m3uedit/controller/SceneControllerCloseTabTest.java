@@ -190,6 +190,46 @@ class SceneControllerCloseTabTest {
     }
 
     @Test
+    void testUnsavedChangesAreMarkedInTheTab() throws Exception {
+        runOnFxThread(() -> {
+            Fixture f = loadScene(false);
+            // a new project has never been saved
+            DataModel dataModel = DataModelFactory.createDataModel("tv");
+            f.controller().addNewProjectTab(dataModel);
+            Tab tab = f.tabPane().getTabs().getFirst();
+            assertThat(tab.getText()).isEqualTo("tv *");
+
+            f.controller().projectSaver = model -> ProjectPersisterUtil.SaveResult.SAVED;
+            f.controller().handleSaveProjectAction();
+            assertThat(tab.getText()).isEqualTo("tv");
+
+            // e.g. a filter enabled
+            dataModel.getFilters().getFirst().getEnabled().set(!dataModel.getFilters().getFirst().getEnabled().get());
+            assertThat(tab.getText()).isEqualTo("tv *");
+
+            f.controller().projectSaver = model -> ProjectPersisterUtil.SaveResult.CANCELLED;
+            f.controller().handleSaveProjectAction();
+            assertThat(tab.getText()).as("not saved").isEqualTo("tv *");
+        });
+    }
+
+    @Test
+    void testAnOpenedProjectIsNotMarked() throws Exception {
+        runOnFxThread(() -> {
+            Fixture f = loadScene(false);
+            DataModel loaded = createDataModel("opened", true);
+            loaded.setBackgroundExecutor(task -> {
+            });
+            f.controller().projectFileChooser = () -> Path.of("/tmp/opened.m3uproj");
+            f.controller().projectLoader = path -> loaded;
+
+            f.controller().handleOpenProjectAction();
+
+            assertThat(f.tabPane().getTabs()).singleElement().extracting(Tab::getText).isEqualTo("opened");
+        });
+    }
+
+    @Test
     void testSuccessfulSaveClearsChangedFlag() throws Exception {
         runOnFxThread(() -> {
             Fixture f = loadScene(false);

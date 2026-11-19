@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.WritableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -80,7 +81,7 @@ class ProjectPersisterUtilTest {
         assertThat(dataModel.getFilters()).extracting(filter -> filter.getEnabled().get())
                 .containsExactly(false, true, false);
         assertThat(dataModel.getSorters()).hasExactlyElementsOfTypes(ChannelNameSorter.class);
-        assertThat(((FileOutput) dataModel.getOutputs().getFirst()).getOutput())
+        assertThat(dataModel.getOutputs().getFirst().getOutput())
                 .isEqualTo(URI.create("file:///tmp/playlist.m3u"));
     }
 
@@ -155,9 +156,10 @@ class ProjectPersisterUtilTest {
 
         String projectFileName = "target/testproject-sftp.m3uproj";
         ProjectPersisterUtil.saveProjectFile(projectFileName, dataModel);
-        assertThat(Files.readString(Path.of(projectFileName))).doesNotContain("topSecret42").contains("example.com");
+        Path projectFilePath = Path.of(projectFileName);
+        assertThat(Files.readString(projectFilePath)).doesNotContain("topSecret42").contains("example.com");
 
-        SftpConnection loaded = ((SftpOutput) ProjectPersisterUtil.loadProject(Path.of(projectFileName))
+        SftpConnection loaded = ((SftpOutput) ProjectPersisterUtil.loadProject(projectFilePath)
                 .getOutputs().get(1)).getSftpConnection();
         assertThat(loaded.getHostName()).isEqualTo("example.com");
         assertThat(loaded.getPassword()).isNull();
@@ -312,7 +314,7 @@ class ProjectPersisterUtilTest {
 
         assertThat(loaded).isNotNull();
         assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(filter.getEnabled()).isNotNull()
-                .extracting(property -> property.get()).isEqualTo(false));
+                .extracting(WritableBooleanValue::get).isEqualTo(false));
     }
 
     @Test
@@ -401,7 +403,7 @@ class ProjectPersisterUtilTest {
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
 
         assertThat(loaded).isNotNull();
-        assertThat(((FileInput) loaded.getInputs().get(0)).getSource()).isEqualTo("/tmp/playlist.m3u");
+        assertThat(loaded.getInputs().get(0).getSource()).isEqualTo("/tmp/playlist.m3u");
         FritzBoxInput loadedFritzBox = (FritzBoxInput) loaded.getInputs().get(1);
         assertThat(loadedFritzBox.getFritzBoxConnection().getBaseUrl()).isEqualTo("http://192.168.178.1/dvb/m3u/");
         assertThat(loadedFritzBox.getSelectedStreamSources()).containsExactly(new StreamSource("tvhd.m3u", "HD streams"));
@@ -466,7 +468,7 @@ class ProjectPersisterUtilTest {
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
 
         assertThat(loaded).isNotNull();
-        assertThat(((FileInput) loaded.getInputs().getFirst()).getSource()).isEqualTo("/tmp/a.m3u");
+        assertThat(loaded.getInputs().getFirst().getSource()).isEqualTo("/tmp/a.m3u");
         assertThat(loaded.getInputs().getFirst().getEnabled().get()).isTrue();
         assertThat(loaded.getFilters()).isEmpty();
         assertThat(loaded.getOutputs()).isEmpty();
@@ -520,7 +522,7 @@ class ProjectPersisterUtilTest {
         List<Path> confirmations = new ArrayList<>();
 
         ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(dataModel, tempDir.resolve("project"),
-                file -> confirmations.add(file));
+                confirmations::add);
 
         assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
         assertThat(tempDir.resolve("project.m3uproj")).exists();
@@ -536,7 +538,7 @@ class ProjectPersisterUtilTest {
         List<Path> confirmations = new ArrayList<>();
 
         ProjectPersisterUtil.SaveResult result = ProjectPersisterUtil.saveProjectAs(getDataModel(), tempDir.resolve("project"),
-                file -> confirmations.add(file));
+                confirmations::add);
 
         assertThat(result).isEqualTo(ProjectPersisterUtil.SaveResult.SAVED);
         assertThat(confirmations).containsExactly(existing);
@@ -623,10 +625,37 @@ class ProjectPersisterUtilTest {
         Path emptySources = tempDir.resolve("empty.m3uproj");
         Files.writeString(emptySources, "name: empty\nenrichers:\n- type: EpgEnricher\n  sources: []\n");
 
-        assertThat(((org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher) ProjectPersisterUtil.loadProject(withoutSources)
+        assertThat(((EpgEnricher) ProjectPersisterUtil.loadProject(withoutSources)
                 .getEnrichers().getFirst()).getSources())
-                .containsExactlyElementsOf(org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher.defaultSources());
-        assertThat(((org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher) ProjectPersisterUtil.loadProject(emptySources)
+                .containsExactlyElementsOf(EpgEnricher.defaultSources());
+        assertThat(((EpgEnricher) ProjectPersisterUtil.loadProject(emptySources)
                 .getEnrichers().getFirst()).getSources()).as("cleared by the user").isEmpty();
+    }
+
+    @Test
+    void testThePersistedStateOfAPluginShowsChangesOfItsConfiguration() {
+        FritzBoxInput input = new FritzBoxInput();
+        FritzBoxConnection connection = new FritzBoxConnection();
+        connection.setBaseUrl("http://fritz.box/dvb/m3u/");
+        input.setFritzBoxConnection(connection);
+
+        String before = ProjectPersisterUtil.persistedState(input);
+        assertThat(ProjectPersisterUtil.persistedState(input)).as("unchanged").isEqualTo(before);
+
+        connection.setBaseUrl("http://192.168.178.1/dvb/m3u/");
+
+        assertThat(ProjectPersisterUtil.persistedState(input)).isNotEqualTo(before).contains("192.168.178.1");
+    }
+
+    @Test
+    void testTheChangedFlagIsNotStoredInTheProject(@TempDir Path dir)
+            throws Exception {
+        DataModel dataModel = new DataModel("flag");
+        dataModel.setChanged(true);
+        Path file = dir.resolve("flag.m3uproj");
+
+        assertThat(ProjectPersisterUtil.saveProjectFile(file.toString(), dataModel)).isTrue();
+
+        assertThat(Files.readString(file)).doesNotContain("changed");
     }
 }

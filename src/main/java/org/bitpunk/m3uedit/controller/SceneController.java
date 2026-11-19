@@ -158,7 +158,10 @@ public class SceneController implements Initializable {
         ProjectController projectController = getProjectController(dataModel);
         String projectName = dataModel.getName();
         if (isNotEmpty(projectName)) {
-            Tab newProjectTab = new Tab(projectName);
+            Tab newProjectTab = new Tab();
+            // unsaved changes are marked by an asterisk after the name
+            newProjectTab.textProperty().bind(Bindings.when(dataModel.changedProperty())
+                    .then(projectName + " *").otherwise(projectName));
             newProjectTab.setContent(projectController);
             newProjectTab.setOnCloseRequest(this::handleTabCloseRequest);
             tabPane.getTabs().add(newProjectTab);
