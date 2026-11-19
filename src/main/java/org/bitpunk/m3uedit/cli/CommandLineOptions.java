@@ -126,8 +126,9 @@ public record CommandLineOptions(List<Path> projects, boolean dryRun, boolean qu
 
                 %s
 
-                The playlist is not written if an input could not be read, if no entries have been read or if the
-                playlist is empty, so a working playlist is not replaced by an incomplete one.
+                The playlist is not written if an input could not be read, if the inputs did not deliver any entries
+                or if the playlist is empty, so a working playlist is not replaced by an incomplete one. A project
+                without inputs, whose playlist has been created by hand, is written as it is.
 
                 Environment:
                   M3UEDIT_SFTP_PASSWORD_<USER>_<HOST>

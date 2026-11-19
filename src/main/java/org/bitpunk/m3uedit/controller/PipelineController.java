@@ -167,7 +167,11 @@ public class PipelineController extends VBox implements ModelAware {
 
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
-        dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> updateFlowLabels());
+        dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> {
+            updateFlowLabels();
+            // e.g. an entry added by the user
+            updateInactive();
+        });
         refresh();
     }
 
@@ -250,7 +254,7 @@ public class PipelineController extends VBox implements ModelAware {
                     : new Badge("±0", "badge-zero", tooltip);
         }));
         int loaded = result.raw().size();
-        updateInactive(loaded == 0);
+        updateInactive();
         inputStage.setStatusProvider(() -> "%s, %s".formatted(count(dataModel.getInputs().size(), "input"),
                 count(loaded, "entry", "entries")));
         filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
@@ -273,12 +277,25 @@ public class PipelineController extends VBox implements ModelAware {
     }
 
     /**
-     * Greys out all stages following the inputs while no entries have been read: there are no inputs, they could
-     * not be read or did not deliver any entries, or they are still being read for the first time.
+     * Greys out the stages that have nothing to work on: filters, sorters and enrichers while no entries have been
+     * read (there are no inputs, they could not be read or did not deliver any entries, or they are still being
+     * read for the first time), the outputs while the playlist is empty.
      */
-    private void updateInactive(boolean noEntriesRead) {
-        stages().stream().filter(stage -> stage != inputStage).forEach(stage -> stage.setInactive(noEntriesRead));
-        connectors.forEach(connector -> connector.pseudoClassStateChanged(PluginStageView.INACTIVE, noEntriesRead));
+    private void updateInactive() {
+        // filters, sorters and enrichers only work on the entries read: entries added by the user are added to the
+        // playlist after them
+        boolean noEntriesRead = dataModel.getPipelineResult().raw().isEmpty();
+        for (PluginStageView<?> stage : List.of(filterStage, sorterStage, enricherStage)) {
+            stage.setInactive(noEntriesRead);
+        }
+        for (HBox connector : connectors.subList(0, connectors.size() - 1)) {
+            connector.pseudoClassStateChanged(PluginStageView.INACTIVE, noEntriesRead);
+        }
+        // the outputs write the playlist, also one created by hand without inputs
+        boolean emptyPlaylist = dataModel.getSortedEntryList().isEmpty();
+        outputStage.setInactive(emptyPlaylist, noEntriesRead ? "Inactive: the playlist is empty, read entries from "
+                + "the inputs or add entries to the playlist" : "Inactive: the playlist is empty");
+        connectors.getLast().pseudoClassStateChanged(PluginStageView.INACTIVE, emptyPlaylist);
     }
 
     private static long enabledCount(List<? extends Plugin> plugins) {

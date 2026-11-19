@@ -83,12 +83,15 @@ public class CommandLineRunner {
                     name, inputErrors.size());
             return FAILED;
         }
-        if (read == 0) {
+        // a project without inputs is a playlist created by hand; inputs without entries are rather a problem (e.g.
+        // a FritzBox switched off), the playlist would be replaced by the entries added by hand only
+        if (read == 0 && !project.getInputs().isEmpty()) {
             err.printf("%s: not written, no entries have been read from the inputs%n", name);
             return FAILED;
         }
         if (entries == 0) {
-            err.printf("%s: not written, the playlist is empty after %d entries have been read%n", name, read);
+            err.printf("%s: not written, the playlist is empty%s%n", name,
+                    read > 0 ? " after %d entries have been read".formatted(read) : "");
             return FAILED;
         }
         if (options.dryRun()) {

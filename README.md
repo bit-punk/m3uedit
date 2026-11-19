@@ -88,8 +88,9 @@ m3uedit --run ~/playlists/tv.m3uproj
 Without options, the user interface is started as before.
 
 **A working playlist is not replaced by an incomplete one:** it is not written if an input could not be read (e.g.
-the FritzBox is offline), if no entries have been read at all or if the playlist is empty after filtering.
-`--ignore-input-errors` writes the entries of the inputs that could be read, but never an empty playlist.
+the FritzBox is offline), if the inputs did not deliver any entries or if the playlist is empty after filtering.
+`--ignore-input-errors` writes the entries of the inputs that could be read, but never an empty playlist. A project
+without inputs, whose playlist has been created by hand, is written as it is.
 
 **Exit codes:** `0` all projects have been run and written, `1` a project could not be run or written, `2` wrong
 options or a project-file that could not be loaded. The result of each project is printed to stdout, errors to
