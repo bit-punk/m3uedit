@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.validation.constraints.NotNull;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -92,10 +94,12 @@ public class DataModel {
     private String name;
 
     /**
-     * The 'dirty'-flag: the state of the editor, not of the project.
+     * The 'dirty'-flag: the state of the editor, not of the project. Observable, e.g. for the tab of the project.
      */
     @JsonIgnore
-    private boolean changed = true;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient BooleanProperty changed = new SimpleBooleanProperty(this, "changed", true);
 
     // the setters are implemented explicitly to move the listeners to a new list
     @Setter(AccessLevel.NONE)
@@ -233,9 +237,9 @@ public class DataModel {
         saving = new ReadOnlyBooleanWrapper(this, "saving", false);
         pipelineResult = new ReadOnlyObjectWrapper<>(this, "pipelineResult", PipelineResult.EMPTY);
         inputEpgUrls = new ReadOnlyObjectWrapper<>(this, "inputEpgUrls", List.of());
-        epgUrls.addListener((ListChangeListener<String>) change -> changed = true);
+        epgUrls.addListener((ListChangeListener<String>) change -> changed.set(true));
         // the 'dirty'-flag is set with each change of a persisted list, or the enabled-state of one of its plugins
-        pluginEnabledListener = (observable, oldValue, newValue) -> changed = true;
+        pluginEnabledListener = (observable, oldValue, newValue) -> changed.set(true);
         pluginListListener = this::onPluginListChanged;
         inputsRecomputeListener = change -> reloadInputs();
         sorterEnabledListener = (observable, wasEnabled, enabled) -> {
@@ -271,7 +275,7 @@ public class DataModel {
     }
 
     private void onPluginListChanged(ListChangeListener.Change<? extends Plugin> change) {
-        changed = true;
+        changed.set(true);
         while (change.next()) {
             change.getRemoved().forEach(plugin -> plugin.getEnabled().removeListener(pluginEnabledListener));
             change.getAddedSubList().forEach(plugin -> plugin.getEnabled().addListener(pluginEnabledListener));
@@ -632,13 +636,13 @@ public class DataModel {
             return;
         }
         manualChanges.clear();
-        changed = true;
+        changed.set(true);
         sortFilteredEntries();
     }
 
     private void recordManualChange(ManualChange change) {
         manualChanges.add(change);
-        changed = true;
+        changed.set(true);
     }
 
     /**
@@ -813,6 +817,21 @@ public class DataModel {
      */
     public ReadOnlyBooleanProperty savingProperty() {
         return saving.getReadOnlyProperty();
+    }
+
+    /**
+     * @return true if the project contains changes that have not been saved yet
+     */
+    public boolean isChanged() {
+        return changed.get();
+    }
+
+    public void setChanged(boolean changed) {
+        this.changed.set(changed);
+    }
+
+    public BooleanProperty changedProperty() {
+        return changed;
     }
 
     public boolean isSaving() {

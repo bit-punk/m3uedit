@@ -118,6 +118,18 @@ public class PluginStageView<T extends Plugin> extends VBox {
     @Setter
     private Consumer<T> onConfigured = plugin -> {};
     /**
+     * Called after the configuration of a plugin has been changed by the user (not if the dialog is cancelled or
+     * nothing is changed), see {@link #persistedState}.
+     */
+    @Setter
+    private Consumer<T> onConfigurationChanged = plugin -> {};
+    /**
+     * The state of a plugin as stored in the project, compared before and after it is configured; by default
+     * nothing is compared and no change is reported.
+     */
+    @Setter
+    private Function<? super T, String> persistedState = plugin -> null;
+    /**
      * Asks the user whether the given plugin may be removed; plugins can only be removed if an add-action is set.
      */
     @Setter
@@ -422,12 +434,17 @@ public class PluginStageView<T extends Plugin> extends VBox {
         if (!plugin.isConfigurable()) {
             return;
         }
+        String before = persistedState.apply(plugin);
         plugin.configure();
         PluginRow row = rows.get(plugin);
         if (row != null) {
             row.update();
         }
         onConfigured.accept(plugin);
+        String after = persistedState.apply(plugin);
+        if (after != null && !after.equals(before)) {
+            onConfigurationChanged.accept(plugin);
+        }
     }
 
     private void remove(T plugin) {

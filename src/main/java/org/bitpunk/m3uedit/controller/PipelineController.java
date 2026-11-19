@@ -31,6 +31,7 @@ import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 
 import java.net.URI;
 import java.util.IdentityHashMap;
@@ -155,6 +156,11 @@ public class PipelineController extends VBox implements ModelAware {
         for (Node node : List.of(sortedConnector, enricherStage)) {
             node.visibleProperty().bind(Bindings.isNotEmpty(dataModel.getEnrichers()));
             node.managedProperty().bind(node.visibleProperty());
+        }
+        // a changed configuration is a change of the project, e.g. asked about before closing it
+        for (PluginStageView<?> stage : stages()) {
+            stage.setPersistedState(ProjectPersisterUtil::persistedState);
+            stage.setOnConfigurationChanged(plugin -> dataModel.setChanged(true));
         }
         // each stage has its own colour (project.css) and is numbered in the order of the pipeline
         inputStage.getStyleClass().add("stage-inputs");

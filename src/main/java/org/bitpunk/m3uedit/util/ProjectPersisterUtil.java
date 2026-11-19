@@ -82,6 +82,19 @@ public class ProjectPersisterUtil {
         return MapperHolder.MAPPER;
     }
 
+    /**
+     * @return the state of the plugin as it is stored in the project-file, e.g. to find out whether it has been
+     * changed; null if it cannot be written
+     */
+    public static String persistedState(Object plugin) {
+        try {
+            return getMapper().writeValueAsString(plugin);
+        } catch (JacksonException e) {
+            log.warn("The state of {} cannot be written", plugin, e);
+            return null;
+        }
+    }
+
     private static final class MapperHolder {
         private static final ObjectMapper MAPPER = createMapper();
     }

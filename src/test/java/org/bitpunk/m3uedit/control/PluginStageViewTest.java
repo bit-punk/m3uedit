@@ -131,6 +131,33 @@ class PluginStageViewTest {
     }
 
     @Test
+    void aChangedConfigurationIsReported() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        AtomicInteger changed = new AtomicInteger();
+        stage.setOnConfigurationChanged(plugin -> changed.incrementAndGet());
+        // the state changes with each configuration
+        stage.setPersistedState(plugin -> "configured " + plugin.configured);
+
+        Event.fireEvent(row(stage, first), click(2));
+
+        assertThat(changed).hasValue(1);
+    }
+
+    @Test
+    void anUnchangedConfigurationIsNotReported() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        AtomicInteger changed = new AtomicInteger();
+        stage.setOnConfigurationChanged(plugin -> changed.incrementAndGet());
+        // e.g. the dialog has been cancelled
+        stage.setPersistedState(plugin -> "unchanged");
+
+        Event.fireEvent(row(stage, first), click(2));
+
+        assertThat(first.configured).isEqualTo(1);
+        assertThat(changed).hasValue(0);
+    }
+
+    @Test
     void doubleClickConfiguresThePlugin() {
         PluginStageView<TestPlugin> stage = orderableStage();
         AtomicInteger configured = new AtomicInteger();
