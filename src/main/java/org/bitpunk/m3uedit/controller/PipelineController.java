@@ -151,6 +151,14 @@ public class PipelineController extends VBox implements ModelAware {
             node.visibleProperty().bind(Bindings.isNotEmpty(dataModel.getEnrichers()));
             node.managedProperty().bind(node.visibleProperty());
         }
+        // each stage has its own colour (project.css) and is numbered in the order of the pipeline
+        inputStage.getStyleClass().add("stage-inputs");
+        filterStage.getStyleClass().add("stage-filters");
+        sorterStage.getStyleClass().add("stage-sorters");
+        enricherStage.getStyleClass().add("stage-enrichers");
+        outputStage.getStyleClass().add("stage-outputs");
+        enricherStage.visibleProperty().addListener((observable, wasVisible, visible) -> updateStageNumbers());
+        updateStageNumbers();
 
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
@@ -175,6 +183,23 @@ public class PipelineController extends VBox implements ModelAware {
         if (!changingAll) {
             recompute.run();
         }
+    }
+
+    /**
+     * Numbers the stages shown, without gaps: the enricher stage is hidden if there are no enrichers.
+     */
+    private void updateStageNumbers() {
+        int number = 0;
+        for (PluginStageView<?> stage : stages()) {
+            stage.setNumber(stage.isVisible() ? ++number : 0);
+        }
+    }
+
+    /**
+     * @return the stages in the order of the pipeline
+     */
+    List<PluginStageView<?>> stages() {
+        return List.of(inputStage, filterStage, sorterStage, enricherStage, outputStage);
     }
 
     private void initRecomputeListeners() {

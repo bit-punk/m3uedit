@@ -26,16 +26,64 @@
 }
 
 .pipeline-stage {
+    /* the colour of the stage (border, number) and the background of its header, set per stage below */
+    -stage-color: -m3u-line;
+    -stage-tint: -m3u-panel;
     -fx-background-color: -fx-control-inner-background;
-    -fx-background-radius: 7;
-    -fx-border-color: -m3u-line;
-    -fx-border-radius: 7;
+    -fx-background-radius: 10;
+    -fx-border-color: -stage-color;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+}
+
+.pipeline-stage.stage-inputs {
+    -stage-color: #3b78d0;
+    -stage-tint: #e5eefa;
+}
+
+.pipeline-stage.stage-filters {
+    -stage-color: #d2741f;
+    -stage-tint: #fbeedf;
+}
+
+.pipeline-stage.stage-sorters {
+    -stage-color: #8656c4;
+    -stage-tint: #efe7f9;
+}
+
+.pipeline-stage.stage-enrichers {
+    -stage-color: #20907f;
+    -stage-tint: #ddf2ee;
+}
+
+.pipeline-stage.stage-outputs {
+    -stage-color: #3c9150;
+    -stage-tint: #e2f2e5;
 }
 
 .stage-header {
     -fx-padding: 6 6 6 6;
-    -fx-border-color: transparent transparent -m3u-line transparent;
+    -fx-background-color: -stage-tint;
+    /* inside the border of the stage, so 2 less than its radius */
+    -fx-background-radius: 8 8 0 0;
+    -fx-border-color: transparent transparent -stage-color transparent;
     -fx-min-height: 34;
+}
+
+.stage-number {
+    -fx-background-color: -stage-color;
+    -fx-background-radius: 1em;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 1.05em;
+    /* a fixed size, the rows of a numbered stage are indented by it (see below) */
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+    -fx-min-height: 24;
+    -fx-pref-height: 24;
+    -fx-max-height: 24;
+    -fx-alignment: center;
 }
 
 .stage-header {
@@ -44,6 +92,7 @@
 
 .pipeline-stage:collapsed .stage-header {
     -fx-border-color: transparent;
+    -fx-background-radius: 8;
 }
 
 .stage-hint:collapsed {
@@ -74,6 +123,12 @@
 .stage-rows {
     -fx-padding: 3;
     -fx-spacing: 1;
+}
+
+/* indented by the number of the stage and the gap after it (24 + 6), so the checkboxes stay aligned with the one
+   of the header */
+.pipeline-stage:numbered .stage-rows {
+    -fx-padding: 3 3 3 33;
 }
 
 .stage-empty {
