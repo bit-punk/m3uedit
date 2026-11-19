@@ -83,6 +83,7 @@ m3uedit --run ~/playlists/tv.m3uproj
 | `-q`, `--quiet`             | only print errors                                                               |
 | `-v`, `--verbose`           | print details of the run                                                        |
 | `-h`, `--help`              | print the help                                                                  |
+| `--version`                 | print the version                                                               |
 
 Without options, the user interface is started as before.
 
@@ -135,7 +136,7 @@ default values on first use and can be edited by hand:
 | `cache/epg/`                           | downloaded EPG sources                                      |
 
 A different directory can be used by setting the system property `m3uedit.config.dir`, e.g.
-`java -Dm3uedit.config.dir=/tmp/m3uedit -jar target/m3uedit-1.0-SNAPSHOT.jar`.
+`java -Dm3uedit.config.dir=/tmp/m3uedit -jar target/m3uedit-<version>.jar`.
 
 ## Building
 
@@ -159,8 +160,9 @@ To run the application using the _javafx-maven-plugin_, use:
 ./mvnw javafx:run
 ```
 
-After a successful build you will find the resulting jar under `./target/m3uedit-1.0-SNAPSHOT.jar`, which can be
-started using `java -jar target/m3uedit-1.0-SNAPSHOT.jar`. The jar contains the JavaFX libraries of the platform it
+After a successful build you will find the resulting jar under `./target/m3uedit-<version>.jar` (e.g.
+`m3uedit-1.1.0-SNAPSHOT.jar`, see [Versions](#versions)), which can be
+started using `java -jar target/m3uedit-<version>.jar`. The jar contains the JavaFX libraries of the platform it
 has been built on, so it only runs on that platform.
 
 To create a self-contained application image for your current platform (including a java runtime, no separate JDK
@@ -185,6 +187,13 @@ on Windows/macOS.
 * Tests use a temporary configuration directory instead of `~/.m3uedit`
   (see `src/test/java/org/bitpunk/m3uedit/testsupport/TestConfigDirListener.java`), in Maven as well as in the IDE.
   Some tests show windows, so on a machine without display run them using `xvfb-run ./mvnw package`.
+
+### Versions
+
+The version is defined once, by the release on GitHub: building a release (`.github/workflows/release.yml`) sets
+the version of its tag (`-Drevision=1.2.0`) for the jar, the application image and the about dialog. Local builds
+use the `revision` of the `pom.xml`, the next release as snapshot (e.g. `1.1.0-SNAPSHOT`); it only needs to be
+raised by a pull request when a release has been published.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
