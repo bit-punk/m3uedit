@@ -85,6 +85,10 @@ public class PipelineController extends VBox implements ModelAware {
      * Set while all plugins of a stage are enabled or disabled at once, so the entries are re-computed only once.
      */
     private boolean changingAll;
+    /**
+     * The connectors between the stages, showing the number of entries passed on.
+     */
+    private List<HBox> connectors = List.of();
 
     public PipelineController() {
         getStyleClass().add("pipeline");
@@ -143,8 +147,9 @@ public class PipelineController extends VBox implements ModelAware {
         writeHint.managedProperty().bind(writeHint.visibleProperty());
 
         HBox sortedConnector = connector(sortedLabel);
-        getChildren().setAll(inputStage, connector(loadedLabel), filterStage, connector(filteredLabel),
-                sorterStage, sortedConnector, enricherStage, connector(playlistLabel), outputStage);
+        connectors = List.of(connector(loadedLabel), connector(filteredLabel), sortedConnector, connector(playlistLabel));
+        getChildren().setAll(inputStage, connectors.get(0), filterStage, connectors.get(1),
+                sorterStage, connectors.get(2), enricherStage, connectors.get(3), outputStage);
         writeBar.getStyleClass().add("write-bar");
         // the stage is only shown if there are enrichers (none are installed yet in older setups)
         for (Node node : List.of(sortedConnector, enricherStage)) {
@@ -245,6 +250,7 @@ public class PipelineController extends VBox implements ModelAware {
                     : new Badge("±0", "badge-zero", tooltip);
         }));
         int loaded = result.raw().size();
+        updateInactive(loaded == 0);
         inputStage.setStatusProvider(() -> "%s, %s".formatted(count(dataModel.getInputs().size(), "input"),
                 count(loaded, "entry", "entries")));
         filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
@@ -264,6 +270,15 @@ public class PipelineController extends VBox implements ModelAware {
         enricherStage.refresh();
         outputStage.refresh();
         updateFlowLabels();
+    }
+
+    /**
+     * Greys out all stages following the inputs while no entries have been read: there are no inputs, they could
+     * not be read or did not deliver any entries, or they are still being read for the first time.
+     */
+    private void updateInactive(boolean noEntriesRead) {
+        stages().stream().filter(stage -> stage != inputStage).forEach(stage -> stage.setInactive(noEntriesRead));
+        connectors.forEach(connector -> connector.pseudoClassStateChanged(PluginStageView.INACTIVE, noEntriesRead));
     }
 
     private static long enabledCount(List<? extends Plugin> plugins) {

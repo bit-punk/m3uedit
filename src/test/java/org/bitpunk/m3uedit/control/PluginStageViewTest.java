@@ -311,4 +311,20 @@ class PluginStageViewTest {
         assertThat(header.getFirst()).isSameAs(number);
         assertThat(header.stream().filter(javafx.scene.control.CheckBox.class::isInstance)).isNotEmpty();
     }
+
+    @Test
+    void anInactiveStageExplainsWhyInItsHeader() {
+        PluginStageView<TestPlugin> stage = orderableStage();
+        javafx.scene.Node header = stage.lookup(".stage-header");
+
+        stage.setInactive(true);
+
+        assertThat(stage.isInactive()).isTrue();
+        assertThat(header.getProperties().values()).anyMatch(javafx.scene.control.Tooltip.class::isInstance);
+
+        stage.setInactive(false);
+
+        assertThat(stage.isInactive()).isFalse();
+        assertThat(header.getProperties().values()).noneMatch(javafx.scene.control.Tooltip.class::isInstance);
+    }
 }

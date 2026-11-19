@@ -61,6 +61,23 @@
     -stage-tint: #e2f2e5;
 }
 
+/* while no entries have been read from the inputs, the following stages are greyed out (still usable); the
+   selectors name the stages, otherwise their colours above would win */
+.pipeline-stage.stage-filters:inactive,
+.pipeline-stage.stage-sorters:inactive,
+.pipeline-stage.stage-enrichers:inactive,
+.pipeline-stage.stage-outputs:inactive {
+    -stage-color: #b4b6bd;
+    -stage-tint: #eeeff2;
+}
+
+.pipeline-stage:inactive .stage-title,
+.pipeline-stage:inactive .stage-hint,
+.pipeline-stage:inactive .stage-rows,
+.pipeline-connector:inactive {
+    -fx-opacity: 0.55;
+}
+
 .stage-header {
     -fx-padding: 6 6 6 6;
     -fx-background-color: -stage-tint;

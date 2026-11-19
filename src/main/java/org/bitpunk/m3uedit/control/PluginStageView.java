@@ -63,6 +63,11 @@ public class PluginStageView<T extends Plugin> extends VBox {
      * one of the header.
      */
     private static final PseudoClass NUMBERED = PseudoClass.getPseudoClass("numbered");
+    /**
+     * Set while the stage has nothing to work on, e.g. no entries have been read from the inputs yet.
+     */
+    public static final PseudoClass INACTIVE = PseudoClass.getPseudoClass("inactive");
+
     private static final String ICON_CHEVRON = "M4.4 5.6L8 9.2l3.6-3.6L13 7l-5 5-5-5z";
     private static final String ICON_PLUS = "M7 2h2v5h5v2H9v5H7V9H2V7h5z";
     private static final String ICON_UP = "M8 4l5 5-1.4 1.4L8 6.8l-3.6 3.6L3 9z";
@@ -87,6 +92,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
      * The position of the stage in the pipeline, shown before its name.
      */
     private final Label numberLabel = new Label();
+    private final Tooltip inactiveTooltip = new Tooltip("Inactive: no entries have been read from the inputs yet");
     private final HBox header;
     private final Label hintLabel;
     private final String title;
@@ -217,6 +223,22 @@ public class PluginStageView<T extends Plugin> extends VBox {
      */
     public int getNumber() {
         return numberLabel.isVisible() ? Integer.parseInt(numberLabel.getText()) : 0;
+    }
+
+    /**
+     * Shows the stage greyed out while it has nothing to work on; its plugins can still be added and configured.
+     */
+    public void setInactive(boolean inactive) {
+        pseudoClassStateChanged(INACTIVE, inactive);
+        if (inactive) {
+            Tooltip.install(header, inactiveTooltip);
+        } else {
+            Tooltip.uninstall(header, inactiveTooltip);
+        }
+    }
+
+    public boolean isInactive() {
+        return getPseudoClassStates().contains(INACTIVE);
     }
 
     public BooleanProperty collapsedProperty() {
