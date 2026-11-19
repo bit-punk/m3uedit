@@ -45,6 +45,15 @@ class CommandLineOptionsTest {
     }
 
     @Test
+    void testVersionNeedsNoProject() throws Exception {
+        CommandLineOptions options = CommandLineOptions.parse("--version");
+
+        assertThat(options.version()).isTrue();
+        assertThat(options.help()).isFalse();
+        assertThat(CommandLineOptions.usage()).contains("--version");
+    }
+
+    @Test
     void testWrongCalls() {
         assertThatThrownBy(() -> CommandLineOptions.parse("--foo")).isInstanceOf(UsageException.class)
                 .hasMessageContaining("Unrecognized option: --foo");

@@ -9,8 +9,8 @@
         <TextFlow>
             <VBox>
                 <Text styleClass="text-id">m3uedit</Text>
-                <Text>version: ${project.version}</Text>
-                <Text>build-time: ${maven.build.timestamp}</Text>
+                <Text fx:id="versionText"/>
+                <Text fx:id="buildTimeText"/>
                 <Hyperlink text="MIT license">https://opensource.org/license/mit/</Hyperlink>
             </VBox>
         </TextFlow>

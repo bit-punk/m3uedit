@@ -26,9 +26,10 @@ import java.util.stream.Collectors;
  * @param verbose           the steps are logged in detail
  * @param ignoreInputErrors writes the playlist although some inputs could not be read
  * @param help              only prints the usage
+ * @param version           only prints the version
  */
 public record CommandLineOptions(List<Path> projects, boolean dryRun, boolean quiet, boolean verbose,
-                                 boolean ignoreInputErrors, boolean help) {
+                                 boolean ignoreInputErrors, boolean help, boolean version) {
 
     private static final Option RUN = Option.builder("r").longOpt("run").hasArg().argName("project-file")
             .desc("the project to run; can be given several times, the projects are run one after another").get();
@@ -41,11 +42,12 @@ public record CommandLineOptions(List<Path> projects, boolean dryRun, boolean qu
     private static final Option VERBOSE = Option.builder("v").longOpt("verbose").desc("print details of the run")
             .get();
     private static final Option HELP = Option.builder("h").longOpt("help").desc("print this help").get();
+    private static final Option VERSION = Option.builder().longOpt("version").desc("print the version").get();
 
     /**
      * The options in the order they are shown by the help.
      */
-    private static final List<Option> ALL = List.of(RUN, DRY_RUN, IGNORE_INPUT_ERRORS, QUIET, VERBOSE, HELP);
+    private static final List<Option> ALL = List.of(RUN, DRY_RUN, IGNORE_INPUT_ERRORS, QUIET, VERBOSE, HELP, VERSION);
 
     /**
      * A call with wrong options.
@@ -72,7 +74,10 @@ public record CommandLineOptions(List<Path> projects, boolean dryRun, boolean qu
     public static CommandLineOptions parse(String... args) throws UsageException {
         // the help is shown even if other options are wrong
         if (Arrays.stream(args).anyMatch(arg -> arg.equals("-h") || arg.equals("--help"))) {
-            return new CommandLineOptions(List.of(), false, false, false, false, true);
+            return new CommandLineOptions(List.of(), false, false, false, false, true, false);
+        }
+        if (Arrays.asList(args).contains("--version")) {
+            return new CommandLineOptions(List.of(), false, false, false, false, false, true);
         }
         CommandLine line;
         try {
@@ -92,7 +97,7 @@ public record CommandLineOptions(List<Path> projects, boolean dryRun, boolean qu
             throw new UsageException("--quiet and --verbose cannot be combined");
         }
         return new CommandLineOptions(Arrays.stream(projectFiles).map(Path::of).toList(), line.hasOption(DRY_RUN),
-                line.hasOption(QUIET), line.hasOption(VERBOSE), line.hasOption(IGNORE_INPUT_ERRORS), false);
+                line.hasOption(QUIET), line.hasOption(VERBOSE), line.hasOption(IGNORE_INPUT_ERRORS), false, false);
     }
 
     public static String usage() {

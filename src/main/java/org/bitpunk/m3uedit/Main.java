@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit;
 
 import org.bitpunk.m3uedit.cli.CommandLineOptions;
 import org.bitpunk.m3uedit.cli.CommandLineRunner;
+import org.bitpunk.m3uedit.util.AppVersion;
 
 /**
  * Starts the user interface, or runs projects without it if command-line options are given (see
@@ -41,6 +42,10 @@ public class Main {
         }
         if (options.help()) {
             System.out.print(CommandLineOptions.usage());
+            return CommandLineRunner.OK;
+        }
+        if (options.version()) {
+            System.out.println("m3uedit " + AppVersion.version());
             return CommandLineRunner.OK;
         }
         // the output of the run goes to stdout, the log only to stderr
