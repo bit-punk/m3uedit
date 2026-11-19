@@ -10,8 +10,6 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
@@ -90,19 +88,7 @@ public class SftpUserInteraction implements UserInfo {
      * @return the entered password, or empty if the dialog was cancelled
      */
     public Optional<String> requestPassword(String userName, String hostName, int port) {
-        return callOnFxThread(() -> {
-            PasswordField passwordField = new PasswordField();
-            Dialog<String> dialog = new Dialog<>();
-            dialog.setTitle("SFTP Password");
-            dialog.setHeaderText("Password for " + userName + "@" + hostName + ":" + port);
-            dialog.getDialogPane().setContent(passwordField);
-            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            dialog.getDialogPane().lookupButton(ButtonType.OK)
-                    .disableProperty().bind(passwordField.textProperty().isEmpty());
-            dialog.setResultConverter(button -> button == ButtonType.OK ? passwordField.getText() : null);
-            Platform.runLater(passwordField::requestFocus);
-            return dialog.showAndWait();
-        });
+        return callOnFxThread(() -> new SftpPasswordDialog(userName, hostName, port).showAndWait());
     }
 
     /**
