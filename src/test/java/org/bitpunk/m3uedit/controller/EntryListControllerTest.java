@@ -139,6 +139,35 @@ class EntryListControllerTest {
         });
     }
 
+    /**
+     * An enricher providing a programme guide, like the EPG Enricher.
+     */
+    static class GuideEnricher extends TestPlugins.TestEnricher implements ProgrammeGuideProvider {
+        @Override
+        public List<org.bitpunk.m3uedit.plugins.enricher.Programme> readProgrammes(List<Entry> playlist) {
+            return List.of();
+        }
+    }
+
+    @Test
+    void testEpgButtonIsDisabledWithoutEntries() throws Exception {
+        EntryListController controller = controllerWith(entry("ZDF"));
+        GuideEnricher enricher = new GuideEnricher();
+        enricher.getEnabled().set(true);
+
+        runOnFxThread(() -> {
+            controller.getDataModel().getEnrichers().add(enricher);
+            assertThat(controller.epgButton().isDisable()).isFalse();
+
+            controller.getDataModel().removeEntries(List.copyOf(controller.playlist()));
+            assertThat(controller.epgButton().isDisable()).isTrue();
+            assertThat(controller.epgButton().getTooltip().getText()).contains("no channels");
+
+            controller.getDataModel().addEntry(entry("arte"));
+            assertThat(controller.epgButton().isDisable()).isFalse();
+        });
+    }
+
     @Test
     void testOnlyOneEpgWindowIsOpenAtATime() throws Exception {
         EntryListController controller = controllerWith(entry("ZDF"));
