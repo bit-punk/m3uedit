@@ -351,8 +351,11 @@ public class EntryListController extends AbstractController  implements Initiali
                 .orElse(entry);
     }
 
+    /**
+     * Opens the dialog for a new entry, which is added at the end of the playlist.
+     */
     @FXML
-    private void addNewEntry() {
+    public void addNewEntry() {
         EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
         entryDialogController.showAndWait().ifPresent(entry -> {
             log.debug("adding new Entry: {}", entry);
@@ -479,6 +482,16 @@ public class EntryListController extends AbstractController  implements Initiali
         }
     }
 
+    /**
+     * Plays the first selected entry in the external player.
+     */
+    public void playSelected() {
+        List<Entry> selected = selectedEntries();
+        if (!selected.isEmpty()) {
+            ListControllerUtil.playEntry(selected.getFirst());
+        }
+    }
+
     public void resetManualChangesAfterConfirmation() {
         resetManualChanges();
     }
@@ -536,11 +549,16 @@ public class EntryListController extends AbstractController  implements Initiali
                 .toList();
     }
 
+    /**
+     * The programme guide needs an enabled EPG Enricher and channels in the playlist.
+     */
     private void updateEpgButton() {
-        boolean available = !programmeGuideProviders().isEmpty();
-        epgButton.setDisable(!available);
-        epgButton.setTooltip(new Tooltip(available ? "Show the programmes of the channels of the playlist"
-                : "Enable the EPG Enricher to see the programmes of the channels"));
+        boolean provided = !programmeGuideProviders().isEmpty();
+        boolean entries = !dataModel.getSortedEntryList().isEmpty();
+        epgButton.setDisable(!provided || !entries);
+        epgButton.setTooltip(new Tooltip(!provided ? "Enable the EPG Enricher to see the programmes of the channels"
+                : entries ? "Show the programmes of the channels of the playlist"
+                : "The playlist contains no channels to show the programmes of"));
     }
 
     /**
@@ -605,7 +623,10 @@ public class EntryListController extends AbstractController  implements Initiali
         });
         this.dataModel.getEnrichers().addListener((ListChangeListener<Enricher>) change -> updateEpgButton());
         // changes of the user, e.g. entries moved or removed
-        this.dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> scheduleEpgRefresh());
+        this.dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> {
+            updateEpgButton();
+            scheduleEpgRefresh();
+        });
         epgRefresh.setOnFinished(event -> refreshEpgWindow());
         updateEpgButton();
     }

@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.model.Entry;
@@ -26,7 +27,7 @@ class EntryListControllerTest {
     static void initToolkit() {
         try {
             Platform.startup(() -> {});
-        } catch (IllegalStateException ignored) {
+        } catch (IllegalStateException _) {
             // Platform already started
         }
         // closing the last window must not end the toolkit for the following tests
@@ -136,6 +137,35 @@ class EntryListControllerTest {
         runOnFxThread(() -> {
             assertThat(controller.epgButton().isDisable()).isTrue();
             assertThat(controller.programmeGuideProviders()).isEmpty();
+        });
+    }
+
+    /**
+     * An enricher providing a programme guide, like the EPG Enricher.
+     */
+    static class GuideEnricher extends TestPlugins.TestEnricher implements ProgrammeGuideProvider {
+        @Override
+        public List<org.bitpunk.m3uedit.plugins.enricher.Programme> readProgrammes(List<Entry> playlist) {
+            return List.of();
+        }
+    }
+
+    @Test
+    void testEpgButtonIsDisabledWithoutEntries() throws Exception {
+        EntryListController controller = controllerWith(entry("ZDF"));
+        GuideEnricher enricher = new GuideEnricher();
+        enricher.getEnabled().set(true);
+
+        runOnFxThread(() -> {
+            controller.getDataModel().getEnrichers().add(enricher);
+            assertThat(controller.epgButton().isDisable()).isFalse();
+
+            controller.getDataModel().removeEntries(List.copyOf(controller.playlist()));
+            assertThat(controller.epgButton().isDisable()).isTrue();
+            assertThat(controller.epgButton().getTooltip().getText()).contains("no channels");
+
+            controller.getDataModel().addEntry(entry("arte"));
+            assertThat(controller.epgButton().isDisable()).isFalse();
         });
     }
 
@@ -503,7 +533,7 @@ class EntryListControllerTest {
 
             controller.deleteSelectedAfterConfirmation();
 
-            assertThat(asked).singleElement().asList().hasSize(1);
+            assertThat(asked).singleElement(). asInstanceOf(InstanceOfAssertFactories.LIST).hasSize(1);
             assertThat(names(controller)).containsExactly("A");
         });
     }
