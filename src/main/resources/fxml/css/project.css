@@ -508,3 +508,14 @@
 .diff-fold:hover {
     -fx-background-color: -m3u-selected-bg;
 }
+
+/* ---------- search of the playlist ---------- */
+.playlist-search {
+    -fx-padding: 4 8 4 4;
+}
+
+.playlist-search-result {
+    -fx-text-fill: -m3u-muted;
+    -fx-min-width: 70;
+    -fx-alignment: center-right;
+}

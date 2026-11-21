@@ -3,6 +3,12 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.2-ea">
+    <!-- filters the entries shown, the playlist itself is not changed -->
+    <HBox fx:id="searchBar" spacing="6" alignment="CENTER_LEFT" styleClass="playlist-search">
+        <TextField fx:id="searchField" promptText="Search name, group, tvg-id or URL (Ctrl+F)" HBox.hgrow="ALWAYS"/>
+        <Button fx:id="clearSearchButton" text="✕" mnemonicParsing="false" focusTraversable="false"/>
+        <Label fx:id="searchResultLabel" styleClass="playlist-search-result"/>
+    </HBox>
     <TableView fx:id="entryTableView" editable="true" GridPane.columnIndex="0" GridPane.columnSpan="1"
                GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" VBox.vgrow="ALWAYS">
         <columnResizePolicy>
