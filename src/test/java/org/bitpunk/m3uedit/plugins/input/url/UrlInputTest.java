@@ -15,6 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.net.URL;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -65,5 +67,40 @@ class UrlInputTest {
         assertThat(error.getEntriesRead()).extracting(Entry::getName).containsExactly("First, with comma", "Second");
         // the stream has been closed, so the file can be deleted right away (fails on Windows otherwise)
         Files.delete(playlist);
+    }
+
+    @Test
+    void testACancelledDialogKeepsTheUrls() throws Exception {
+        UrlInput input = new UrlInput();
+        URL url = URI.create("http://example.com/tv.m3u").toURL();
+        input.applyDialogResult(Optional.of(List.of(url)));
+
+        input.applyDialogResult(Optional.empty());
+
+        assertThat(input.getSelectedInputUrls()).containsExactly(url);
+        assertThat(input.getSource()).contains("http://example.com/tv.m3u");
+    }
+
+    @Test
+    void testTheDialogShowsTheCurrentUrls() throws Exception {
+        try {
+            javafx.application.Platform.startup(() -> {});
+        } catch (IllegalStateException ignored) {
+            // Platform already started
+        }
+        List<URL> urls = List.of(URI.create("http://example.com/a.m3u").toURL(),
+                URI.create("http://example.com/b.m3u").toURL());
+        java.util.concurrent.CompletableFuture<List<URL>> shown = new java.util.concurrent.CompletableFuture<>();
+        javafx.application.Platform.runLater(() -> {
+            try {
+                UrlInputDialogController dialog = new UrlInputDialogController();
+                dialog.setUrls(urls);
+                shown.complete(List.copyOf(dialog.selectedUrlListView.getItems()));
+            } catch (Throwable t) {
+                shown.completeExceptionally(t);
+            }
+        });
+
+        assertThat(shown.get(10, java.util.concurrent.TimeUnit.SECONDS)).containsExactlyElementsOf(urls);
     }
 }

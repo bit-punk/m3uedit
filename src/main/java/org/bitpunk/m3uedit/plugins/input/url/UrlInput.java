@@ -19,6 +19,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -83,15 +84,26 @@ public class UrlInput extends AbstractInput implements Input {
     public void configure() {
         log.debug("configure()");
         UrlInputDialogController urlInputDialogController = new UrlInputDialogController();
+        // an input configured again starts with its current urls
+        urlInputDialogController.setUrls(selectedInputUrls);
         DialogPane dialogPane = urlInputDialogController.getDialogPane();
         // @formatter:off
         dialogPane.lookupButton(urlInputDialogController.okButtonType)
                 .disableProperty()
                 .bind(urlInputDialogController.getInputsFull());
         // @formatter:on
-        urlInputDialogController.showAndWait().ifPresent(con -> urlList = con);
-        
-        selectedInputUrls = urlInputDialogController.getResult();
+        applyDialogResult(urlInputDialogController.showAndWait());
+    }
+
+    /**
+     * @param urls the urls confirmed in the dialog, empty if it has been cancelled: then nothing is changed (before,
+     *             cancelling removed all urls)
+     */
+    void applyDialogResult(Optional<List<URL>> urls) {
+        urls.ifPresent(confirmed -> {
+            urlList = confirmed;
+            selectedInputUrls = new ArrayList<>(confirmed);
+        });
     }
 
 }

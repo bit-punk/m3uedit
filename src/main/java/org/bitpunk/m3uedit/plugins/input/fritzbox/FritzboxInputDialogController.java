@@ -122,7 +122,14 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     }
 
     /**
-     * Fills in the base url and the streams of a recently used connection.
+     * Shows the current configuration of an input configured again: its base url and selected streams.
+     */
+    public void setFritzBoxConnection(FritzBoxConnection connection) {
+        applyRecentConnection(connection);
+    }
+
+    /**
+     * Fills in the base url and the streams of a connection, e.g. a recently used one.
      */
     private void applyRecentConnection(FritzBoxConnection connection) {
         if (connection == null) {

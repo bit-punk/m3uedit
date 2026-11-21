@@ -85,6 +85,13 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
         return sb.toString();
     }
 
+    /**
+     * Shows the urls of an input configured again.
+     */
+    public void setUrls(List<URL> urls) {
+        selectedUrlListView.getItems().setAll(urls == null ? List.of() : urls);
+    }
+
     private void addNewUrl() {
         String newUrlText = urlTextField.getText();
         log.debug("Adding new url: {}", newUrlText);

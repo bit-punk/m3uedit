@@ -220,4 +220,14 @@ class FritzBoxInputTest {
         assertThat(input.resolveStreamSourceUri(new StreamSource("tvhd.m3u", "HD streams")))
                 .hasToString("http://192.168.178.1/dvb/m3u/tvhd.m3u");
     }
+
+    @Test
+    void testACancelledDialogKeepsTheConfiguration() {
+        FritzBoxInput input = createInput("http://192.168.178.1/dvb/m3u/", new StreamSource("tvhd.m3u", "HD streams"));
+
+        input.applyDialogResult(java.util.Optional.empty());
+
+        assertThat(input.getFritzBoxConnection().getBaseUrl()).isEqualTo("http://192.168.178.1/dvb/m3u/");
+        assertThat(input.getSelectedStreamSources()).extracting(StreamSource::getName).containsExactly("tvhd.m3u");
+    }
 }
