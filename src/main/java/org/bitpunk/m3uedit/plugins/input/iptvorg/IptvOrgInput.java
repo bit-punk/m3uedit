@@ -6,8 +6,10 @@ import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 
 import java.io.IOException;
@@ -48,15 +50,28 @@ public class IptvOrgInput extends AbstractInput implements Input {
                     .connectTimeout(TIMEOUT)
                     .build();
             Set<String> selectedChannelIds = new HashSet<>();
+            List<String> failures = new ArrayList<>();
             for (IptvOrgPlaylist playlist : selectedPlaylists) {
                 if (playlist.getGrouping().isChannel()) {
                     selectedChannelIds.add(playlist.getId());
                 } else {
-                    entriesRead.addAll(readEntriesFromPlaylist(client, playlist.getPath()));
+                    try {
+                        entriesRead.addAll(readEntriesFromPlaylist(client, playlist.getPath()));
+                    } catch (IOException | ParsingException e) {
+                        failures.add("%s: %s".formatted(playlist.getPath(), e.getMessage()));
+                    }
                 }
             }
             if (!selectedChannelIds.isEmpty()) {
-                entriesRead.addAll(readEntriesOfChannels(client, selectedChannelIds));
+                try {
+                    entriesRead.addAll(readEntriesOfChannels(client, selectedChannelIds));
+                } catch (IOException | ParsingException e) {
+                    failures.add("channels %s: %s".formatted(String.join(", ", selectedChannelIds), e.getMessage()));
+                }
+            }
+            if (!failures.isEmpty()) {
+                // the entries of the other playlists are kept
+                throw new InputReadException(String.join("; ", failures), entriesRead);
             }
         }
         return entriesRead;
@@ -66,14 +81,14 @@ public class IptvOrgInput extends AbstractInput implements Input {
      * Reads the streams of the given channels out of the playlist containing all streams, as iptv-org provides no
      * playlist per channel.
      */
-    private List<Entry> readEntriesOfChannels(HttpClient client, Set<String> channelIds) {
+    private List<Entry> readEntriesOfChannels(HttpClient client, Set<String> channelIds) throws IOException {
         log.debug("reading streams of channels {}", channelIds);
         return readEntriesFromPlaylist(client, IptvOrgPlaylist.ALL_STREAMS_PATH).stream()
                 .filter(entry -> channelIds.contains(IptvOrgChannels.channelIdOf(entry)))
                 .toList();
     }
 
-    private List<Entry> readEntriesFromPlaylist(HttpClient client, String playlistPath) {
+    private List<Entry> readEntriesFromPlaylist(HttpClient client, String playlistPath) throws IOException {
         URI uri = URI.create(playlistBaseUrl + playlistPath);
         log.debug("reading playlist from {}", uri);
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build();
@@ -82,17 +97,17 @@ public class IptvOrgInput extends AbstractInput implements Input {
             try (InputStream body = response.body()) {
                 if (response.statusCode() != 200) {
                     log.warn("Unable to read playlist {}, status-code: {}", uri, response.statusCode());
-                    return List.of();
+                    throw new IOException("status-code %d reading %s".formatted(response.statusCode(), uri));
                 }
                 return readData(body);
             }
         } catch (IOException e) {
             log.error("Error reading playlist from url {}", uri, e);
+            throw e;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("Interrupted while reading playlist from url {}", uri, e);
+            throw new IOException("interrupted while reading " + uri, e);
         }
-        return List.of();
     }
 
     @Override

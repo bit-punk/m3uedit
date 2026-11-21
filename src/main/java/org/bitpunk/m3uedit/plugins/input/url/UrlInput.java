@@ -8,8 +8,10 @@ import lombok.Getter;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.EntryList;
 import org.bitpunk.m3uedit.parser.Parser;
+import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,32 +38,38 @@ public class UrlInput extends AbstractInput implements Input {
     public List<Entry> read() {
         EntryList entriesRead = new EntryList();
         List<String> epgUrls = new ArrayList<>();
+        List<String> failures = new ArrayList<>();
         if (selectedInputUrls != null) {
             for (URL url : selectedInputUrls) {
-                EntryList entries = readEntriesFromUrl(url);
-                entriesRead.addAll(entries);
-                epgUrls.addAll(entries.getEpgUrls());
+                try {
+                    EntryList entries = readEntriesFromUrl(url);
+                    entriesRead.addAll(entries);
+                    epgUrls.addAll(entries.getEpgUrls());
+                } catch (IOException | ParsingException e) {
+                    log.error("Error reading playlist from url {}", url, e);
+                    failures.add("%s: %s".formatted(url, e.getMessage()));
+                }
             }
         }
         entriesRead.setEpgUrls(epgUrls);
+        if (!failures.isEmpty()) {
+            // the playlists of the other urls are kept
+            throw new InputReadException(String.join("; ", failures), entriesRead);
+        }
         return entriesRead;
     }
 
-    private EntryList readEntriesFromUrl(URL url) {
+    private EntryList readEntriesFromUrl(URL url) throws IOException {
         EntryList entries = new EntryList();
-        try {
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(TIMEOUT_MILLIS);
-            connection.setReadTimeout(TIMEOUT_MILLIS);
-            try (InputStream inputStream = connection.getInputStream()) {
-                EntryList parsed = new Parser().parse(inputStream);
-                if (parsed != null) {
-                    entries.addAll(parsed);
-                    entries.setEpgUrls(parsed.getEpgUrls());
-                }
+        URLConnection connection = url.openConnection();
+        connection.setConnectTimeout(TIMEOUT_MILLIS);
+        connection.setReadTimeout(TIMEOUT_MILLIS);
+        try (InputStream inputStream = connection.getInputStream()) {
+            EntryList parsed = new Parser().parse(inputStream);
+            if (parsed != null) {
+                entries.addAll(parsed);
+                entries.setEpgUrls(parsed.getEpgUrls());
             }
-        } catch (IOException e) {
-            log.error("Error parsing playlist read from url {}", url, e);
         }
         return entries;
     }

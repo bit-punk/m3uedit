@@ -176,6 +176,30 @@ class PipelineControllerTest {
     }
 
     @Test
+    void anInputWithAnErrorIsMarkedUntilItIsReadSuccessfully() {
+        TestInput fritzBox = new TestInput("Second FritzBox", List.of(entry("arte")));
+        fritzBox.error = "tvhd.m3u: status-code 404";
+        dataModel.getInputs().add(fritzBox);
+
+        javafx.scene.control.Label badge = (javafx.scene.control.Label) pipeline.getInputStage().rowOf(fritzBox)
+                .orElseThrow().lookup(".badge");
+        assertThat(badge.getText()).isEqualTo("⚠ +1");
+        assertThat(badge.getStyleClass()).contains("badge-error");
+        assertThat(badge.getTooltip().getText()).isEqualTo("Partly read, 1 entries read. Error: tvhd.m3u: status-code 404");
+        // also shown while the stage is collapsed
+        pipeline.getInputStage().setCollapsed(true);
+        assertThat(pipeline.getInputStage().getHeaderText()).contains("⚠ 1 with errors");
+        pipeline.getInputStage().setCollapsed(false);
+
+        fritzBox.error = null;
+        dataModel.reloadInputs();
+
+        badge = (javafx.scene.control.Label) pipeline.getInputStage().rowOf(fritzBox).orElseThrow().lookup(".badge");
+        assertThat(badge.getText()).isEqualTo("+1");
+        assertThat(badge.getStyleClass()).doesNotContain("badge-error");
+    }
+
+    @Test
     void eachStageHasItsOwnStyle() {
         assertThat(pipeline.stages()).extracting(stage -> stage.getStyleClass().getLast())
                 .containsExactly("stage-inputs", "stage-filters", "stage-sorters", "stage-enrichers", "stage-outputs");

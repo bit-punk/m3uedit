@@ -238,6 +238,12 @@
     -fx-background-color: -m3u-panel;
 }
 
+.badge-error {
+    -fx-background-color: #f9dcdc;
+    -fx-text-fill: #b42318;
+    -fx-font-weight: bold;
+}
+
 .badge-removed {
     -fx-background-color: -m3u-removed-bg;
     -fx-text-fill: -m3u-removed;

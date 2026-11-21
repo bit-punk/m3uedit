@@ -5,6 +5,8 @@ import javafx.beans.property.SimpleBooleanProperty;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.util.HeadlessMode;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,7 +63,7 @@ class CommandLineRunnerTest {
         return run(runner(ProjectPersisterUtil::loadProject), args);
     }
 
-    private CommandLineRunner runner(java.util.function.Function<Path, DataModel> loader) {
+    private CommandLineRunner runner(Function<Path, DataModel> loader) {
         return new CommandLineRunner(new PrintStream(out, true, StandardCharsets.UTF_8),
                 new PrintStream(err, true, StandardCharsets.UTF_8), loader);
     }
@@ -190,6 +193,66 @@ class CommandLineRunnerTest {
         assertThat(run("-r", project("nothing").toString())).isEqualTo(CommandLineRunner.FAILED);
         assertThat(err()).contains("not written, the playlist is empty").doesNotContain("after");
         assertThat(output).doesNotExist();
+    }
+
+    @Test
+    void testAnInputReadOnlyPartlyKeepsThePlaylistWritten() throws Exception {
+        Files.writeString(output, "the last good playlist");
+        Path project = project("partly", playlist);
+        CommandLineRunner runner = runner(file -> {
+            DataModel model = ProjectPersisterUtil.loadProject(file);
+            // e.g. a FritzBox whose HD streams cannot be read, the SD streams can
+            model.getInputs().add(new PartlyReadInput());
+            return model;
+        });
+
+        assertThat(run(runner, "-r", project.toString())).isEqualTo(CommandLineRunner.FAILED);
+        assertThat(output).hasContent("the last good playlist");
+        assertThat(err()).contains("input could not be read", "tvhd.m3u: status-code 404");
+
+        // the entries read are written if errors are ignored
+        assertThat(run(runner, "--ignore-input-errors", "-r", project.toString())).isEqualTo(CommandLineRunner.OK);
+        assertThat(entries(output)).isEqualTo(entries(playlist) + 1);
+    }
+
+    /**
+     * Reads one entry, but reports that another part could not be read.
+     */
+    private static class PartlyReadInput implements Input {
+        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+
+        @Override
+        public List<Entry> read() {
+            Entry entry = new Entry();
+            entry.setName("SD Channel");
+            entry.setChannelUri("http://example.com/sd");
+            throw new InputReadException("tvhd.m3u: status-code 404", List.of(entry));
+        }
+
+        @Override
+        public String getSource() {
+            return "fritz.box";
+        }
+
+        @Override
+        public void configure() {
+            // nothing to configure
+        }
+
+        @Override
+        public String getName() {
+            return "Partly Read Input";
+        }
+
+        @Override
+        public String getDescription() {
+            return "reads a part only";
+        }
+
+        @Override
+        public BooleanProperty getEnabled() {
+            return enabled;
+        }
     }
 
     @Test

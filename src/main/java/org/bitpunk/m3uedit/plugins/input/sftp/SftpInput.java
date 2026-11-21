@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.sftp.RecentSftpServers;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
 import org.bitpunk.m3uedit.plugins.sftp.SftpConnectionDialogController;
@@ -50,7 +51,7 @@ public class SftpInput extends AbstractInput implements Input {
         String target = describeTarget();
         if (!userInteraction.ensurePassword(sftpConnection)) {
             log.warn("Reading from {} skipped: no password entered", target);
-            return new ArrayList<>();
+            throw new InputReadException("no password entered for " + target, List.of());
         }
         String path = sftpConnection.getTargetPath();
         try (SftpClient client = SftpClient.connect(sftpConnection, userInteraction);
@@ -64,16 +65,18 @@ public class SftpInput extends AbstractInput implements Input {
                 // ask again on the next attempt instead of retrying a wrong password
                 sftpConnection.setPassword(null);
             }
-            return handleReadError(userInteraction, target, e);
+            throw readError(target, e);
         } catch (SftpException | IOException e) {
-            return handleReadError(userInteraction, target, e);
+            throw readError(target, e);
         }
     }
 
-    private List<Entry> handleReadError(SftpUserInteraction userInteraction, String target, Exception e) {
+    /**
+     * The error is reported by the pipeline together with the errors of the other inputs, not by a dialog of its own.
+     */
+    private InputReadException readError(String target, Exception e) {
         log.error("Reading playlist from {} failed: {}", target, e.getMessage(), e);
-        userInteraction.showMessage("Reading the playlist from " + target + " failed:\n" + SftpClient.describeError(e));
-        return new ArrayList<>();
+        return new InputReadException(SftpClient.describeError(e), e);
     }
 
     private String describeTarget() {

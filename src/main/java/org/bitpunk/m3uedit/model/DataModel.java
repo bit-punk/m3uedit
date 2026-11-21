@@ -26,6 +26,7 @@ import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.output.Export;
 import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
 import org.bitpunk.m3uedit.plugins.output.Output;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +88,7 @@ public class DataModel {
      * @param playlist       the sorted entries with the manual changes applied
      * @param appliedChanges the number of manual changes applied to the playlist
      */
-    private record Result(PipelineResult pipeline, List<Entry> playlist, int appliedChanges, List<String> inputErrors,
+    private record Result(PipelineResult pipeline, List<Entry> playlist, int appliedChanges, Map<Input, String> inputErrors,
                           List<String> inputEpgUrls, List<String> enricherWarnings) {
     }
 
@@ -158,8 +160,20 @@ public class DataModel {
     private transient ReadOnlyBooleanWrapper saving;
     /**
      * The errors of the inputs that could not be read when the inputs have been read last.
+     * -- GETTER --
+     *
+     * @return the errors of the inputs that could not be read when the inputs have been read last, empty if all
+     * could be read
+
      */
     private transient List<String> inputErrors = List.of();
+    /**
+     * The error of each input that could not be read (or only partly) when the inputs have been read last.
+     */
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient ReadOnlyObjectWrapper<Map<Input, String>> inputErrorsByInput =
+            new ReadOnlyObjectWrapper<>(this, "inputErrorsByInput", Map.of());
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient ReadOnlyObjectWrapper<PipelineResult> pipelineResult;
@@ -462,7 +476,7 @@ public class DataModel {
 
         getBackgroundExecutorOrDefault().execute(() -> {
             try {
-                List<String> inputErrors = new ArrayList<>();
+                Map<Input, String> inputErrors = new LinkedHashMap<>();
                 Map<Entry, Input> sources = new IdentityHashMap<>();
                 Map<Plugin, StepResult> steps = new IdentityHashMap<>();
                 Map<Entry, Filter> removedBy = new IdentityHashMap<>();
@@ -529,7 +543,9 @@ public class DataModel {
             if (step == Step.LOAD_INPUTS) {
                 rawEntryList.setAll(pipeline.raw());
                 inputEpgUrls.set(result.inputEpgUrls());
-                inputErrors = List.copyOf(result.inputErrors());
+                inputErrors = describe(result.inputErrors());
+                // a property of its own: the result of the pipeline may be equal although the errors changed
+                inputErrorsByInput.set(Collections.unmodifiableMap(new LinkedHashMap<>(result.inputErrors())));
             }
             if (step.compareTo(Step.SORT) < 0) {
                 filteredEntryList.setAll(pipeline.filtered());
@@ -542,7 +558,7 @@ public class DataModel {
         pendingStep = null;
         busy.set(false);
         if (!result.inputErrors().isEmpty()) {
-            reportError("Some inputs could not be read:\n" + String.join("\n", result.inputErrors()));
+            reportError("Some inputs could not be read:\n" + String.join("\n", describe(result.inputErrors())));
         }
         if (!result.enricherWarnings().isEmpty()) {
             reportError("Some enrichers reported problems:\n" + String.join("\n", result.enricherWarnings()));
@@ -678,33 +694,53 @@ public class DataModel {
      * Reads all given inputs. Inputs that cannot be read are skipped, their errors are added to {@code errors}.
      */
     List<Entry> loadEntries(List<Input> inputs, List<String> errors) {
-        return loadEntries(inputs, errors, new IdentityHashMap<>(), new LinkedHashSet<>());
+        Map<Input, String> errorsByInput = new LinkedHashMap<>();
+        List<Entry> entries = loadEntries(inputs, errorsByInput, new IdentityHashMap<>(), new LinkedHashSet<>());
+        errors.addAll(describe(errorsByInput));
+        return entries;
     }
 
     /**
      * Reads all given inputs, remembering the input each entry has been read from in {@code sources}
      * and collecting the EPG urls found in the playlist headers in {@code epgUrls}.
      */
-    private List<Entry> loadEntries(List<Input> inputs, List<String> errors, Map<Entry, Input> sources,
+    private List<Entry> loadEntries(List<Input> inputs, Map<Input, String> errors, Map<Entry, Input> sources,
                                     Set<String> epgUrls) {
         List<Entry> loadedEntries = new ArrayList<>();
         for (Input currentInput : inputs) {
             log.debug("reading from: {}", currentInput.getName());
             try {
-                List<Entry> entries = currentInput.read();
-                loadedEntries.addAll(entries);
-                if (entries instanceof EntryList entryList) {
-                    epgUrls.addAll(entryList.getEpgUrls());
-                }
-                entries.forEach(entry -> sources.putIfAbsent(entry, currentInput));
+                addEntries(currentInput, currentInput.read(), loadedEntries, sources, epgUrls);
+            } catch (InputReadException e) {
+                // a part of the input could not be read: the entries of the other parts are kept
+                log.error("Error reading input {} ({}): {}", currentInput.getName(), currentInput.getSource(),
+                        e.getMessage(), e);
+                addEntries(currentInput, e.getEntriesRead(), loadedEntries, sources, epgUrls);
+                errors.put(currentInput, e.getMessage());
             } catch (Exception e) {
                 log.error("Error reading input {} ({})", currentInput.getName(), currentInput.getSource(), e);
-                errors.add("%s (%s): %s".formatted(currentInput.getName(), currentInput.getSource(),
-                        UncaughtExceptionHandler.describe(e)));
+                errors.put(currentInput, UncaughtExceptionHandler.describe(e));
             }
         }
         log.debug("{} raw entries loaded", loadedEntries.size());
         return loadedEntries;
+    }
+
+    private static void addEntries(Input input, List<Entry> entries, List<Entry> loadedEntries,
+                                   Map<Entry, Input> sources, Set<String> epgUrls) {
+        loadedEntries.addAll(entries);
+        if (entries instanceof EntryList entryList) {
+            epgUrls.addAll(entryList.getEpgUrls());
+        }
+        entries.forEach(entry -> sources.putIfAbsent(entry, input));
+    }
+
+    /**
+     * @return e.g. "FritzBox Input (base-url: …): tvhd.m3u: status-code 404", one per input
+     */
+    private static List<String> describe(Map<Input, String> errors) {
+        return errors.entrySet().stream().map(error -> "%s (%s): %s".formatted(error.getKey().getName(),
+                error.getKey().getSource(), error.getValue())).toList();
     }
 
     /**
@@ -839,11 +875,18 @@ public class DataModel {
     }
 
     /**
-     * @return the errors of the inputs that could not be read when the inputs have been read last, empty if all
-     * could be read
+     * @return the error of the given input when the inputs have been read last (also if only a part of it could not
+     * be read), null if it could be read
      */
-    public List<String> getInputErrors() {
-        return inputErrors;
+    public String getInputError(Input input) {
+        return inputErrorsByInput.get().get(input);
+    }
+
+    /**
+     * @return the error of each input that could not be read (or only partly) when the inputs have been read last
+     */
+    public ReadOnlyObjectProperty<Map<Input, String>> inputErrorsByInputProperty() {
+        return inputErrorsByInput.getReadOnlyProperty();
     }
 
     private static List<Entry> filterEntries(List<Filter> filters, List<Entry> entries,

@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.input.url;
 
 import com.sun.net.httpserver.HttpServer;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.model.Entry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 class UrlInputTest {
 
@@ -50,14 +52,17 @@ class UrlInputTest {
     }
 
     @Test
-    void testReadFromFileUrlAndSkipUnreadableUrls(@TempDir Path tempDir) throws IOException {
+    void testAnUnreadableUrlIsReportedTheOthersAreKept(@TempDir Path tempDir) throws IOException {
         Path playlist = Files.writeString(tempDir.resolve("playlist.m3u"), PLAYLIST);
         UrlInput input = new UrlInput();
         input.setSelectedInputUrls(List.of(
                 tempDir.resolve("missing.m3u").toUri().toURL(),
                 playlist.toUri().toURL()));
 
-        assertThat(input.read()).extracting(Entry::getName).containsExactly("First, with comma", "Second");
+        InputReadException error = catchThrowableOfType(InputReadException.class, input::read);
+
+        assertThat(error).hasMessageContaining("missing.m3u");
+        assertThat(error.getEntriesRead()).extracting(Entry::getName).containsExactly("First, with comma", "Second");
         // the stream has been closed, so the file can be deleted right away (fails on Windows otherwise)
         Files.delete(playlist);
     }

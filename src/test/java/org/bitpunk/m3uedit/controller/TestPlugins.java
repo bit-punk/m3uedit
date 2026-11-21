@@ -7,6 +7,7 @@ import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.util.EntryMapper;
 
@@ -35,6 +36,10 @@ final class TestPlugins {
         private final List<Entry> entries;
         private final BooleanProperty enabled = new SimpleBooleanProperty(true);
         final AtomicInteger configured = new AtomicInteger();
+        /**
+         * The error reported when reading, the entries are read nevertheless (a part of the input); null if none.
+         */
+        String error;
 
         TestInput(String name, List<Entry> entries) {
             this.name = name;
@@ -43,6 +48,9 @@ final class TestPlugins {
 
         @Override
         public List<Entry> read() {
+            if (error != null) {
+                throw new InputReadException(error, entries);
+            }
             return entries;
         }
 
