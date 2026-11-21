@@ -49,6 +49,7 @@ import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.PlaylistClipboard;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.bitpunk.m3uedit.util.SvgUtil;
+import org.bitpunk.m3uedit.util.Themes;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -279,6 +280,8 @@ public class SceneController implements Initializable {
         Language language = configuration.load().language();
         configurationDialog.apply(configuration).ifPresent(result -> {
             configuration.apply(result.values(), result.toClear()).forEach(errorReporter);
+            // all windows change at once
+            Themes.setTheme(result.values().theme());
             if (result.values().language() != language) {
                 messageReporter.accept(Messages.get("scene.languageChanged"));
             }

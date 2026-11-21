@@ -21,6 +21,10 @@ public class SettingsConfig {
      */
     private Language language = Language.SYSTEM;
     /**
+     * The appearance of the user interface.
+     */
+    private Theme theme = Theme.LIGHT;
+    /**
      * The project-files open when m3uedit was closed the last time, reopened with
      * {@link StartupMode#REOPEN_PROJECTS}.
      */

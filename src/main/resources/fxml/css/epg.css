@@ -1,6 +1,7 @@
 /*
  * Programme guide window. All colours are defined as variables on .guide-window: the light theme is the default and
- * matches the rest of the application (Modena); adding the style class "dark" to the window switches to the dark one.
+ * matches the rest of the application (Modena); the dark one is used with the dark theme, which adds the style class
+ * "dark" to the root of each window (see org.bitpunk.m3uedit.util.Themes).
  */
 .guide-window {
     -guide-background: -fx-background;

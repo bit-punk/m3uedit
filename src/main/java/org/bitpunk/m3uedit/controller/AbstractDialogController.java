@@ -8,11 +8,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.stage.Modality;
 import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.util.Themes;
 
 import java.io.IOException;
 
 public abstract class AbstractDialogController<T> extends Dialog<T> implements Initializable {
-    public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
+    public static final String CSS_INVALID_TEXT_FIELD_INPUT = Themes.INVALID_INPUT_STYLE;
 
     protected AbstractDialogController(String fxmlFileName, String dialogTitle) {
         DialogPane dialogPane = loadDialogPane(fxmlFileName);

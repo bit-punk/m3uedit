@@ -7,13 +7,14 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import org.bitpunk.m3uedit.util.Themes;
 
 import java.util.function.Predicate;
 
 @Slf4j
 public class ValidatingEditingCell<T> extends TableCell<T, String> {
 
-    public static final String CSS_INVALID_TEXT_FIELD_INPUT = "-fx-text-box-border: red; -fx-focus-color: red; -fx-control-inner-background: #ffc0c0; -fx-accent: red;";
+    public static final String CSS_INVALID_TEXT_FIELD_INPUT = Themes.INVALID_INPUT_STYLE;
     private final TextField textField = new TextField();
     private StringBinding isInputValid;
 

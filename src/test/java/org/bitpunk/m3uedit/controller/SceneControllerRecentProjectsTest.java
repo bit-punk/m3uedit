@@ -299,7 +299,7 @@ class SceneControllerRecentProjectsTest {
                 return java.util.Optional.of(new ConfigurationDialog.Result(
                         new org.bitpunk.m3uedit.config.Configuration.Values(values.playerCommand(),
                                 values.playerArguments(), values.passVlcOptions(), 1, values.startup(),
-                                values.language()),
+                                values.language(), values.theme()),
                         java.util.Set.of()));
             };
 
@@ -307,6 +307,29 @@ class SceneControllerRecentProjectsTest {
 
             assertThat(f.table().getItems()).extracting(RecentProject::name).containsExactly("second");
             assertThat(f.menuTexts()).containsExactly("second  –  " + tempDir, null, "Clear List");
+        });
+    }
+
+    @Test
+    void testAChangedThemeIsAppliedWithOk() throws Exception {
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            f.controller().configurationDialog = configuration -> {
+                org.bitpunk.m3uedit.config.Configuration.Values values = configuration.load();
+                return java.util.Optional.of(new ConfigurationDialog.Result(
+                        new org.bitpunk.m3uedit.config.Configuration.Values(values.playerCommand(),
+                                values.playerArguments(), values.passVlcOptions(), values.maxRecentProjects(),
+                                values.startup(), values.language(), org.bitpunk.m3uedit.config.Theme.DARK),
+                        java.util.Set.of()));
+            };
+            try {
+                f.controller().handleConfigurationAction();
+
+                assertThat(org.bitpunk.m3uedit.util.Themes.getTheme()).isEqualTo(org.bitpunk.m3uedit.config.Theme.DARK);
+                assertThat(f.controller().settings.getTheme()).isEqualTo(org.bitpunk.m3uedit.config.Theme.DARK);
+            } finally {
+                org.bitpunk.m3uedit.util.Themes.setTheme(org.bitpunk.m3uedit.config.Theme.LIGHT);
+            }
         });
     }
 }

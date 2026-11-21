@@ -28,6 +28,9 @@ public class Settings {
         if (config.getStartup() == null) {
             config.setStartup(StartupMode.START_SCREEN);
         }
+        if (config.getTheme() == null) {
+            config.setTheme(Theme.LIGHT);
+        }
         if (config.getLanguage() == null) {
             config.setLanguage(Language.SYSTEM);
         }
@@ -44,6 +47,16 @@ public class Settings {
     public void setStartup(StartupMode startup) {
         SettingsConfig config = load();
         config.setStartup(Objects.requireNonNull(startup));
+        configManager.saveConfig(config);
+    }
+
+    public Theme getTheme() {
+        return load().getTheme();
+    }
+
+    public void setTheme(Theme theme) {
+        SettingsConfig config = load();
+        config.setTheme(Objects.requireNonNull(theme));
         configManager.saveConfig(config);
     }
 

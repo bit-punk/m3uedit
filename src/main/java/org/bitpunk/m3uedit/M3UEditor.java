@@ -10,6 +10,7 @@ import org.bitpunk.m3uedit.config.Settings;
 import org.bitpunk.m3uedit.controller.SceneController;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.util.AppIcons;
+import org.bitpunk.m3uedit.util.Themes;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
 import java.util.Locale;
@@ -25,7 +26,10 @@ public class M3UEditor extends Application {
     public void start(Stage primaryStage) throws Exception {
         // show errors not handled anywhere else instead of only printing them to the console
         new UncaughtExceptionHandler().install();
-        useLanguage(new Settings().getLanguage());
+        Settings settings = new Settings();
+        useLanguage(settings.getLanguage());
+        // the main window and all dialogs and other windows opened later on
+        Themes.install(settings.getTheme());
         FXMLLoader loader = Messages.fxmlLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
         Scene scene = loader.load();
         SceneController sceneController = loader.getController();

@@ -9,6 +9,7 @@ import org.bitpunk.m3uedit.config.RecentProjects;
 import org.bitpunk.m3uedit.config.RecentProjectsConfig;
 import org.bitpunk.m3uedit.config.Settings;
 import org.bitpunk.m3uedit.config.StartupMode;
+import org.bitpunk.m3uedit.config.Theme;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.player.ExternalPlayer;
 import org.bitpunk.m3uedit.player.ExternalPlayerConfig;
@@ -101,12 +102,14 @@ class ConfigurationDialogTest {
             dialog.getRecentProjectsSpinner().getEditor().setText("3");
             dialog.getStartScreenRadioButton().setSelected(true);
             dialog.getLanguageComboBox().setValue(Language.GERMAN);
+            dialog.getThemeComboBox().setValue(Theme.DARK);
             dialog.getClearButtons().get(Collected.RECENT_PROJECTS).fire();
             return dialog.getResultConverter().call(dialog.getOkButtonType());
         });
 
         assertThat(result.values()).isEqualTo(new Configuration.Values("vlc",
-                List.of("--no-osd", "--video-title=Das Erste"), true, 3, StartupMode.START_SCREEN, Language.GERMAN));
+                List.of("--no-osd", "--video-title=Das Erste"), true, 3, StartupMode.START_SCREEN, Language.GERMAN,
+                Theme.DARK));
         assertThat(result.toClear()).containsExactly(Collected.RECENT_PROJECTS);
     }
 

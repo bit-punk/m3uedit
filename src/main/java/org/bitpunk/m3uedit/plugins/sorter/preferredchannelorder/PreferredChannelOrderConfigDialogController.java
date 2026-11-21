@@ -217,7 +217,7 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
 
             cell.setOnDragEntered(event -> {
                 if (event.getGestureSource() != cell && event.getDragboard().hasString()) {
-                    cell.setStyle("-fx-border-color: #2196F3; -fx-border-width: 2 0 0 0;");
+                    cell.setStyle("-fx-border-color: -fx-accent; -fx-border-width: 2 0 0 0;");
                 }
             });
 
