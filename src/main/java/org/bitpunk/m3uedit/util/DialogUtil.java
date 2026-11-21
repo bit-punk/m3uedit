@@ -4,9 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -20,18 +21,52 @@ public class DialogUtil {
     }
 
     public static Path getSaveFilePath(String description, String... extension) {
-        return showFileChooserDialog(true, description, extension);
+        return getSaveFilePath(null, description, extension);
+    }
+
+    /**
+     * @param current the file chosen before, the dialog starts in its directory with its name; null if none
+     */
+    public static Path getSaveFilePath(Path current, String description, String... extension) {
+        return showFileChooserDialog(true, current, description, extension);
     }
 
     public static Path getOpenFilePath(String description, String... extension) {
-        return showFileChooserDialog(false, description, extension);
+        return getOpenFilePath(null, description, extension);
     }
 
-    private static Path showFileChooserDialog(boolean isSave, String description, String... extension) {
+    /**
+     * @param current the file chosen before, the dialog starts in its directory with its name; null if none
+     */
+    public static Path getOpenFilePath(Path current, String description, String... extension) {
+        return showFileChooserDialog(false, current, description, extension);
+    }
+
+    /**
+     * Lets the file chooser start in the directory of the given file, with its name preselected; nothing if the file is
+     * null or its directory does not exist (anymore).
+     */
+    static void startAt(FileChooser fileChooser, Path current) {
+        if (current == null) {
+            return;
+        }
+        Path directory = current.toAbsolutePath().getParent();
+        if (directory != null && Files.isDirectory(directory)) {
+            fileChooser.setInitialDirectory(directory.toFile());
+            if (current.getFileName() != null) {
+                fileChooser.setInitialFileName(current.getFileName().toString());
+            }
+        }
+    }
+
+    private static Path showFileChooserDialog(boolean isSave, Path current, String description, String... extension) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter(description, extension));
+        startAt(fileChooser, current);
+        // centered on the window it is opened from
+        Window owner = Window.getWindows().stream().filter(Window::isFocused).findFirst().orElse(null);
         File selectedFile;
-        selectedFile = isSave ? fileChooser.showSaveDialog(new Stage()) : fileChooser.showOpenDialog(new Stage());
+        selectedFile = isSave ? fileChooser.showSaveDialog(owner) : fileChooser.showOpenDialog(owner);
         log.debug("selected open-file: {}", selectedFile);
         return selectedFile == null ? null : selectedFile.toPath();
     }

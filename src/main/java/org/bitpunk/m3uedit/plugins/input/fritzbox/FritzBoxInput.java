@@ -22,6 +22,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -94,16 +95,30 @@ public class FritzBoxInput extends AbstractInput implements Input {
     public void configure() {
         log.debug("configure()");
         FritzboxInputDialogController fritzboxInputDialogController = new FritzboxInputDialogController();
+        // an input configured again starts with its current settings
+        if (fritzBoxConnection != null) {
+            FritzBoxConnection current = new FritzBoxConnection();
+            current.setBaseUrl(fritzBoxConnection.getBaseUrl());
+            current.setSelectedStreamSources(selectedStreamSources == null ? List.of() : selectedStreamSources);
+            fritzboxInputDialogController.setFritzBoxConnection(current);
+        }
         DialogPane dialogPane = fritzboxInputDialogController.getDialogPane();
         // @formatter:off
         dialogPane.lookupButton(fritzboxInputDialogController.okButtonType)
                 .disableProperty()
                 .bind(fritzboxInputDialogController.getInputsFull().not());
         // @formatter:on
-        // a cancelled dialog changes nothing
-        fritzboxInputDialogController.showAndWait().ifPresent(connection -> {
-            fritzBoxConnection = connection;
-            selectedStreamSources = new ArrayList<>(connection.getSelectedStreamSources());
+        applyDialogResult(fritzboxInputDialogController.showAndWait());
+    }
+
+    /**
+     * @param connection the connection confirmed in the dialog, empty if it has been cancelled: then nothing is
+     *                   changed
+     */
+    void applyDialogResult(Optional<FritzBoxConnection> connection) {
+        connection.ifPresent(confirmed -> {
+            fritzBoxConnection = confirmed;
+            selectedStreamSources = new ArrayList<>(confirmed.getSelectedStreamSources());
         });
     }
 

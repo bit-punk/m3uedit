@@ -167,6 +167,21 @@ class FritzboxInputDialogControllerTest {
         assertThat(recent.getConnections()).isEmpty();
     }
 
+    @Test
+    void testTheDialogShowsTheCurrentConnection() throws Exception {
+        runOnFxThread(() -> {
+            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+
+            controller.setFritzBoxConnection(RecentFritzBoxConnectionsTest.connection("http://192.168.178.1/dvb/m3u/",
+                    RecentFritzBoxConnectionsTest.HD));
+
+            TextField baseUrl = getField(controller, "baseUrlTextField");
+            assertThat(baseUrl.getText()).isEqualTo("http://192.168.178.1/dvb/m3u/");
+            assertThat(controller.getSelectedStreamSources()).extracting(StreamSource::getName)
+                    .containsExactly("tvhd.m3u");
+        });
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T getField(Object target, String fieldName) {
         try {

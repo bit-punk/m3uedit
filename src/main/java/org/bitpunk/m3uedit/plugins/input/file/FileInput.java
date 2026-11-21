@@ -45,7 +45,9 @@ public class FileInput extends AbstractInput implements Input {
 
     @Override
     public void configure() {
-        Path inputPath = DialogUtil.getOpenFilePath("M3U-Playlist Files (*.m3u)", "*.m3u");
+        // starts at the file chosen before
+        Path current = source == null || source.isBlank() ? null : Path.of(source);
+        Path inputPath = DialogUtil.getOpenFilePath(current, "M3U-Playlist Files (*.m3u)", "*.m3u");
         if (inputPath != null) {
             this.source = inputPath.toAbsolutePath().toString();
         }

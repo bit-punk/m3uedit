@@ -1,8 +1,6 @@
 package org.bitpunk.m3uedit.plugins.output.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,6 +12,7 @@ import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.Export;
 import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
 import org.bitpunk.m3uedit.plugins.output.OutputException;
+import org.bitpunk.m3uedit.util.DialogUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -80,11 +79,10 @@ public class FileOutput extends AbstractPlugin implements Output {
     }
 
     private Path getOutputPathFromFileDialog() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("M3U-Playlist Files", "*.m3u"));
-        File selectedFile;
-        selectedFile = fileChooser.showSaveDialog(new Stage());
-        log.debug("selected file: {}", selectedFile);
-        return selectedFile == null ? null : selectedFile.toPath();
+        // starts at the file written before
+        Path current = output == null || !"file".equals(output.getScheme()) ? null : Path.of(output);
+        Path selected = DialogUtil.getSaveFilePath(current, "M3U-Playlist Files", "*.m3u");
+        log.debug("selected file: {}", selected);
+        return selected;
     }
 }
