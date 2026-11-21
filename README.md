@@ -30,7 +30,8 @@ entries of several sources, filters, sorts and enriches them and writes the resu
 * browse the programmes of all channels of the playlist in a TV-like programme guide, which follows the changes of
   the playlist; channels are played from there as well
 * save your inputs, filters, sorters, enrichers and outputs as project (`*.m3uproj`) to re-create the playlist later
-  on; recently used projects are listed on the start screen and in the file menu
+  on; recently used projects are listed on the start screen, in the file menu and in the toolbar, and the projects
+  open when m3uedit was closed can be reopened at startup
 * run a project without user interface from the command line, e.g. as a cron job, see
   [Command-line mode](#command-line-mode)
 
@@ -122,6 +123,19 @@ With `--quiet`, cron only sends a mail if something went wrong.
 
 ## Configuration
 
+The general settings are changed in the dialog *File → Configuration…* (Ctrl+,); they take effect without restart:
+
+| Section         | Settings                                                                                         |
+|-----------------|--------------------------------------------------------------------------------------------------|
+| External player | the command (e.g. `vlc`, `mpv` or the path of the program), additional arguments and whether the VLC options of the entries are passed |
+| Recently used   | how many recently used projects are remembered; clearing the lists of recently used projects, SFTP servers and FritzBoxes |
+| EPG cache       | the space taken by the downloaded EPG sources; clearing it (the sources are downloaded again when needed) |
+| Startup         | showing the start screen, or reopening the projects that were open when m3uedit was closed (files that no longer exist are skipped) |
+
+*OK* applies and saves the settings, *Cancel* discards them, also the lists marked to be cleared. The settings of
+single plugins (e.g. the expressions of the channel name filter, the EPG sources) are changed in the configuration
+dialogs of the plugins.
+
 Besides the project files, the configuration is stored in the directory `~/.m3uedit`. The files are created with
 default values on first use and can be edited by hand:
 
@@ -129,6 +143,7 @@ default values on first use and can be edited by hand:
 |----------------------------------------|-------------------------------------------------------------|
 | `external_player.yaml`                 | command and arguments of the external player (vlc)          |
 | `recent_projects.yaml`                 | recently used projects, `maxEntries` sets how many (10)     |
+| `settings.yaml`                        | what is shown at startup (`START_SCREEN` or `REOPEN_PROJECTS`) and the projects open at the last exit |
 | `plugins/channel_name_filter.yaml`     | regular expressions of channel names to filter              |
 | `plugins/epg_enricher.yaml`            | EPG sources a new EPG Enricher starts with                  |
 | `plugins/fritzbox_recent_connections.yaml` | recently used FritzBoxes and their streams              |

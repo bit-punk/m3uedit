@@ -37,8 +37,10 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
+import org.bitpunk.m3uedit.config.Configuration;
 import org.bitpunk.m3uedit.config.RecentProject;
 import org.bitpunk.m3uedit.config.RecentProjects;
+import org.bitpunk.m3uedit.config.Settings;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
@@ -53,6 +55,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -105,6 +108,15 @@ public class SceneController implements Initializable {
      * Shows an error message to the user.
      */
     Consumer<String> errorReporter = DialogUtil::showError;
+    /**
+     * Shows the configuration dialog, replaced by tests.
+     */
+    Function<Configuration, Optional<ConfigurationDialog.Result>> configurationDialog =
+            configuration -> new ConfigurationDialog(configuration).showAndWait();
+    /**
+     * The general settings, e.g. whether the open projects are reopened at startup.
+     */
+    Settings settings = new Settings();
     /**
      * The recently used project-files, shown in the file-menu and on the start screen.
      */
@@ -224,7 +236,42 @@ public class SceneController implements Initializable {
                 .filter(DataModel::isChanged)
                 .map(DataModel::getName)
                 .toList();
-        return unsavedProjects.isEmpty() || exitConfirmation.test(unsavedProjects);
+        boolean canBeClosed = unsavedProjects.isEmpty() || exitConfirmation.test(unsavedProjects);
+        if (canBeClosed) {
+            // to reopen them at the next start, if configured
+            settings.rememberOpenProjects(openProjectFiles());
+        }
+        return canBeClosed;
+    }
+
+    /**
+     * @return the files of the open projects in the order of their tabs; projects never saved have none
+     */
+    List<Path> openProjectFiles() {
+        return tabPane.getTabs().stream()
+                .map(Tab::getContent)
+                .filter(ProjectController.class::isInstance)
+                .map(content -> ((ProjectController) content).getDataModel().getProjectFile())
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * Opens the projects that were open when m3uedit was closed, if configured; called once the main window is
+     * shown, so dialogs (e.g. for SFTP passwords) appear in front of it. Files that no longer exist are skipped.
+     */
+    public void reopenProjects() {
+        for (Path projectFile : settings.projectsToReopen()) {
+            log.info("reopening project {}", projectFile);
+            openProject(projectFile);
+        }
+    }
+
+    @FXML
+    void handleConfigurationAction() {
+        Configuration configuration = new Configuration(recentProjects, settings);
+        configurationDialog.apply(configuration).ifPresent(result ->
+                configuration.apply(result.values(), result.toClear()).forEach(errorReporter));
     }
 
     @FXML

@@ -40,6 +40,12 @@
                             </accelerator>
                         </MenuItem>
                         <SeparatorMenuItem/>
+                        <MenuItem onAction="#handleConfigurationAction" text="Configuration…">
+                            <accelerator>
+                                <KeyCodeCombination alt="UP" code="COMMA" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                            </accelerator>
+                        </MenuItem>
+                        <SeparatorMenuItem/>
                         <MenuItem onAction="#handleExitAction" text="Exit"/>
                     </Menu>
                     <Menu fx:id="editMenu" text="Edit">

@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -34,6 +35,8 @@ public class M3UEditor extends Application {
         AppIcons.applyToAllWindows();
         primaryStage.getIcons().setAll(AppIcons.get());
         primaryStage.show();
+        // after the main window has been shown, so it is not delayed and dialogs appear in front of it
+        Platform.runLater(sceneController::reopenProjects);
     }
 
 }

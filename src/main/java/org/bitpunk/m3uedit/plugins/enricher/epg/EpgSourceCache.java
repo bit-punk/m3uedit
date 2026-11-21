@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.config.AppConfigPaths;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,7 +58,7 @@ class EpgSourceCache {
     private final Map<String, Instant> failedAttempts = new ConcurrentHashMap<>();
 
     EpgSourceCache() {
-        this(AppConfigPaths.getBaseDir().resolve("cache").resolve("epg"),
+        this(EpgCache.directory(),
                 HttpClient.newBuilder()
                         .followRedirects(HttpClient.Redirect.NORMAL)
                         .connectTimeout(CONNECT_TIMEOUT)
