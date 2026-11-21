@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.model.Entry;
@@ -26,7 +27,7 @@ class EntryListControllerTest {
     static void initToolkit() {
         try {
             Platform.startup(() -> {});
-        } catch (IllegalStateException ignored) {
+        } catch (IllegalStateException _) {
             // Platform already started
         }
         // closing the last window must not end the toolkit for the following tests
@@ -532,7 +533,7 @@ class EntryListControllerTest {
 
             controller.deleteSelectedAfterConfirmation();
 
-            assertThat(asked).singleElement().asList().hasSize(1);
+            assertThat(asked).singleElement(). asInstanceOf(InstanceOfAssertFactories.LIST).hasSize(1);
             assertThat(names(controller)).containsExactly("A");
         });
     }
