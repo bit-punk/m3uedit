@@ -16,12 +16,12 @@
         <VBox minWidth="400">
             <PipelineSummaryView fx:id="summaryView"/>
             <TabPane fx:id="resultTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="result-tabs">
-                <Tab fx:id="playlistTab" text="Playlist">
+                <Tab fx:id="playlistTab" text="%project.tab.playlist">
                     <content>
                         <EntryListController fx:id="entryListController"/>
                     </content>
                 </Tab>
-                <Tab fx:id="diffTab" text="Diff">
+                <Tab fx:id="diffTab" text="%project.tab.diff">
                     <content>
                         <DiffController fx:id="diffController"/>
                     </content>

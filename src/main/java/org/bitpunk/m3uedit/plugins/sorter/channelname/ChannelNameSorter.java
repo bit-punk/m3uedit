@@ -1,8 +1,8 @@
 package org.bitpunk.m3uedit.plugins.sorter.channelname;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
@@ -13,10 +13,18 @@ import java.util.List;
 @Getter
 @Setter
 public class ChannelNameSorter extends AbstractPlugin implements Sorter {
-    @JsonIgnore
-    private final String name = "ChannelName Sorter";
-    @JsonIgnore
-    private final String description = "sorts list alphabetically";
+    /**
+     * @return the name shown to the user, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("sorter.channelName.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("sorter.channelName.description");
+    }
 
     @Override
     public List<Entry> sort(List<Entry> entries) {

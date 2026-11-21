@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
 import org.bitpunk.m3uedit.config.Configuration;
 import org.bitpunk.m3uedit.config.Configuration.Collected;
+import org.bitpunk.m3uedit.config.Language;
 import org.bitpunk.m3uedit.config.RecentProjects;
 import org.bitpunk.m3uedit.config.RecentProjectsConfig;
 import org.bitpunk.m3uedit.config.Settings;
@@ -99,12 +100,13 @@ class ConfigurationDialogTest {
             // typed without pressing Enter
             dialog.getRecentProjectsSpinner().getEditor().setText("3");
             dialog.getStartScreenRadioButton().setSelected(true);
+            dialog.getLanguageComboBox().setValue(Language.GERMAN);
             dialog.getClearButtons().get(Collected.RECENT_PROJECTS).fire();
             return dialog.getResultConverter().call(dialog.getOkButtonType());
         });
 
         assertThat(result.values()).isEqualTo(new Configuration.Values("vlc",
-                List.of("--no-osd", "--video-title=Das Erste"), true, 3, StartupMode.START_SCREEN));
+                List.of("--no-osd", "--video-title=Das Erste"), true, 3, StartupMode.START_SCREEN, Language.GERMAN));
         assertThat(result.toClear()).containsExactly(Collected.RECENT_PROJECTS);
     }
 

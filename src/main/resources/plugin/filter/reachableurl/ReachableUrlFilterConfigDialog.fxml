@@ -10,15 +10,15 @@
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
             <HBox spacing="8" alignment="CENTER_LEFT">
-                <Label text="Timeout:" style="-fx-font-weight: bold;"/>
+                <Label text="%filter.reachableUrl.config.timeout" style="-fx-font-weight: bold;"/>
                 <Spinner fx:id="timeoutSpinner" editable="true" prefWidth="120"/>
-                <Label text="ms"/>
+                <Label text="%filter.reachableUrl.config.milliseconds"/>
             </HBox>
             <Label fx:id="hintLabel" wrapText="true"
-                   text="Each stream is requested (http: GET incl. HLS-playlists, rtsp: DESCRIBE). Entries whose server does not answer successfully or delivers no data within this time are filtered out."/>
+                   text="%filter.reachableUrl.config.hint"/>
         </VBox>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

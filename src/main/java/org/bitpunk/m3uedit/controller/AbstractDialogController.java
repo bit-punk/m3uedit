@@ -7,6 +7,7 @@ import javafx.scene.control.DialogPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.stage.Modality;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.io.IOException;
 
@@ -25,8 +26,7 @@ public abstract class AbstractDialogController<T> extends Dialog<T> implements I
 
     private DialogPane loadDialogPane(String fxmlFileName) {
         try {
-            FXMLLoader loader = new FXMLLoader();
-            loader.setLocation(getClass().getClassLoader().getResource(fxmlFileName));
+            FXMLLoader loader = Messages.fxmlLoader(getClass().getClassLoader().getResource(fxmlFileName));
             loader.setController(this);
             return loader.load();
         } catch (IOException e) {

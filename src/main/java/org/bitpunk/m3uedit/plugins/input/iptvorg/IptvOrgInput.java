@@ -5,6 +5,7 @@ import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -33,13 +34,22 @@ public class IptvOrgInput extends AbstractInput implements Input {
     public static final String IPTV_ORG_PLAYLIST_BASE_URL = "https://iptv-org.github.io/iptv/";
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
-    @JsonIgnore
-    private final String name = "IPTV-org Input";
-    @JsonIgnore
-    private final String description = "Reads playlists by country, category, language, region or channel from https://github.com/iptv-org/iptv.";
     private List<IptvOrgPlaylist> selectedPlaylists = new ArrayList<>();
     @JsonIgnore
     private String playlistBaseUrl = IPTV_ORG_PLAYLIST_BASE_URL;
+
+    /**
+     * @return the name shown to the user; a constant, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("input.iptvorg.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("input.iptvorg.description");
+    }
 
     @Override
     public List<Entry> read() {
@@ -66,7 +76,7 @@ public class IptvOrgInput extends AbstractInput implements Input {
                 try {
                     entriesRead.addAll(readEntriesOfChannels(client, selectedChannelIds));
                 } catch (IOException | ParsingException e) {
-                    failures.add("channels %s: %s".formatted(String.join(", ", selectedChannelIds), e.getMessage()));
+                    failures.add(Messages.get("iptvorg.channelsError", String.join(", ", selectedChannelIds), e.getMessage()));
                 }
             }
             if (!failures.isEmpty()) {
@@ -97,7 +107,7 @@ public class IptvOrgInput extends AbstractInput implements Input {
             try (InputStream body = response.body()) {
                 if (response.statusCode() != 200) {
                     log.warn("Unable to read playlist {}, status-code: {}", uri, response.statusCode());
-                    throw new IOException("status-code %d reading %s".formatted(response.statusCode(), uri));
+                    throw new IOException(Messages.get("iptvorg.statusCode", response.statusCode(), uri));
                 }
                 return readData(body);
             }
@@ -106,7 +116,7 @@ public class IptvOrgInput extends AbstractInput implements Input {
             throw e;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("interrupted while reading " + uri, e);
+            throw new IOException(Messages.get("iptvorg.interrupted", uri), e);
         }
     }
 

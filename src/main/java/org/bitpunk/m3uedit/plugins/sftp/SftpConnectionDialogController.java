@@ -20,6 +20,7 @@ import javafx.util.StringConverter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
@@ -40,13 +41,15 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
      * OUTPUT: the file to write to (empty file name = default, overwrite option).
      */
     public enum Mode {
-        INPUT("SFTP Input: Playlist Source"),
-        OUTPUT("SFTP Output: Playlist Target");
+        INPUT,
+        OUTPUT;
 
-        private final String title;
-
-        Mode(String title) {
-            this.title = title;
+        /**
+         * @return the title of the dialog, e.g. "SFTP Input: Playlist Source"
+         */
+        String title() {
+            return this == INPUT ? Messages.get("sftp.connection.title.input")
+                    : Messages.get("sftp.connection.title.output");
         }
     }
 
@@ -95,7 +98,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
     private final Mode mode;
 
     public SftpConnectionDialogController(Mode mode) {
-        super(FXML_PLUGIN_SFTP, mode.title);
+        super(FXML_PLUGIN_SFTP, mode.title());
         // initialize() already ran inside super(), so mode specific settings are applied here
         this.mode = mode;
         setResizable(true);
@@ -111,7 +114,8 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
             node.setVisible(output);
             node.setManaged(output);
         }
-        fileNameTextField.setPromptText(output ? SftpConnection.DEFAULT_FILE_NAME : "name of the playlist file");
+        fileNameTextField.setPromptText(output ? SftpConnection.DEFAULT_FILE_NAME
+                : Messages.get("sftp.connection.fileName.prompt"));
         inputsFull.invalidate();
     }
 
@@ -342,7 +346,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         log.trace("Validation-errors found: {}", errors);
         boolean fileNameMissing = isFileNameRequired() && isBlank(sftpConnectionFromInput.getFileName());
         if (fileNameMissing) {
-            markFieldInvalid(fileNameTextField, "Filename must not be empty");
+            markFieldInvalid(fileNameTextField, Messages.get("sftp.connection.invalid.fileNameEmpty"));
         }
         return errors.isEmpty() && !fileNameMissing && sftpConnectionFromInput.isValidUri();
     }
@@ -350,9 +354,9 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
     private void displayValidationErrors(Set<ConstraintViolation<SftpConnection>> errors) {
         resetTextFields();
         for (ConstraintViolation<SftpConnection> error : errors) {
-            String errorMessage = error.getMessage();
+            String errorMessage = describe(error);
             String fieldName = error.getPropertyPath().toString();
-            log.trace("Field: {} Message: {}", fieldName, errorMessage);
+            log.trace("Field: {} Message: {}", fieldName, error.getMessage());
             switch (fieldName) {
                 case "hostName" -> markFieldInvalid(hostnameTextField, errorMessage);
                 case "port" -> markFieldInvalid(hostPortTextField, errorMessage);
@@ -363,6 +367,20 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
                 default -> throw new IllegalStateException("Unexpected value: " + fieldName);
             }
         }
+    }
+
+    /**
+     * @return the message of a validation error in the language of the user interface
+     */
+    private static String describe(ConstraintViolation<SftpConnection> error) {
+        return switch (error.getMessage()) {
+            case SftpConnection.HOST_NAME_EMPTY -> Messages.get("sftp.connection.invalid.hostNameEmpty");
+            case SftpConnection.PORT_NOT_POSITIVE -> Messages.get("sftp.connection.invalid.port");
+            case SftpConnection.PATH_NOT_ABSOLUTE -> Messages.get("sftp.connection.invalid.path");
+            case SftpConnection.FILE_NAME_WITH_SLASH -> Messages.get("sftp.connection.invalid.fileName");
+            case SftpConnection.USER_NAME_EMPTY -> Messages.get("sftp.connection.invalid.userNameEmpty");
+            default -> error.getMessage();
+        };
     }
 
     private void resetTextFields() {

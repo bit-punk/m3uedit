@@ -9,6 +9,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.shape.SVGPath;
 import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.player.ExternalPlayer;
 
@@ -47,7 +48,7 @@ public class ListControllerUtil {
     public static void addPlayColumn(TableView<Entry> tableView) {
         TableColumn<Entry, Void> playColumn = createIconColumn();
         playColumn.setCellFactory(column -> new TableCell<>() {
-            private final Button playButton = createIconButton(PLAY_ICON, "Play in external player");
+            private final Button playButton = createIconButton(PLAY_ICON, Messages.get("player.play.tooltip"));
 
             {
                 playButton.setOnAction(event -> {
@@ -77,10 +78,10 @@ public class ListControllerUtil {
         } catch (IOException | IllegalArgumentException e) {
             log.error("failed to start external player for: {}", entry, e);
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("External Player");
-            alert.setHeaderText("Could not start the external player");
-            alert.setContentText("%s%n%nMake sure VLC is installed or configure the player in:%n%s".formatted(
-                    e.getMessage(), ExternalPlayer.getConfigPath()));
+            alert.setTitle(Messages.get("player.error.title"));
+            alert.setHeaderText(Messages.get("player.error.header"));
+            alert.setContentText(Messages.get("player.error.content", String.valueOf(e.getMessage()),
+                    ExternalPlayer.getConfigPath()));
             alert.setResizable(true);
             alert.showAndWait();
         }
@@ -136,15 +137,16 @@ public class ListControllerUtil {
 
     private static boolean deleteNamedItemsDialog(ObservableList<NamedItem> deleteItems) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
-        dialog.setTitle("Delete Item");
+        dialog.setTitle(Messages.get("dialog.delete.title"));
         dialog.setResizable(true);
         dialog.getDialogPane().setPrefSize(377, 270);
-        dialog.setHeaderText("Delete Item");
-        String deleteConfirmMessage = "Sure you want to delete %d items:%n%n%s".formatted(deleteItems.size(), EntryListNameFormatter.getNamesSummary(deleteItems));
+        dialog.setHeaderText(Messages.get("dialog.delete.title"));
+        String deleteConfirmMessage = Messages.get("dialog.delete.content", deleteItems.size(),
+                EntryListNameFormatter.getNamesSummary(deleteItems));
         dialog.setContentText(deleteConfirmMessage);
 
-        ButtonType buttonYes = new ButtonType("Yes");
-        ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType buttonYes = new ButtonType(Messages.get("common.yes"));
+        ButtonType buttonNo = new ButtonType(Messages.get("common.no"), ButtonBar.ButtonData.CANCEL_CLOSE);
 
         dialog.getButtonTypes().setAll(buttonYes, buttonNo);
         Optional<ButtonType> selectedOption = dialog.showAndWait();

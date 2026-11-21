@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -47,23 +48,23 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
     @Getter
     private final Spinner<Integer> cacheHoursSpinner = new Spinner<>(1, 24 * 7, EpgEnricher.DEFAULT_CACHE_HOURS);
     @Getter
-    private final CheckBox compileGuideCheckBox = new CheckBox("Write a guide with only the channels of the playlist next to it");
+    private final CheckBox compileGuideCheckBox = new CheckBox(Messages.get("epgEnricher.config.compileGuide"));
     @Getter
     private final Spinner<Integer> guideDaysAheadSpinner = new Spinner<>(0, 31, EpgEnricher.DEFAULT_GUIDE_DAYS_AHEAD);
     @Getter
     private final Spinner<Integer> guideHoursPastSpinner = new Spinner<>(0, 24 * 7, EpgEnricher.DEFAULT_GUIDE_HOURS_PAST);
     @Getter
-    private final CheckBox compressGuideCheckBox = new CheckBox("gzip-compressed (.xml.gz)");
+    private final CheckBox compressGuideCheckBox = new CheckBox(Messages.get("epgEnricher.config.compressGuide"));
     @Getter
     private final Label errorLabel = new Label();
     @Getter
-    private final ButtonType okButtonType = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
+    private final ButtonType okButtonType = new ButtonType(Messages.get("common.ok"), ButtonBar.ButtonData.OK_DONE);
 
     public EpgEnricherConfigDialog(EpgEnricher enricher) {
         initModality(Modality.APPLICATION_MODAL);
         setResizable(true);
         setTitle(enricher.getName());
-        setHeaderText("Assign the entries to the channels of programme guides (XMLTV) by their tvg-id");
+        setHeaderText(Messages.get("epgEnricher.config.header"));
 
         sourcesTextArea.setPromptText("https://example.org/guide-de.xml.gz");
         sourcesTextArea.setPrefRowCount(5);
@@ -108,39 +109,42 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         grid.setVgap(6);
         grid.setPadding(new Insets(4));
         int row = 0;
-        defaultSourcesButton = new Button("Default sources");
+        defaultSourcesButton = new Button(Messages.get("epgEnricher.config.defaultSources"));
         defaultSourcesButton.setTooltip(new javafx.scene.control.Tooltip(
-                "The sources configured in ~/.m3uedit/plugins/" + EpgEnricher.CONFIG_FILE_NAME));
+                Messages.get("epgEnricher.config.defaultSources.tooltip",
+                        "~/.m3uedit/plugins/" + EpgEnricher.CONFIG_FILE_NAME)));
         defaultSourcesButton.setOnAction(event -> sourcesTextArea.setText(String.join("\n", EpgEnricher.defaultSources())));
-        javafx.scene.layout.VBox sourcesLabel = new javafx.scene.layout.VBox(6, new Label("Sources:"), defaultSourcesButton);
+        javafx.scene.layout.VBox sourcesLabel = new javafx.scene.layout.VBox(6,
+                new Label(Messages.get("epgEnricher.config.sources")), defaultSourcesButton);
         sourcesLabel.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         grid.add(sourcesLabel, 0, row);
         grid.add(sourcesTextArea, 1, row++);
-        grid.add(hint("One URL per line (.xml or .xml.gz), the first source wins if several contain a channel."), 1, row++);
-        grid.add(new Label("Match by:"), 0, row);
+        grid.add(hint(Messages.get("epgEnricher.config.sources.hint")), 1, row++);
+        grid.add(new Label(Messages.get("epgEnricher.config.strategies")), 0, row);
         grid.add(strategyBox, 1, row++);
-        grid.add(hint("Tried in this order: the tvg-id of the entry, the URL rules, the (tvg-)name of the entry, "
-                + "the first words of the name (a guess, e.g. \"WDR Köln\" for \"WDR\")."), 1, row++);
-        grid.add(new Label("URL rules:"), 0, row);
+        grid.add(hint(Messages.get("epgEnricher.config.strategies.hint")), 1, row++);
+        grid.add(new Label(Messages.get("epgEnricher.config.urlRules")), 0, row);
         grid.add(urlRulesTextArea, 1, row++);
-        grid.add(hint("One rule per line: regular expression found in the stream URL " + UrlRule.SEPARATOR
-                + " channel id (may use groups like $1)."), 1, row++);
-        grid.add(new Label("Update after:"), 0, row);
-        grid.add(new HBox(6, cacheHoursSpinner, new Label("hours")), 1, row++);
-        grid.add(new Label("Guide:"), 0, row);
+        grid.add(hint(Messages.get("epgEnricher.config.urlRules.hint", UrlRule.SEPARATOR)), 1, row++);
+        grid.add(new Label(Messages.get("epgEnricher.config.cacheHours")), 0, row);
+        grid.add(new HBox(6, cacheHoursSpinner, new Label(Messages.get("epgEnricher.config.cacheHours.unit"))), 1,
+                row++);
+        grid.add(new Label(Messages.get("epgEnricher.config.guide")), 0, row);
         grid.add(compileGuideCheckBox, 1, row++);
-        HBox window = new HBox(6, new Label("Programmes up to"), guideDaysAheadSpinner, new Label("days ahead, ended up to"),
-                guideHoursPastSpinner, new Label("hours ago (0: all)"));
+        HBox window = new HBox(6, new Label(Messages.get("epgEnricher.config.guideWindow.ahead")), guideDaysAheadSpinner,
+                new Label(Messages.get("epgEnricher.config.guideWindow.past")), guideHoursPastSpinner,
+                new Label(Messages.get("epgEnricher.config.guideWindow.end")));
         window.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         grid.add(window, 1, row++);
         grid.add(compressGuideCheckBox, 1, row++);
-        grid.add(hint("Written by the outputs when the playlist is written, named after it (tv.m3u: tv.xml.gz), "
-                + "and referenced by the playlist where the output knows its URL."), 1, row++);
+        grid.add(hint(Messages.get("epgEnricher.config.guide.hint")), 1, row++);
         grid.add(errorLabel, 1, row);
         GridPane.setHgrow(sourcesTextArea, Priority.ALWAYS);
         GridPane.setVgrow(sourcesTextArea, Priority.ALWAYS);
         getDialogPane().setContent(grid);
-        getDialogPane().getButtonTypes().setAll(okButtonType, ButtonType.CANCEL);
+        // not ButtonType.CANCEL: its text follows the language of the system, not the one of the application
+        getDialogPane().getButtonTypes().setAll(okButtonType,
+                new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE));
 
         Button okButton = (Button) getDialogPane().lookupButton(okButtonType);
         sourcesTextArea.textProperty().addListener((observable, oldText, newText) -> validate(okButton));
@@ -172,7 +176,7 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         List<String> errors = new ArrayList<>();
         for (String source : lines(sourcesTextArea.getText())) {
             if (!isValidSource(source)) {
-                errors.add("Not a valid source URL: " + source);
+                errors.add(Messages.get("epgEnricher.config.error.invalidSource", source));
             }
         }
         if (strategyCheckBoxes.get(MatchStrategy.URL_RULE).isSelected()) {
@@ -185,7 +189,7 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
             }
         }
         if (strategyCheckBoxes.values().stream().noneMatch(CheckBox::isSelected)) {
-            errors.add("Select at least one way to match the entries.");
+            errors.add(Messages.get("epgEnricher.config.error.noStrategy"));
         }
         return errors;
     }

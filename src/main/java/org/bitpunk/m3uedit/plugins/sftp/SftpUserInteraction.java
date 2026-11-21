@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.plugins.sftp;
 
 import lombok.extern.slf4j.Slf4j;
 import com.jcraft.jsch.UserInfo;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.util.HeadlessMode;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -44,15 +45,15 @@ public class SftpUserInteraction implements UserInfo {
      */
     public OverwriteDecision confirmOverwrite(String target, String existingFileInfo) {
         return callOnFxThread(() -> {
-            ButtonType overwrite = new ButtonType("Overwrite", ButtonBar.ButtonData.OK_DONE);
-            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            CheckBox dontAskAgain = new CheckBox("Don't ask again for this target");
-            Label message = new Label(target + "\n" + existingFileInfo + "\n\nDo you want to overwrite it?");
+            ButtonType overwrite = new ButtonType(Messages.get("sftp.overwrite.overwrite"), ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancel = new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+            CheckBox dontAskAgain = new CheckBox(Messages.get("sftp.overwrite.dontAskAgain"));
+            Label message = new Label(Messages.get("sftp.overwrite.message", target, existingFileInfo));
             message.setWrapText(true);
 
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION, null, overwrite, cancel);
-            alert.setTitle("SFTP Output");
-            alert.setHeaderText("The playlist already exists on the server");
+            alert.setTitle(Messages.get("output.sftp.name"));
+            alert.setHeaderText(Messages.get("sftp.overwrite.header"));
             alert.getDialogPane().setContent(new VBox(10, message, dontAskAgain));
             // never overwrite by accidentally pressing Enter
             ((Button) alert.getDialogPane().lookupButton(overwrite)).setDefaultButton(false);
@@ -99,10 +100,13 @@ public class SftpUserInteraction implements UserInfo {
     public boolean promptYesNo(String message) {
         log.info("Host key confirmation requested: {}", message);
         boolean accepted = callOnFxThread(() -> {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.YES, ButtonType.NO);
-            alert.setTitle("SFTP Host Verification");
-            alert.setHeaderText("Please verify the identity of the SFTP server");
-            return alert.showAndWait().filter(ButtonType.YES::equals).isPresent();
+            // not ButtonType.YES / NO: their texts follow the language of the system, not the one of the user interface
+            ButtonType yes = new ButtonType(Messages.get("common.yes"), ButtonBar.ButtonData.YES);
+            ButtonType no = new ButtonType(Messages.get("common.no"), ButtonBar.ButtonData.NO);
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, yes, no);
+            alert.setTitle(Messages.get("sftp.hostKey.title"));
+            alert.setHeaderText(Messages.get("sftp.hostKey.header"));
+            return alert.showAndWait().filter(yes::equals).isPresent();
         });
         log.info("Host key confirmation {}", accepted ? "accepted" : "rejected");
         return accepted;
@@ -112,7 +116,8 @@ public class SftpUserInteraction implements UserInfo {
     public void showMessage(String message) {
         log.warn("SFTP server message: {}", message);
         callOnFxThread(() -> {
-            Alert alert = new Alert(Alert.AlertType.WARNING, message, ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.WARNING, message,
+                    new ButtonType(Messages.get("common.ok"), ButtonBar.ButtonData.OK_DONE));
             alert.setTitle("SFTP");
             alert.setHeaderText(null);
             alert.showAndWait();

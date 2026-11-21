@@ -52,7 +52,7 @@ class FritzboxInputDialogControllerTest {
         runOnFxThread(() -> {
             FritzboxInputDialogController controller = new FritzboxInputDialogController();
 
-            assertThat(controller.getTitle()).isEqualTo(FritzboxInputDialogController.FRITZBOX_DIALOG_TITLE);
+            assertThat(controller.getTitle()).isEqualTo("Enter FritzBox-Inputs data");
             assertThat(controller.getDialogPane()).isNotNull();
 
             TextField baseUrlTextField = getField(controller, "baseUrlTextField");

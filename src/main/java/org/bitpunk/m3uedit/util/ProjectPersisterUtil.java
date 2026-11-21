@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.util;
 import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.jackson.JavaFxModule;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.*;
@@ -30,11 +31,17 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Slf4j
 public class ProjectPersisterUtil {
-    public static final String M3U_PROJECTFILE_DESCRIPTION = "M3UProjectfile (*.m3uproj)";
     public static final String M3U_PROJECT_FILE_SUFFIX = ".m3uproj";
     public static final String M3U_PROJECT_EXTENSION = "*" + M3U_PROJECT_FILE_SUFFIX;
 
     private ProjectPersisterUtil() {
+    }
+
+    /**
+     * @return the description of project-files shown by the file dialogs
+     */
+    public static String projectFileDescription() {
+        return Messages.get("projectFile.filter");
     }
 
     /**
@@ -43,7 +50,7 @@ public class ProjectPersisterUtil {
      * @return the selected file, or null if the dialog was cancelled
      */
     public static Path openProjectFileDialog() {
-        return DialogUtil.getOpenFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
+        return DialogUtil.getOpenFilePath(projectFileDescription(), M3U_PROJECT_EXTENSION);
     }
 
     public static DataModel loadProject(Path projectFilePath) {
@@ -200,7 +207,7 @@ public class ProjectPersisterUtil {
      */
     public static SaveResult openSaveDialogAndSaveProject(DataModel dataModel) {
         log.debug("Saving the Project");
-        Path saveFilePath = DialogUtil.getSaveFilePath(M3U_PROJECTFILE_DESCRIPTION, M3U_PROJECT_EXTENSION);
+        Path saveFilePath = DialogUtil.getSaveFilePath(projectFileDescription(), M3U_PROJECT_EXTENSION);
         return saveProjectAs(dataModel, saveFilePath, DialogUtil::canFileBeOverwritten);
     }
 

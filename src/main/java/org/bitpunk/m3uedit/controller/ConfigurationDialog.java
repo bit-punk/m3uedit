@@ -4,6 +4,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -17,10 +18,13 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.util.StringConverter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.config.Configuration;
 import org.bitpunk.m3uedit.config.Configuration.Collected;
+import org.bitpunk.m3uedit.config.Language;
 import org.bitpunk.m3uedit.config.StartupMode;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.player.PlayerArguments;
 
 import java.io.File;
@@ -47,13 +51,15 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
     }
 
     @Getter
+    private final ComboBox<Language> languageComboBox = new ComboBox<>();
+    @Getter
     private final TextField playerCommandField = new TextField();
     @Getter
-    private final Button choosePlayerButton = new Button("Choose…");
+    private final Button choosePlayerButton = new Button(Messages.get("common.choose"));
     @Getter
     private final TextField playerArgumentsField = new TextField();
     @Getter
-    private final CheckBox passVlcOptionsCheckBox = new CheckBox("Pass the VLC options of the entries");
+    private final CheckBox passVlcOptionsCheckBox = new CheckBox(Messages.get("configuration.player.passVlcOptions"));
     @Getter
     private final Spinner<Integer> recentProjectsSpinner = new Spinner<>(0, MAX_RECENT_PROJECTS, 10);
     @Getter
@@ -61,29 +67,42 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
     @Getter
     private final Map<Collected, Label> collectedLabels = new EnumMap<>(Collected.class);
     @Getter
-    private final RadioButton startScreenRadioButton = new RadioButton("Show the start screen");
+    private final RadioButton startScreenRadioButton = new RadioButton(Messages.get("configuration.startup.startScreen"));
     @Getter
     private final RadioButton reopenProjectsRadioButton =
-            new RadioButton("Reopen the projects that were open when m3uedit was closed");
+            new RadioButton(Messages.get("configuration.startup.reopenProjects"));
     @Getter
-    private final ButtonType okButtonType = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
+    private final ButtonType okButtonType = new ButtonType(Messages.get("common.ok"), ButtonBar.ButtonData.OK_DONE);
     private final Set<Collected> toClear = EnumSet.noneOf(Collected.class);
 
     public ConfigurationDialog(Configuration configuration) {
         initModality(Modality.APPLICATION_MODAL);
         setResizable(true);
-        setTitle("Configuration");
+        setTitle(Messages.get("configuration.title"));
         setHeaderText(null);
         getDialogPane().getStyleClass().add("configuration-dialog");
         getDialogPane().getStylesheets().add(Objects.requireNonNull(
                 getClass().getResource("/fxml/css/configuration-dialog.css")).toExternalForm());
 
         Configuration.Values values = configuration.load();
+        languageComboBox.getItems().setAll(Language.values());
+        languageComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Language language) {
+                return language == null ? "" : languageName(language);
+            }
+
+            @Override
+            public Language fromString(String text) {
+                return null;
+            }
+        });
+        languageComboBox.setValue(values.language());
         playerCommandField.setText(values.playerCommand());
-        playerCommandField.setPromptText("e.g. vlc, mpv or the path of the program");
+        playerCommandField.setPromptText(Messages.get("configuration.player.command.prompt"));
         choosePlayerButton.setOnAction(event -> choosePlayer());
         playerArgumentsField.setText(PlayerArguments.join(values.playerArguments()));
-        playerArgumentsField.setPromptText("e.g. --fullscreen");
+        playerArgumentsField.setPromptText(Messages.get("configuration.player.arguments.prompt"));
         passVlcOptionsCheckBox.setSelected(values.passVlcOptions());
         recentProjectsSpinner.getValueFactory().setValue(Math.clamp(values.maxRecentProjects(), 0, MAX_RECENT_PROJECTS));
         recentProjectsSpinner.setEditable(true);
@@ -103,35 +122,42 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
         form.getColumnConstraints().addAll(labels, fields);
         int row = 0;
 
-        form.add(section("External player"), 0, row++, 2, 1);
+        form.add(section(Messages.get("configuration.section.appearance")), 0, row++, 2, 1);
+        form.addRow(row++, field(Messages.get("configuration.language")), withHint(languageComboBox,
+                Messages.get("configuration.language.hint")));
+
+        form.add(section(Messages.get("configuration.section.externalPlayer")), 0, row++, 2, 1);
         HBox commandRow = new HBox(playerCommandField, choosePlayerButton);
         commandRow.getStyleClass().add("field-row");
         HBox.setHgrow(playerCommandField, Priority.ALWAYS);
-        form.addRow(row++, field("Command"), commandRow);
-        form.addRow(row++, field("Additional arguments"), withHint(playerArgumentsField,
-                "separated by spaces, put arguments containing spaces in double quotes"));
-        form.add(withHint(passVlcOptionsCheckBox, "only understood by VLC: the options are given as :option=value"),
+        form.addRow(row++, field(Messages.get("configuration.player.command")), commandRow);
+        form.addRow(row++, field(Messages.get("configuration.player.arguments")), withHint(playerArgumentsField,
+                Messages.get("configuration.player.arguments.hint")));
+        form.add(withHint(passVlcOptionsCheckBox, Messages.get("configuration.player.passVlcOptions.hint")),
                 1, row++);
 
-        form.add(section("Recently used"), 0, row++, 2, 1);
-        HBox recentRow = new HBox(recentProjectsSpinner, hint("0 turns the list off"));
+        form.add(section(Messages.get("configuration.section.recentlyUsed")), 0, row++, 2, 1);
+        HBox recentRow = new HBox(recentProjectsSpinner, hint(Messages.get("configuration.recent.max.hint")));
         recentRow.getStyleClass().add("field-row");
-        form.addRow(row++, field("Projects remembered"), recentRow);
-        form.addRow(row++, field("Projects"), collected(configuration, Collected.RECENT_PROJECTS));
-        form.addRow(row++, field("SFTP servers"), collected(configuration, Collected.SFTP_SERVERS));
-        form.addRow(row++, field("FritzBoxes"), collected(configuration, Collected.FRITZBOXES));
+        form.addRow(row++, field(Messages.get("configuration.recent.max")), recentRow);
+        form.addRow(row++, field(Messages.get("configuration.recent.projects")),
+                collected(configuration, Collected.RECENT_PROJECTS));
+        form.addRow(row++, field(Messages.get("configuration.recent.sftpServers")),
+                collected(configuration, Collected.SFTP_SERVERS));
+        form.addRow(row++, field(Messages.get("configuration.recent.fritzBoxes")),
+                collected(configuration, Collected.FRITZBOXES));
 
-        form.add(section("EPG cache"), 0, row++, 2, 1);
-        form.addRow(row++, field("Downloaded sources"), withHint(collected(configuration, Collected.EPG_CACHE),
-                "cleared sources are downloaded again when they are needed"));
+        form.add(section(Messages.get("configuration.section.epgCache")), 0, row++, 2, 1);
+        form.addRow(row++, field(Messages.get("configuration.epgCache.sources")),
+                withHint(collected(configuration, Collected.EPG_CACHE), Messages.get("configuration.epgCache.hint")));
 
-        form.add(section("Startup"), 0, row++, 2, 1);
+        form.add(section(Messages.get("configuration.section.startup")), 0, row++, 2, 1);
         form.add(new VBox(6, startScreenRadioButton, reopenProjectsRadioButton), 0, row, 2, 1);
 
         getDialogPane().setContent(form);
-        // in English like the rest of the application, not in the language of the system
+        // in the language of the application, not in the language of the system
         getDialogPane().getButtonTypes().addAll(okButtonType,
-                new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE));
+                new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE));
         getDialogPane().setPrefWidth(640);
 
         setResultConverter(buttonType -> buttonType == okButtonType ? result() : null);
@@ -151,7 +177,7 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
         return new Result(new Configuration.Values(playerCommandField.getText(),
                 PlayerArguments.split(playerArgumentsField.getText()), passVlcOptionsCheckBox.isSelected(),
                 maxRecentProjects, reopenProjectsRadioButton.isSelected() ? StartupMode.REOPEN_PROJECTS
-                : StartupMode.START_SCREEN), toClear);
+                : StartupMode.START_SCREEN, languageComboBox.getValue()), toClear);
     }
 
     /**
@@ -159,14 +185,14 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
      */
     void markToClear(Collected collected) {
         toClear.add(collected);
-        collectedLabels.get(collected).setText("cleared when OK is pressed");
+        collectedLabels.get(collected).setText(Messages.get("configuration.cleared"));
         clearButtons.get(collected).setDisable(true);
     }
 
     private HBox collected(Configuration configuration, Collected collected) {
         Label label = new Label(configuration.describe(collected));
         label.getStyleClass().add("collected-label");
-        Button clear = new Button("Clear");
+        Button clear = new Button(Messages.get("common.clear"));
         clear.setDisable(configuration.isEmpty(collected));
         clear.setOnAction(event -> markToClear(collected));
         collectedLabels.put(collected, label);
@@ -178,7 +204,7 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
 
     private void choosePlayer() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Choose the external player");
+        chooser.setTitle(Messages.get("configuration.player.chooser.title"));
         File current = new File(playerCommandField.getText().strip());
         if (current.getParentFile() != null && current.getParentFile().isDirectory()) {
             chooser.setInitialDirectory(current.getParentFile());
@@ -187,6 +213,18 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
         if (chosen != null) {
             playerCommandField.setText(chosen.getAbsolutePath());
         }
+    }
+
+    /**
+     * @return the name of the language in the language itself, so it is found by someone not understanding the
+     * current one; only the default of the system is named in the current language
+     */
+    static String languageName(Language language) {
+        return switch (language) {
+            case SYSTEM -> Messages.get("configuration.language.system");
+            case ENGLISH -> "English";
+            case GERMAN -> "Deutsch";
+        };
     }
 
     private static Label section(String title) {

@@ -16,6 +16,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.util.Callback;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
@@ -26,7 +27,6 @@ import java.util.*;
 @Slf4j
 public class IptvOrgInputDialogController extends AbstractDialogController<List<IptvOrgPlaylist>> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_IPTV_ORG = "plugin/input/iptvorg/IptvOrgInputDialog.fxml";
-    public static final String IPTV_ORG_DIALOG_TITLE = "Select iptv-org playlist(s) or channel(s) to read entries from";
     private final IptvOrgApiClient apiClient;
     private final ObservableList<IptvOrgPlaylist> availablePlaylists = FXCollections.observableArrayList();
     private final FilteredList<IptvOrgPlaylist> filteredPlaylists = new FilteredList<>(availablePlaylists);
@@ -54,7 +54,7 @@ public class IptvOrgInputDialogController extends AbstractDialogController<List<
     private Label statusLabel;
 
     public IptvOrgInputDialogController(IptvOrgApiClient apiClient, List<IptvOrgPlaylist> preselectedPlaylists) {
-        super(FXML_PLUGIN_INPUT_IPTV_ORG, IPTV_ORG_DIALOG_TITLE);
+        super(FXML_PLUGIN_INPUT_IPTV_ORG, Messages.get("iptvorg.dialog.title"));
         this.apiClient = apiClient;
         setResultConverter(getPlaylistResultConverter());
         if (preselectedPlaylists != null) {
@@ -112,7 +112,7 @@ public class IptvOrgInputDialogController extends AbstractDialogController<List<
         if (grouping == null) {
             return;
         }
-        statusLabel.setText("Loading %s list...".formatted(grouping.getLabel().toLowerCase(Locale.ROOT)));
+        statusLabel.setText(loadingText(grouping));
         Task<List<IptvOrgPlaylist>> loadTask = new Task<>() {
             @Override
             protected List<IptvOrgPlaylist> call() throws Exception {
@@ -123,18 +123,33 @@ public class IptvOrgInputDialogController extends AbstractDialogController<List<
             // ignore results of a grouping that is no longer selected
             if (grouping == groupingComboBox.getValue()) {
                 availablePlaylists.setAll(loadTask.getValue());
-                statusLabel.setText("%d %s available".formatted(availablePlaylists.size(), grouping.isChannel() ? "channels" : "playlists"));
+                statusLabel.setText(grouping.isChannel()
+                        ? Messages.get("iptvorg.available.channels", availablePlaylists.size())
+                        : Messages.get("iptvorg.available.playlists", availablePlaylists.size()));
             }
         });
         loadTask.setOnFailed(event -> {
             log.error("Unable to load {} list from iptv-org", grouping, loadTask.getException());
             if (grouping == groupingComboBox.getValue()) {
-                statusLabel.setText("Unable to load list: " + loadTask.getException().getMessage());
+                statusLabel.setText(Messages.get("iptvorg.loadError", loadTask.getException().getMessage()));
             }
         });
         Thread loadThread = new Thread(loadTask, "iptv-org-playlist-loader");
         loadThread.setDaemon(true);
         loadThread.start();
+    }
+
+    /**
+     * @return e.g. "Loading country list..."
+     */
+    static String loadingText(PlaylistGrouping grouping) {
+        return switch (grouping) {
+            case COUNTRY -> Messages.get("iptvorg.loading.country");
+            case CATEGORY -> Messages.get("iptvorg.loading.category");
+            case LANGUAGE -> Messages.get("iptvorg.loading.language");
+            case REGION -> Messages.get("iptvorg.loading.region");
+            case CHANNEL -> Messages.get("iptvorg.loading.channel");
+        };
     }
 
     private void addPlaylistsOnDoubleClick(MouseEvent mouseEvent) {

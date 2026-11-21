@@ -24,6 +24,7 @@ import javafx.scene.shape.Rectangle;
 import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.controller.GuideTimeline.Slot;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.ChannelLogos;
 import org.bitpunk.m3uedit.plugins.enricher.Programme;
@@ -57,7 +58,6 @@ public class ProgrammeGuideView extends VBox {
     private static final PseudoClass PAST = PseudoClass.getPseudoClass("past");
     private static final PseudoClass ODD = PseudoClass.getPseudoClass("odd");
     private static final DateTimeFormatter TICK = DateTimeFormatter.ofPattern("H:mm");
-    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("EEE dd.MM.");
 
     /**
      * A channel of the guide.
@@ -225,7 +225,7 @@ public class ProgrammeGuideView extends VBox {
         timeHeader.setTranslateX(-scrollX());
         channelColumn.setTranslateY(-scrollY());
         if (timeline != null) {
-            cornerLabel.setText(DATE.format(timeline.timeAt(scrollX()).atZone(zone)));
+            cornerLabel.setText(date().format(timeline.timeAt(scrollX()).atZone(zone)));
         }
     }
 
@@ -344,7 +344,7 @@ public class ProgrammeGuideView extends VBox {
         cell.getChildren().add(name);
         if (channel.entry() != null) {
             cell.getStyleClass().add("guide-channel-playable");
-            Tooltip.install(cell, new Tooltip("Play %s in the external player".formatted(channel.name())));
+            Tooltip.install(cell, new Tooltip(Messages.get("guide.play.tooltip", channel.name())));
             cell.setOnMouseClicked(event -> {
                 if (event.getButton() == MouseButton.PRIMARY) {
                     onPlay.accept(channel.entry());
@@ -379,7 +379,7 @@ public class ProgrammeGuideView extends VBox {
         timeHeader.getChildren().clear();
         for (Instant tick : timeline.ticks()) {
             boolean midnight = tick.atZone(zone).toLocalTime().equals(java.time.LocalTime.MIDNIGHT);
-            Label label = new Label(midnight ? DATE.format(tick.atZone(zone)) : TICK.format(tick.atZone(zone)));
+            Label label = new Label(midnight ? date().format(tick.atZone(zone)) : TICK.format(tick.atZone(zone)));
             label.getStyleClass().add(midnight ? "guide-tick-day" : "guide-tick");
             // managed: the pane sizes it once its style is known, the position is kept
             label.relocate(timeline.x(tick), 5);
@@ -566,5 +566,12 @@ public class ProgrammeGuideView extends VBox {
                 scrollPane.setVvalue(Math.clamp((y + ROW_HEIGHT - viewport.getHeight()) / scrollableHeight, 0, 1));
             }
         }
+    }
+
+    /**
+     * @return the format of a day, e.g. "Sat 21.11.", in the language of the user interface
+     */
+    private static DateTimeFormatter date() {
+        return DateTimeFormatter.ofPattern("EEE dd.MM.", Messages.locale());
     }
 }

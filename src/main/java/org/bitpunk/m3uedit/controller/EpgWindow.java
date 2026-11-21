@@ -23,6 +23,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Programme;
 import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
@@ -51,7 +52,6 @@ import java.util.concurrent.Executor;
  */
 @Slf4j
 public class EpgWindow extends Stage {
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEE dd.MM.");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     /**
@@ -68,16 +68,19 @@ public class EpgWindow extends Stage {
      * A part of the day to jump to.
      */
     enum PartOfDay {
-        MORNING("Morning", LocalTime.of(6, 0)),
-        AFTERNOON("Afternoon", LocalTime.of(12, 0)),
-        EVENING("Evening", LocalTime.of(18, 0)),
-        NIGHT("Night", LocalTime.of(22, 0));
+        MORNING("epg.partOfDay.morning", LocalTime.of(6, 0)),
+        AFTERNOON("epg.partOfDay.afternoon", LocalTime.of(12, 0)),
+        EVENING("epg.partOfDay.evening", LocalTime.of(18, 0)),
+        NIGHT("epg.partOfDay.night", LocalTime.of(22, 0));
 
-        final String label;
+        /**
+         * The key of the text shown.
+         */
+        final String labelKey;
         final LocalTime start;
 
-        PartOfDay(String label, LocalTime start) {
-            this.label = label;
+        PartOfDay(String labelKey, LocalTime start) {
+            this.labelKey = labelKey;
             this.start = start;
         }
 
@@ -94,7 +97,7 @@ public class EpgWindow extends Stage {
 
         @Override
         public String toString() {
-            return label;
+            return Messages.get(labelKey);
         }
     }
 
@@ -113,7 +116,7 @@ public class EpgWindow extends Stage {
     @Getter
     private final ComboBox<PartOfDay> partOfDayComboBox = new ComboBox<>();
     @Getter
-    private final Button nowButton = new Button("Now");
+    private final Button nowButton = new Button(Messages.get("epg.now"));
     @Getter
     private final TextField searchField = new TextField();
     @Getter
@@ -125,7 +128,7 @@ public class EpgWindow extends Stage {
     private final ImageView imageView = new ImageView();
     @Getter
     private final Label statusLabel = new Label();
-    private final Label loadingLabel = new Label("Reading the programme guides …");
+    private final Label loadingLabel = new Label(Messages.get("epg.status.reading"));
     @Getter
     private List<Programme> programmes = List.of();
     /**
@@ -152,13 +155,13 @@ public class EpgWindow extends Stage {
         if (owner != null) {
             initOwner(owner);
         }
-        setTitle("EPG – " + projectName);
+        setTitle(Messages.get("epg.title", projectName));
 
         partOfDayComboBox.getItems().setAll(PartOfDay.values());
         dayComboBox.valueProperty().addListener((observable, oldDay, day) -> jumpToChoice());
         partOfDayComboBox.valueProperty().addListener((observable, oldPart, part) -> jumpToChoice());
         nowButton.setOnAction(event -> showNow());
-        searchField.setPromptText("Search title or description");
+        searchField.setPromptText(Messages.get("epg.search.prompt"));
         searchField.textProperty().addListener((observable, oldText, text) -> guide.setSearch(text));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -253,7 +256,7 @@ public class EpgWindow extends Stage {
         if (this.providers.isEmpty()) {
             loadGeneration++;
             showProgrammes(List.of(), true);
-            loadingLabel.setText("Enable the EPG Enricher to see the programmes of the channels.");
+            loadingLabel.setText(Messages.get("epg.status.noProvider"));
             statusLabel.setText(loadingLabel.getText());
             return;
         }
@@ -284,12 +287,12 @@ public class EpgWindow extends Stage {
                 return;
             }
             log.error("The programmes could not be read", task.getException());
-            statusLabel.setText("The programme guides could not be read: " + task.getException().getMessage());
+            statusLabel.setText(Messages.get("epg.status.failed", task.getException().getMessage()));
             if (!refreshing) {
                 loadingLabel.setText(statusLabel.getText());
             }
         });
-        statusLabel.setText(refreshing ? "Updating the programme guides …" : "Reading the programme guides …");
+        statusLabel.setText(Messages.get(refreshing ? "epg.status.updating" : "epg.status.reading"));
         executor.execute(task);
     }
 
@@ -309,7 +312,7 @@ public class EpgWindow extends Stage {
         double vvalue = guide.getScrollPane().getVvalue();
         programmes = List.copyOf(read);
         loadingLabel.setVisible(read.isEmpty());
-        loadingLabel.setText("No programmes for the channels of the playlist.");
+        loadingLabel.setText(Messages.get("epg.status.noProgrammes"));
         Map<String, List<Programme>> byChannel = new HashMap<>();
         read.forEach(programme -> byChannel.computeIfAbsent(programme.channelId(), id -> new ArrayList<>()).add(programme));
         List<ProgrammeGuideView.Channel> channels = new ArrayList<>();
@@ -343,8 +346,8 @@ public class EpgWindow extends Stage {
         updatingChoices = true;
         dayComboBox.getItems().setAll(dates.stream().map(date -> new Day(date, label(date, today))).toList());
         updatingChoices = false;
-        statusLabel.setText("%d programmes, %d of %d channels with programmes".formatted(read.size(),
-                channelsWithProgrammes, channels.size()));
+        statusLabel.setText(Messages.get("epg.status.read", read.size(), channelsWithProgrammes,
+                channels.size()));
         // the search applies to the new blocks as well
         guide.setSearch(searchField.getText());
         if (refreshing && shownTime != null) {
@@ -383,17 +386,24 @@ public class EpgWindow extends Stage {
                 programme.subTitle(), programme.description(), programme.category(), programme.icon());
     }
 
+    /**
+     * @return the format of a day, e.g. "Sat 21.11.", in the language of the user interface
+     */
+    private static DateTimeFormatter day() {
+        return DateTimeFormatter.ofPattern("EEE dd.MM.", Messages.locale());
+    }
+
     private static String label(LocalDate date, LocalDate today) {
         if (date.equals(today)) {
-            return "Today";
+            return Messages.get("epg.day.today");
         }
         if (date.equals(today.plusDays(1))) {
-            return "Tomorrow";
+            return Messages.get("epg.day.tomorrow");
         }
         if (date.equals(today.minusDays(1))) {
-            return "Yesterday";
+            return Messages.get("epg.day.yesterday");
         }
-        return DAY.format(date);
+        return day().format(date);
     }
 
     /**
@@ -457,7 +467,7 @@ public class EpgWindow extends Stage {
                 : "%s – %s".formatted(programme.title(), programme.subTitle()));
         StringBuilder time = new StringBuilder(programme.channelName());
         if (programme.start() != null) {
-            time.append(" · ").append(DAY.format(programme.start().atZone(zone))).append(' ')
+            time.append(" · ").append(day().format(programme.start().atZone(zone))).append(' ')
                     .append(TIME.format(programme.start().atZone(zone)));
             if (programme.stop() != null) {
                 time.append(" – ").append(TIME.format(programme.stop().atZone(zone)));

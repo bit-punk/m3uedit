@@ -16,6 +16,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.StackPane;
 import javafx.stage.WindowEvent;
 import javafx.util.Duration;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
@@ -226,7 +227,8 @@ public class EntryListController extends AbstractController  implements Initiali
 
     private void updateSearchResult() {
         searchResultLabel.setText(isSearching()
-                ? "%d of %d".formatted(shownEntries.size(), dataModel.getSortedEntryList().size()) : "");
+                ? Messages.get("playlist.search.result", shownEntries.size(), dataModel.getSortedEntryList().size())
+                : "");
     }
 
     // package-private for tests
@@ -438,7 +440,7 @@ public class EntryListController extends AbstractController  implements Initiali
     public void paste() {
         List<Entry> pasted = PlaylistClipboard.fromM3u(clipboardReader.get());
         if (pasted.isEmpty()) {
-            messageReporter.accept("The clipboard contains no entries of a playlist (M3U text) to paste.");
+            messageReporter.accept(Messages.get("playlist.paste.noEntries"));
             return;
         }
         List<Integer> selected = entryTableView.getSelectionModel().getSelectedIndices().stream().sorted().toList();
@@ -556,9 +558,9 @@ public class EntryListController extends AbstractController  implements Initiali
         boolean provided = !programmeGuideProviders().isEmpty();
         boolean entries = !dataModel.getSortedEntryList().isEmpty();
         epgButton.setDisable(!provided || !entries);
-        epgButton.setTooltip(new Tooltip(!provided ? "Enable the EPG Enricher to see the programmes of the channels"
-                : entries ? "Show the programmes of the channels of the playlist"
-                : "The playlist contains no channels to show the programmes of"));
+        epgButton.setTooltip(new Tooltip(Messages.get(!provided ? "playlist.epg.tooltip.noProvider"
+                : entries ? "playlist.epg.tooltip.show"
+                : "playlist.epg.tooltip.noChannels")));
     }
 
     /**

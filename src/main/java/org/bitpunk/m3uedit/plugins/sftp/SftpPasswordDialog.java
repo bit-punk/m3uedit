@@ -11,6 +11,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Window;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.util.Objects;
 
@@ -18,24 +19,28 @@ import java.util.Objects;
  * Asks for the password of an SFTP server. It is kept in memory only, until the application is closed.
  */
 public class SftpPasswordDialog extends Dialog<String> {
-    public static final ButtonType CONNECT = new ButtonType("Connect", ButtonBar.ButtonData.OK_DONE);
-    // not ButtonType.CANCEL: its text follows the language of the system, the application is in English
-    public static final ButtonType CANCEL = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+    @Getter
+    private final ButtonType connectButtonType = new ButtonType(Messages.get("sftp.password.connect"),
+            ButtonBar.ButtonData.OK_DONE);
+    // not ButtonType.CANCEL: its text follows the language of the system, not the one of the user interface
+    @Getter
+    private final ButtonType cancelButtonType = new ButtonType(Messages.get("common.cancel"),
+            ButtonBar.ButtonData.CANCEL_CLOSE);
 
     @Getter
     private final PasswordField passwordField = new PasswordField();
 
     public SftpPasswordDialog(String userName, String hostName, int port) {
-        setTitle("SFTP Password");
+        setTitle(Messages.get("sftp.password.title"));
         setResizable(false);
         // centered on the window it is opened from instead of anywhere on the screen
         Window.getWindows().stream().filter(Window::isFocused).findFirst().ifPresent(this::initOwner);
 
         Label server = new Label("%s@%s:%d".formatted(userName, hostName, port));
         server.getStyleClass().add("sftp-password-server");
-        passwordField.setPromptText("password");
+        passwordField.setPromptText(Messages.get("sftp.password.prompt"));
         passwordField.setPrefColumnCount(22);
-        Label hint = new Label("The password is kept until m3uedit is closed, it is never stored.");
+        Label hint = new Label(Messages.get("sftp.password.hint"));
         hint.getStyleClass().add("sftp-password-hint");
         hint.setWrapText(true);
 
@@ -46,17 +51,18 @@ public class SftpPasswordDialog extends Dialog<String> {
         ColumnConstraints fields = new ColumnConstraints();
         fields.setHgrow(Priority.ALWAYS);
         form.getColumnConstraints().addAll(labels, fields);
-        form.addRow(0, new Label("Server"), server);
-        form.addRow(1, new Label("Password"), passwordField);
+        form.addRow(0, new Label(Messages.get("sftp.password.server")), server);
+        form.addRow(1, new Label(Messages.get("sftp.password.password")), passwordField);
         form.add(hint, 1, 2);
 
         getDialogPane().setContent(form);
         getDialogPane().getStyleClass().add("sftp-password-dialog");
         getDialogPane().getStylesheets().add(Objects.requireNonNull(
                 getClass().getResource("/plugin/sftp/sftp-password-dialog.css")).toExternalForm());
-        getDialogPane().getButtonTypes().setAll(CONNECT, CANCEL);
-        getDialogPane().lookupButton(CONNECT).disableProperty().bind(passwordField.textProperty().isEmpty());
-        setResultConverter(button -> button == CONNECT ? passwordField.getText() : null);
+        getDialogPane().getButtonTypes().setAll(connectButtonType, cancelButtonType);
+        getDialogPane().lookupButton(connectButtonType).disableProperty()
+                .bind(passwordField.textProperty().isEmpty());
+        setResultConverter(button -> button == connectButtonType ? passwordField.getText() : null);
         setOnShown(event -> passwordField.requestFocus());
     }
 }

@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg.model;
 
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 /**
  * The groupings in which iptv-org publishes its playlists. Each grouping maps to a sub-path of the playlist base-url
@@ -10,20 +11,30 @@ import lombok.Getter;
  */
 @Getter
 public enum PlaylistGrouping {
-    COUNTRY("Country", "countries", "code"),
-    CATEGORY("Category", "categories", "id"),
-    LANGUAGE("Language", "languages", "code"),
-    REGION("Region", "regions", "code"),
-    CHANNEL("Channel", "channels", null);
+    COUNTRY("iptvorg.grouping.country", "countries", "code"),
+    CATEGORY("iptvorg.grouping.category", "categories", "id"),
+    LANGUAGE("iptvorg.grouping.language", "languages", "code"),
+    REGION("iptvorg.grouping.region", "regions", "code"),
+    CHANNEL("iptvorg.grouping.channel", "channels", null);
 
-    private final String label;
+    /**
+     * The key of the label shown to the user.
+     */
+    private final String labelKey;
     private final String path;
     private final String idField;
 
-    PlaylistGrouping(String label, String path, String idField) {
-        this.label = label;
+    PlaylistGrouping(String labelKey, String path, String idField) {
+        this.labelKey = labelKey;
         this.path = path;
         this.idField = idField;
+    }
+
+    /**
+     * @return the label shown to the user, e.g. "Country"
+     */
+    public String getLabel() {
+        return Messages.get(labelKey);
     }
 
     public boolean isChannel() {
@@ -32,6 +43,6 @@ public enum PlaylistGrouping {
 
     @Override
     public String toString() {
-        return label;
+        return getLabel();
     }
 }

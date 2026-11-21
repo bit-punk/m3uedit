@@ -12,6 +12,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.Plugin;
@@ -24,8 +25,6 @@ import java.util.ResourceBundle;
  * A project: the pipeline on the left, the resulting playlist and the diff of the selected step on the right.
  */
 public class ProjectController extends AbstractController implements Initializable, ModelAware {
-    static final String LOADING_MESSAGE = "Loading entries ...";
-    static final String SAVING_MESSAGE = "Writing playlist to the outputs ...";
     public static final String FXML_PROJECT = "fxml/Project.fxml";
     @FXML
     public SplitPane splitPane;
@@ -91,7 +90,7 @@ public class ProjectController extends AbstractController implements Initializab
 
     private static void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
+        alert.setTitle(Messages.get("common.error"));
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.show();   // not blocking, the error is reported asynchronously
@@ -106,12 +105,26 @@ public class ProjectController extends AbstractController implements Initializab
             return;
         }
         if (dataModel.isBusy() || dataModel.isSaving()) {
-            statusLabel.setText(dataModel.isSaving() ? SAVING_MESSAGE : LOADING_MESSAGE);
+            statusLabel.setText(dataModel.isSaving() ? savingMessage() : loadingMessage());
             statusLabel.setGraphic(getLoadingIndicator());
             return;
         }
         statusLabel.setGraphic(null);
-        statusLabel.setText("%d entries in the playlist".formatted(dataModel.getSortedEntryList().size()));
+        statusLabel.setText(Messages.get("project.status.entries", dataModel.getSortedEntryList().size()));
+    }
+
+    /**
+     * @return the status shown while the entries are loaded
+     */
+    static String loadingMessage() {
+        return Messages.get("project.status.loading");
+    }
+
+    /**
+     * @return the status shown while the playlist is written
+     */
+    static String savingMessage() {
+        return Messages.get("project.status.saving");
     }
 
     /**

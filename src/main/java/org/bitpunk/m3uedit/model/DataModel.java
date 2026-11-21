@@ -24,6 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.Plugin;
 import org.bitpunk.m3uedit.plugins.enricher.Attachment;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
@@ -600,10 +601,10 @@ public class DataModel {
         pendingStep = null;
         busy.set(false);
         if (!result.inputErrors().isEmpty()) {
-            reportError("Some inputs could not be read:\n" + String.join("\n", describe(result.inputErrors())));
+            reportError(Messages.get("model.error.inputs", String.join("\n", describe(result.inputErrors()))));
         }
         if (!result.enricherWarnings().isEmpty()) {
-            reportError("Some enrichers reported problems:\n" + String.join("\n", result.enricherWarnings()));
+            reportError(Messages.get("model.error.enrichers", String.join("\n", result.enricherWarnings())));
         }
     }
 
@@ -823,7 +824,7 @@ public class DataModel {
         }
         pendingStep = null;
         busy.set(false);
-        reportError("Error computing the playlist: " + e.getMessage());
+        reportError(Messages.get("model.error.pipeline", e.getMessage()));
     }
 
     private void reportError(String message) {
@@ -915,7 +916,7 @@ public class DataModel {
                 getFxExecutorOrDefault().execute(() -> {
                     saving.set(false);
                     if (!errors.isEmpty()) {
-                        reportError("The playlist could not be written to all outputs:\n" + String.join("\n", errors));
+                        reportError(Messages.get("model.error.outputs", String.join("\n", errors)));
                     }
                 });
             }

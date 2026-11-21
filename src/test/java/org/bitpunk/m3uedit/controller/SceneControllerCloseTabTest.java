@@ -63,7 +63,7 @@ class SceneControllerCloseTabTest {
     }
 
     private Fixture loadScene(boolean userConfirmsClose) throws Exception {
-        FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
+        FXMLLoader loader = org.bitpunk.m3uedit.i18n.Messages.fxmlLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
         Scene scene = loader.load();
         SceneController controller = loader.getController();
         AtomicInteger confirmationCalls = new AtomicInteger();

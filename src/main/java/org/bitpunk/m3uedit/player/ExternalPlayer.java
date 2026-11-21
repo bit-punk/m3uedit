@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 
 import java.io.IOException;
@@ -62,7 +63,8 @@ public class ExternalPlayer {
 
     static List<String> buildCommand(ExternalPlayerConfig config, Entry entry) {
         if (entry == null || StringUtils.isBlank(entry.getChannelUri())) {
-            throw new IllegalArgumentException("Entry has no channel uri");
+            // shown to the user when the player cannot be started
+            throw new IllegalArgumentException(Messages.get("player.error.noChannelUri"));
         }
         ExternalPlayerConfig effectiveConfig = config != null ? config : new ExternalPlayerConfig();
         String executable = StringUtils.defaultIfBlank(effectiveConfig.getCommand(), ExternalPlayerConfig.DEFAULT_COMMAND);

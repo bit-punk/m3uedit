@@ -11,6 +11,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 
 import java.io.BufferedReader;
@@ -24,7 +25,6 @@ import java.util.*;
 @Slf4j
 public class UrlInputDialogController extends AbstractDialogController<List<URL>> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_URL = "plugin/input/url/UrlInputDialog.fxml";
-    public static final String URL_DIALOG_TITLE = "Enter Url(s) to read entries from";
     @Getter
     private final List<URL> urlList = new ArrayList<>();
     @FXML
@@ -39,7 +39,7 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
     private Button addUrlButton;
 
     public UrlInputDialogController() {
-        super(FXML_PLUGIN_INPUT_URL, URL_DIALOG_TITLE);
+        super(FXML_PLUGIN_INPUT_URL, Messages.get("url.dialog.title"));
         setResultConverter(getURIResultConverter());
         addUrlButton.setOnAction(actionEvent -> addNewUrl());
         urlTextField.setOnAction(actionEvent -> addNewUrl());
@@ -53,15 +53,15 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
 
     private static boolean deleteNamedItemsDialog(ObservableList<URL> deleteItems) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
-        dialog.setTitle("Delete Item");
+        dialog.setTitle(Messages.get("url.delete.title"));
         dialog.setResizable(true);
         dialog.getDialogPane().setPrefSize(377, 270);
-        dialog.setHeaderText("Delete Item");
-        String deleteConfirmMessage = "Sure you want to delete %d items:%n%n%s".formatted(deleteItems.size(), formatDeleteUrls(deleteItems));
+        dialog.setHeaderText(Messages.get("url.delete.title"));
+        String deleteConfirmMessage = Messages.get("url.delete.confirm", deleteItems.size(), formatDeleteUrls(deleteItems));
         dialog.setContentText(deleteConfirmMessage);
 
-        ButtonType buttonYes = new ButtonType("Yes");
-        ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType buttonYes = new ButtonType(Messages.get("common.yes"));
+        ButtonType buttonNo = new ButtonType(Messages.get("common.no"), ButtonBar.ButtonData.CANCEL_CLOSE);
 
         dialog.getButtonTypes().setAll(buttonYes, buttonNo);
         Optional<ButtonType> selectedOption = dialog.showAndWait();
@@ -104,7 +104,7 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
                 urlTextField.clear();
             } catch (MalformedURLException e) {
                 log.error("Unable to create an URL from the input-string '{}': {}", newUrlText, e.getMessage());
-                markTextFieldInvalid(urlTextField, "invalid Url provided");
+                markTextFieldInvalid(urlTextField, Messages.get("url.invalid"));
             }
         } else markTextFieldInvalid(urlTextField, validationMessage);
     }
@@ -113,10 +113,10 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
         String message = "";
 
         if (url == null || url.isEmpty()) {
-            return "URL cannot be empty";
+            return Messages.get("url.empty");
         }
         if (selectedUrlListView.getItems().stream().anyMatch(urlItem -> urlItem.toString().equals(url))) {
-            return "Url already added";
+            return Messages.get("url.duplicate");
         }
         URL playListUrl;
         try {
@@ -125,7 +125,7 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
            return e.getMessage();
         }
         if (!isUrlPlayList(playListUrl)) {
-            return "Url does not contain any playlist";
+            return Messages.get("url.noPlaylist");
         }
         return message;
     }

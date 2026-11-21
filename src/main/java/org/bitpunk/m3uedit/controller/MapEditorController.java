@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.control.ValidatingEditingCell;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 import java.net.URL;
@@ -109,7 +110,7 @@ public class MapEditorController extends AbstractController implements Initializ
 
     private void markTextFieldInvalid(TextField textField) {
         textField.setStyle(CSS_INVALID_TEXT_FIELD_INPUT);
-        textField.setTooltip(new Tooltip("Key already exists"));
+        textField.setTooltip(new Tooltip(Messages.get("mapEditor.keyExists")));
     }
 
     private void unmarkTextField(TextField textField) {

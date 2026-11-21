@@ -11,6 +11,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
 
 import java.net.URL;
@@ -24,7 +25,6 @@ import java.util.ResourceBundle;
 @Slf4j
 public class ReachableUrlFilterConfigDialogController extends AbstractDialogController<ReachableUrlFilterConfig> {
     public static final String FXML_PLUGIN_FILTER_CONFIG = "plugin/filter/reachableurl/ReachableUrlFilterConfigDialog.fxml";
-    public static final String DIALOG_TITLE = "Configure Reachable URL Filter";
     public static final int MIN_TIMEOUT_MILLIS = 100;
     public static final int MAX_TIMEOUT_MILLIS = 60_000;
     public static final int STEP_MILLIS = 100;
@@ -45,7 +45,7 @@ public class ReachableUrlFilterConfigDialogController extends AbstractDialogCont
     private final ReachableUrlFilter filter;
 
     public ReachableUrlFilterConfigDialogController(ReachableUrlFilter filter) {
-        super(FXML_PLUGIN_FILTER_CONFIG, DIALOG_TITLE);
+        super(FXML_PLUGIN_FILTER_CONFIG, Messages.get("filter.reachableUrl.config.title"));
         this.filter = Objects.requireNonNull(filter, "filter must not be null");
         timeoutSpinner.getValueFactory().setValue(filter.getTimeoutMillis());
         getDialogPane().lookupButton(okButtonType).disableProperty().bind(isEditorTextValid().not());

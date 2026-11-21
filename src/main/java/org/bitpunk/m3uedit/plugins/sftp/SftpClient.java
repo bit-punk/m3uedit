@@ -7,6 +7,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.UserInfo;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
 import java.nio.charset.StandardCharsets;
@@ -132,16 +133,16 @@ public final class SftpClient implements AutoCloseable {
      */
     public static String describeError(Throwable error) {
         if (error instanceof JSchException jschException && isAuthenticationFailure(jschException)) {
-            return "Authentication failed: wrong username or password.";
+            return Messages.get("sftp.error.authentication");
         }
         if (error instanceof SftpException sftpException) {
             return switch (sftpException.id) {
-                case ChannelSftp.SSH_FX_PERMISSION_DENIED -> "Permission denied.";
-                case ChannelSftp.SSH_FX_NO_SUCH_FILE -> "Directory not found.";
-                default -> "SFTP error: " + sftpException.getMessage();
+                case ChannelSftp.SSH_FX_PERMISSION_DENIED -> Messages.get("sftp.error.permissionDenied");
+                case ChannelSftp.SSH_FX_NO_SUCH_FILE -> Messages.get("sftp.error.directoryNotFound");
+                default -> Messages.get("sftp.error.sftp", sftpException.getMessage());
             };
         }
-        return "Error: " + error.getMessage();
+        return Messages.get("sftp.error.other", error.getMessage());
     }
 
     static String getKnownHostsPath() {

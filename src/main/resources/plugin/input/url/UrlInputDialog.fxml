@@ -4,10 +4,10 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Playlist-URL:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <Label text="%url.dialog.url" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
             <TextField fx:id="urlTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-            <Button fx:id="addUrlButton" text="Add Url" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-            <Label text="URLs to import:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <Button fx:id="addUrlButton" text="%url.dialog.add" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+            <Label text="%url.dialog.selected" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
             <ListView fx:id="selectedUrlListView" VBox.vgrow="ALWAYS" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
             <columnConstraints>
                 <ColumnConstraints/>
@@ -16,6 +16,6 @@
         </GridPane>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

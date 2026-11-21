@@ -22,6 +22,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient.RemoteEntry;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
@@ -79,7 +80,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         this.userInteraction = userInteraction;
         this.fileRequired = fileRequired;
         initModality(Modality.APPLICATION_MODAL);
-        setTitle("Browse SFTP Server");
+        setTitle(Messages.get("sftp.browser.title"));
         setHeaderText(connection.getUserName() + "@" + connection.getHostName() + ":" + connection.getPort());
         setResizable(true);
         initContent();
@@ -92,8 +93,10 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
     }
 
     private void initContent() {
-        ButtonType selectButtonType = new ButtonType("Select", ButtonBar.ButtonData.OK_DONE);
-        getDialogPane().getButtonTypes().addAll(selectButtonType, ButtonType.CANCEL);
+        ButtonType selectButtonType = new ButtonType(Messages.get("sftp.browser.select"), ButtonBar.ButtonData.OK_DONE);
+        // not ButtonType.CANCEL: its text follows the language of the system, not the one of the user interface
+        ButtonType cancelButtonType = new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        getDialogPane().getButtonTypes().addAll(selectButtonType, cancelButtonType);
         Button selectButton = (Button) getDialogPane().lookupButton(selectButtonType);
         BooleanBinding noFileSelected = Bindings.createBooleanBinding(() -> {
             RemoteEntry selected = listView.getSelectionModel().getSelectedItem();
@@ -131,8 +134,8 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         });
 
         Label hint = new Label(fileRequired
-                ? "Double-click opens a directory or selects a playlist file."
-                : "Double-click opens a directory. Select a file to overwrite it.");
+                ? Messages.get("sftp.browser.hint.input")
+                : Messages.get("sftp.browser.hint.output"));
         hint.setStyle("-fx-opacity: 0.7;");
         HBox statusBox = new HBox(5, progressIndicator, statusLabel);
         VBox content = new VBox(8, pathLabel, listView, hint, statusBox);
@@ -152,7 +155,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
 
     static String displayName(RemoteEntry entry) {
         if (entry == PARENT_ENTRY) {
-            return ".. (parent directory)";
+            return Messages.get("sftp.browser.parent");
         }
         return entry.directory() ? entry.name() + "/" : entry.name();
     }
@@ -182,17 +185,17 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         String target = selected == PARENT_ENTRY
                 ? SftpClient.parent(currentDirectory)
                 : SftpClient.child(currentDirectory, selected.name());
-        runInBackground("Loading " + target + " ...", () -> loadDirectory(target, null));
+        runInBackground(Messages.get("sftp.browser.loading", target), () -> loadDirectory(target, null));
     }
 
     private void connectAndLoad(String startDirectory) {
-        runInBackground("Connecting ...", () -> {
+        runInBackground(Messages.get("sftp.browser.connecting"), () -> {
             client = SftpClient.connect(connection, userInteraction);
             try {
                 return loadDirectory(startDirectory, null);
             } catch (SftpException e) {
                 log.debug("Start directory '{}' not available ({}), showing home directory", startDirectory, e.getMessage());
-                return loadDirectory(".", "Directory '" + startDirectory + "' not found, showing home directory.");
+                return loadDirectory(".", Messages.get("sftp.browser.startDirectoryNotFound", startDirectory));
             }
         });
     }

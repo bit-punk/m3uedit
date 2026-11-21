@@ -4,18 +4,18 @@
 
     <content>
         <GridPane hgap="8" vgap="8">
-            <Label text="Recent:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <ComboBox fx:id="recentConnectionsComboBox" promptText="recently used FritzBoxes" maxWidth="Infinity"
+            <Label text="%fritzbox.dialog.recent" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <ComboBox fx:id="recentConnectionsComboBox" promptText="%fritzbox.dialog.recent.prompt" maxWidth="Infinity"
                       GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-            <Button fx:id="removeRecentConnectionButton" text="Remove" onAction="#handleRemoveRecentConnection"
+            <Button fx:id="removeRecentConnectionButton" text="%common.remove" onAction="#handleRemoveRecentConnection"
                     GridPane.columnIndex="2" GridPane.rowIndex="0"/>
 
             <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="3"/>
 
-            <Label text="Fritzbox-Base-URL:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <Label text="%fritzbox.dialog.baseUrl" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
             <TextField fx:id="baseUrlTextField" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="2"
                        text="http://fritz.box/dvb/m3u/"/>
-            <Label text="Streams to import:" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.valignment="TOP"/>
+            <Label text="%fritzbox.dialog.streams" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.valignment="TOP"/>
             <ListView fx:id="availableStreamSources" prefHeight="62" GridPane.columnIndex="1" GridPane.rowIndex="3"
                       GridPane.columnSpan="2"/>
             <columnConstraints>
@@ -26,6 +26,6 @@
         </GridPane>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

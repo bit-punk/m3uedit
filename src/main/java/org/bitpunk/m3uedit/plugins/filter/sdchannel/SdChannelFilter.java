@@ -1,9 +1,9 @@
 package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -30,10 +30,18 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
      */
     private static final Pattern HD_NAME = Pattern.compile("^(.*?)\\s*(?:HD|\\(HD\\)|ᴴᴰ)$", Pattern.CASE_INSENSITIVE);
 
-    @JsonIgnore
-    private final String name = "SD Channel Filter";
-    @JsonIgnore
-    private final String description = "Filters for SD channels (criteria: the same channelName exists with a 'HD' suffix)";
+    /**
+     * @return the name shown to the user, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("filter.sdChannel.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("filter.sdChannel.description");
+    }
 
     @Override
     public int order() {
@@ -57,7 +65,7 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
         return input.stream()
                 .filter(entry -> sdNameOf(entry).filter(removedName::equals).isPresent())
                 .findFirst()
-                .map(entry -> "\"%s\" exists".formatted(entry.getName()))
+                .map(entry -> Messages.get("filter.sdChannel.reason", entry.getName()))
                 .orElse(null);
     }
 

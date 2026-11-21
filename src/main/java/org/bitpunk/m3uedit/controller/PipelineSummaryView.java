@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.EntryDiff;
@@ -53,10 +54,10 @@ public class PipelineSummaryView extends VBox {
         removedFigure.getStyleClass().add("removed");
         movedFigure.getStyleClass().add("moved");
         HBox flow = new HBox(6,
-                loadedFigure, caption("loaded"), arrow(),
-                removedFigure, caption("by filters"), arrow(),
-                playlistFigure, caption("in the playlist"), spacer(),
-                movedFigure, caption("reordered"));
+                loadedFigure, caption(Messages.get("summary.loaded")), arrow(),
+                removedFigure, caption(Messages.get("summary.byFilters")), arrow(),
+                playlistFigure, caption(Messages.get("summary.inPlaylist")), spacer(),
+                movedFigure, caption(Messages.get("summary.reordered")));
         flow.setAlignment(Pos.BASELINE_LEFT);
         bar.getStyleClass().add("summary-bar");
         bar.setHgap(2);
@@ -107,8 +108,8 @@ public class PipelineSummaryView extends VBox {
         int total = Math.max(1, loaded);
         int kept = result.filtered().size();
         if (kept > 0 || segments.isEmpty()) {
-            addSegment(kept > 0 ? kept : 1, total, "segment-kept", "%d entries kept".formatted(kept), null);
-            legendItems.add(legendItem("kept " + kept, "segment-kept", null));
+            addSegment(kept > 0 ? kept : 1, total, "segment-kept", Messages.get("summary.kept.tooltip", kept), null);
+            legendItems.add(legendItem(Messages.get("summary.kept", kept), "segment-kept", null));
         }
         for (int i = 0; i < segments.size(); i++) {
             Segment segment = segments.get(i);

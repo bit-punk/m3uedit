@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
@@ -80,12 +81,12 @@ public class IptvOrgApiClient {
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() != 200) {
                 response.body().close();
-                throw new IOException("Unexpected status-code %d reading %s".formatted(response.statusCode(), uri));
+                throw new IOException(Messages.get("input.statusCode", response.statusCode(), uri));
             }
             return response.body();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while reading " + uri, e);
+            throw new IOException(Messages.get("input.interrupted", uri), e);
         }
     }
 

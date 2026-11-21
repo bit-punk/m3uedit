@@ -38,9 +38,11 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import org.bitpunk.m3uedit.config.Configuration;
+import org.bitpunk.m3uedit.config.Language;
 import org.bitpunk.m3uedit.config.RecentProject;
 import org.bitpunk.m3uedit.config.RecentProjects;
 import org.bitpunk.m3uedit.config.Settings;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
@@ -54,6 +56,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -78,7 +81,6 @@ public class SceneController implements Initializable {
     private static final String ADD_ENTRY_ICON_RESOURCE = "/icons/add_entry.svg";
     private static final String PLAY_ICON_RESOURCE = "/icons/play.svg";
     private static final String PROGRAMME_GUIDE_ICON_RESOURCE = "/icons/programme_guide.svg";
-    private static final DateTimeFormatter LAST_OPENED = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     /**
      * Asks the user whether the project with the given name may be closed despite unsaved changes.
@@ -117,6 +119,10 @@ public class SceneController implements Initializable {
      * The general settings, e.g. whether the open projects are reopened at startup.
      */
     Settings settings = new Settings();
+    /**
+     * Shows a message to the user, replaced by tests.
+     */
+    Consumer<String> messageReporter = DialogUtil::showInformation;
     /**
      * The recently used project-files, shown in the file-menu and on the start screen.
      */
@@ -270,8 +276,13 @@ public class SceneController implements Initializable {
     @FXML
     void handleConfigurationAction() {
         Configuration configuration = new Configuration(recentProjects, settings);
-        configurationDialog.apply(configuration).ifPresent(result ->
-                configuration.apply(result.values(), result.toClear()).forEach(errorReporter));
+        Language language = configuration.load().language();
+        configurationDialog.apply(configuration).ifPresent(result -> {
+            configuration.apply(result.values(), result.toClear()).forEach(errorReporter);
+            if (result.values().language() != language) {
+                messageReporter.accept(Messages.get("scene.languageChanged"));
+            }
+        });
     }
 
     @FXML
@@ -362,11 +373,14 @@ public class SceneController implements Initializable {
         recentProjectNameColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().name()));
         recentProjectFolderColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().folder()));
         recentProjectLastOpenedColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().lastOpened()));
+        // in the format of the language of the user interface, e.g. "Nov 21, 2026, 3:04 PM" or "21.11.2026, 15:04"
+        DateTimeFormatter lastOpenedFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                .withLocale(Messages.locale());
         recentProjectLastOpenedColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Instant lastOpened, boolean empty) {
                 super.updateItem(lastOpened, empty);
-                setText(empty || lastOpened == null ? null : LAST_OPENED.format(lastOpened.atZone(ZoneId.systemDefault())));
+                setText(empty || lastOpened == null ? null : lastOpenedFormat.format(lastOpened.atZone(ZoneId.systemDefault())));
             }
         });
         recentProjectsTable.setRowFactory(table -> {
@@ -393,7 +407,7 @@ public class SceneController implements Initializable {
             openProjectToolButton.getItems().clear();
         }
         for (RecentProject project : recentProjects.getProjects()) {
-            MenuItem item = new MenuItem("%s  –  %s".formatted(project.name(), project.folder()));
+            MenuItem item = new MenuItem(Messages.get("menu.file.recentProject", project.name(), project.folder()));
             item.setMnemonicParsing(false);
             item.setOnAction(event -> openRecentProject(project));
             recentProjectsMenu.getItems().add(item);
@@ -406,7 +420,7 @@ public class SceneController implements Initializable {
             }
         }
         if (!recentProjectsMenu.getItems().isEmpty()) {
-            MenuItem clear = new MenuItem("Clear List");
+            MenuItem clear = new MenuItem(Messages.get("menu.file.clearRecent"));
             clear.setOnAction(event -> recentProjects.clear());
             recentProjectsMenu.getItems().addAll(new SeparatorMenuItem(), clear);
         }
@@ -420,8 +434,7 @@ public class SceneController implements Initializable {
         Path projectFile = project.file();
         if (!Files.isRegularFile(projectFile)) {
             recentProjects.remove(projectFile);
-            errorReporter.accept("Project-file '%s' no longer exists, it has been removed from the recent projects."
-                    .formatted(projectFile));
+            errorReporter.accept(Messages.get("scene.error.recentProjectMissing", projectFile));
             return;
         }
         openProject(projectFile);
@@ -540,18 +553,22 @@ public class SceneController implements Initializable {
     }
 
     private void initToolBar() {
-        setUpToolButton(newProjectToolButton, NEW_PROJECT_ICON_RESOURCE, "New Project", newProjectMenuItem);
-        setUpToolButton(openProjectToolButton, OPEN_PROJECT_ICON_RESOURCE,
-                "Open Project (recently used projects in the list)", openProjectMenuItem);
-        setUpToolButton(saveProjectToolButton, SAVE_ICON_RESOURCE, "Save Project", saveProjectMenuItem);
-        setUpToolButton(undoToolButton, UNDO_ICON_RESOURCE, "Undo", undoMenuItem);
-        setUpToolButton(redoToolButton, REDO_ICON_RESOURCE, "Redo", redoMenuItem);
-        setUpToolButton(reloadInputsToolButton, RELOAD_ICON_RESOURCE, "Reload Inputs", reloadInputsMenuItem);
-        setUpToolButton(writePlaylistToolButton, WRITE_PLAYLIST_ICON_RESOURCE, "Write Playlist", writePlaylistMenuItem);
-        setUpToolButton(addEntryToolButton, ADD_ENTRY_ICON_RESOURCE, "Add Entry", null);
-        setUpToolButton(playToolButton, PLAY_ICON_RESOURCE, "Play the selected entry", null);
-        setUpToolButton(programmeGuideToolButton, PROGRAMME_GUIDE_ICON_RESOURCE, "Programme Guide",
-                programmeGuideMenuItem);
+        setUpToolButton(newProjectToolButton, NEW_PROJECT_ICON_RESOURCE, Messages.get("menu.file.newProject"),
+                newProjectMenuItem);
+        setUpToolButton(openProjectToolButton, OPEN_PROJECT_ICON_RESOURCE, Messages.get("toolbar.openProject"),
+                openProjectMenuItem);
+        setUpToolButton(saveProjectToolButton, SAVE_ICON_RESOURCE, Messages.get("menu.file.saveProject"),
+                saveProjectMenuItem);
+        setUpToolButton(undoToolButton, UNDO_ICON_RESOURCE, Messages.get("menu.edit.undo"), undoMenuItem);
+        setUpToolButton(redoToolButton, REDO_ICON_RESOURCE, Messages.get("menu.edit.redo"), redoMenuItem);
+        setUpToolButton(reloadInputsToolButton, RELOAD_ICON_RESOURCE, Messages.get("menu.project.reloadInputs"),
+                reloadInputsMenuItem);
+        setUpToolButton(writePlaylistToolButton, WRITE_PLAYLIST_ICON_RESOURCE,
+                Messages.get("menu.project.writePlaylist"), writePlaylistMenuItem);
+        setUpToolButton(addEntryToolButton, ADD_ENTRY_ICON_RESOURCE, Messages.get("toolbar.addEntry"), null);
+        setUpToolButton(playToolButton, PLAY_ICON_RESOURCE, Messages.get("toolbar.play"), null);
+        setUpToolButton(programmeGuideToolButton, PROGRAMME_GUIDE_ICON_RESOURCE,
+                Messages.get("menu.project.programmeGuide"), programmeGuideMenuItem);
         saveProjectToolButton.disableProperty().bind(saveProjectMenuItem.disableProperty());
         bindToolBar(null);
     }
@@ -567,7 +584,8 @@ public class SceneController implements Initializable {
         button.setText(null);
         button.setFocusTraversable(false);
         KeyCombination shortcut = menuItem == null ? null : menuItem.getAccelerator();
-        button.setTooltip(new Tooltip(shortcut == null ? name : "%s (%s)".formatted(name, shortcut.getDisplayText())));
+        button.setTooltip(new Tooltip(shortcut == null ? name
+                : Messages.get("toolbar.tooltip", name, shortcut.getDisplayText())));
         button.setAccessibleText(name);
     }
 
@@ -781,7 +799,7 @@ public class SceneController implements Initializable {
         }
         DataModel dataModel = projectLoader.apply(projectFile);
         if (dataModel == null) {
-            errorReporter.accept("Project-file '%s' could not be opened, see the log for details.".formatted(projectFile));
+            errorReporter.accept(Messages.get("scene.error.openFailed", projectFile));
             return;
         }
         DataModelFactory.completePlugins(dataModel);    // each filter and sorter is shown exactly once
@@ -823,7 +841,7 @@ public class SceneController implements Initializable {
                     recentProjects.add(dataModel.getProjectFile());
                 }
             }
-            case FAILED -> errorReporter.accept("Project '%s' could not be saved, see the log for details.".formatted(dataModel.getName()));
+            case FAILED -> errorReporter.accept(Messages.get("scene.error.saveFailed", dataModel.getName()));
             case CANCELLED -> log.debug("saving project '{}' cancelled", dataModel.getName());
         }
     }

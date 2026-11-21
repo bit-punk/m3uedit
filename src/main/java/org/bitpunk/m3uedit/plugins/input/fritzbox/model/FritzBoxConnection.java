@@ -16,8 +16,13 @@ import static org.bitpunk.m3uedit.model.Entry.REGEX_URL;
  */
 @Data
 public class FritzBoxConnection {
-    @NotEmpty(message = "baseUrl must not be empty")
-    @Pattern(regexp = REGEX_URL, message = "baseUrl must be a valid URL")
+    /**
+     * The messages of the validation, translated when they are shown.
+     */
+    public static final String BASE_URL_EMPTY = "baseUrl must not be empty";
+    public static final String BASE_URL_INVALID = "baseUrl must be a valid URL";
+    @NotEmpty(message = BASE_URL_EMPTY)
+    @Pattern(regexp = REGEX_URL, message = BASE_URL_INVALID)
     private String baseUrl;
     private List<StreamSource> selectedStreamSources = new ArrayList<>();
 

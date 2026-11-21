@@ -32,6 +32,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
 import lombok.Setter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.Plugin;
 
 import java.util.ArrayList;
@@ -92,8 +93,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
      * The position of the stage in the pipeline, shown before its name.
      */
     private final Label numberLabel = new Label();
-    public static final String NO_ENTRIES_READ = "Inactive: no entries have been read from the inputs yet";
-    private final Tooltip inactiveTooltip = new Tooltip(NO_ENTRIES_READ);
+    private final Tooltip inactiveTooltip = new Tooltip(noEntriesRead());
     private final HBox header;
     private final Label hintLabel;
     private final String title;
@@ -189,7 +189,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
         hintLabel.setMinWidth(0);
         HBox.setHgrow(hintLabel, Priority.ALWAYS);
         hintLabel.setMaxWidth(Double.MAX_VALUE);
-        collapseButton = iconButton(ICON_CHEVRON, "Collapse " + title);
+        collapseButton = iconButton(ICON_CHEVRON, Messages.get("stage.collapse", title));
         collapseButton.getStyleClass().add("stage-collapse");
         collapseButton.setOnAction(event -> collapsed.set(!collapsed.get()));
         numberLabel.getStyleClass().add("stage-number");
@@ -208,7 +208,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
         collapsed.addListener((observable, wasCollapsed, isCollapsed) -> updateCollapsed());
 
         rowBox.getStyleClass().add("stage-rows");
-        emptyLabel.setText("No %s yet, use + to add one.".formatted(title.toLowerCase()));
+        emptyLabel.setText(Messages.get("stage.empty", titleInText()));
         emptyLabel.getStyleClass().add("stage-empty");
         getChildren().addAll(header, rowBox);
 
@@ -242,7 +242,23 @@ public class PluginStageView<T extends Plugin> extends VBox {
      * Shows the stage greyed out while it has nothing to work on; its plugins can still be added and configured.
      */
     public void setInactive(boolean inactive) {
-        setInactive(inactive, NO_ENTRIES_READ);
+        setInactive(inactive, noEntriesRead());
+    }
+
+    /**
+     * @return the name of the stage within a text, e.g. "filters" in English, "Filter" in German (nouns are
+     * capitalised there)
+     */
+    private String titleInText() {
+        return Boolean.parseBoolean(Messages.get("stage.lowerCaseTitleInText"))
+                ? title.toLowerCase(Messages.locale()) : title;
+    }
+
+    /**
+     * @return the reason of a stage being inactive because no entries have been read
+     */
+    public static String noEntriesRead() {
+        return Messages.get("stage.inactive.noEntriesRead");
     }
 
     /**
@@ -294,9 +310,9 @@ public class PluginStageView<T extends Plugin> extends VBox {
         rowBox.setManaged(!isCollapsed);
         pseudoClassStateChanged(COLLAPSED, isCollapsed);
         collapseButton.setRotate(isCollapsed ? -90 : 0);
-        String action = isCollapsed ? "Expand " : "Collapse ";
-        collapseButton.setAccessibleText(action + title);
-        collapseButton.getTooltip().setText(action + title);
+        String action = Messages.get(isCollapsed ? "stage.expand" : "stage.collapse", title);
+        collapseButton.setAccessibleText(action);
+        collapseButton.getTooltip().setText(action);
         updateStatus();
     }
 
@@ -343,9 +359,9 @@ public class PluginStageView<T extends Plugin> extends VBox {
         enableAllCheckBox.setIndeterminate(enabled > 0 && enabled < plugins.size());
         enableAllCheckBox.setSelected(!plugins.isEmpty() && enabled == plugins.size());
         enableAllCheckBox.setDisable(plugins.isEmpty());
-        String action = areAllEnabled() ? "Disable all " : "Enable all ";
-        enableAllCheckBox.getTooltip().setText(action + title.toLowerCase());
-        enableAllCheckBox.setAccessibleText(action + title.toLowerCase());
+        String action = Messages.get(areAllEnabled() ? "stage.disableAll" : "stage.enableAll", titleInText());
+        enableAllCheckBox.getTooltip().setText(action);
+        enableAllCheckBox.setAccessibleText(action);
     }
 
     /**
@@ -355,7 +371,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
     public void setAddAction(List<String> pluginNames, Consumer<String> onAdd) {
         addButton = new MenuButton(null, icon(ICON_PLUS));
         addButton.getStyleClass().add("stage-add");
-        addButton.setTooltip(new Tooltip("Add"));
+        addButton.setTooltip(new Tooltip(Messages.get("common.add")));
         for (String pluginName : pluginNames) {
             MenuItem item = new MenuItem(pluginName);
             item.setOnAction(event -> onAdd.accept(pluginName));
@@ -455,10 +471,11 @@ public class PluginStageView<T extends Plugin> extends VBox {
 
     private static boolean confirmRemoval(Plugin plugin) {
         Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
-        dialog.setTitle("Remove");
-        dialog.setHeaderText("Remove \"%s\"?".formatted(plugin.getName()));
-        ButtonType remove = new ButtonType("Remove", ButtonBar.ButtonData.OK_DONE);
-        dialog.getButtonTypes().setAll(remove, new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE));
+        dialog.setTitle(Messages.get("common.remove"));
+        dialog.setHeaderText(Messages.get("stage.remove.header", plugin.getName()));
+        ButtonType remove = new ButtonType(Messages.get("common.remove"), ButtonBar.ButtonData.OK_DONE);
+        dialog.getButtonTypes().setAll(remove,
+                new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE));
         return dialog.showAndWait().filter(remove::equals).isPresent();
     }
 
@@ -496,10 +513,10 @@ public class PluginStageView<T extends Plugin> extends VBox {
         private final Label titleLabel = new Label();
         private final Label detailLabel = new Label();
         private final Label badgeLabel = new Label();
-        private final Button configureButton = iconButton(ICON_CONFIGURE, "Configure");
-        private final Button upButton = iconButton(ICON_UP, "Move up");
-        private final Button downButton = iconButton(ICON_DOWN, "Move down");
-        private final Button removeButton = iconButton(ICON_REMOVE, "Remove");
+        private final Button configureButton = iconButton(ICON_CONFIGURE, Messages.get("stage.configure"));
+        private final Button upButton = iconButton(ICON_UP, Messages.get("stage.moveUp"));
+        private final Button downButton = iconButton(ICON_DOWN, Messages.get("stage.moveDown"));
+        private final Button removeButton = iconButton(ICON_REMOVE, Messages.get("common.remove"));
         private final HBox tools = new HBox(1);
 
         PluginRow(T plugin) {
@@ -526,7 +543,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
                 grip.setVisible(reorderable);
                 enabledCheckBox = new CheckBox();
                 enabledCheckBox.selectedProperty().bindBidirectional(plugin.getEnabled());
-                enabledCheckBox.setAccessibleText("Enable " + plugin.getName());
+                enabledCheckBox.setAccessibleText(Messages.get("stage.enable", plugin.getName()));
                 getChildren().addAll(grip, enabledCheckBox);
                 plugin.getEnabled().addListener((observable, oldValue, newValue) -> {
                     updateEnabled();

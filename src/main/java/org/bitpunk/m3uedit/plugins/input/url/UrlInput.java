@@ -1,10 +1,10 @@
 package org.bitpunk.m3uedit.plugins.input.url;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Setter;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.EntryList;
 import org.bitpunk.m3uedit.parser.Parser;
@@ -30,10 +30,19 @@ public class UrlInput extends AbstractInput implements Input {
     private List<URL> selectedInputUrls;
     private List<URL> urlList = null;
 
-    @JsonIgnore
-    private final String name = "Url Input";
-    @JsonIgnore
-    private final String description = "Reads a playlist from a given Url.";
+
+    /**
+     * @return the name shown to the user; a constant, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("input.url.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("input.url.description");
+    }
 
     @Override
     public List<Entry> read() {

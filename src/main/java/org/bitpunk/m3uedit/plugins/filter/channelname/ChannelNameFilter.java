@@ -1,11 +1,11 @@
 package org.bitpunk.m3uedit.plugins.filter.channelname;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -22,10 +22,18 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/channelname/channel_name_filter.yaml";
     public static final String CONFIG_FILE_NAME = "channel_name_filter.yaml";
 
-    @JsonIgnore
-    private final String name = "ChannelName Filter";
-    @JsonIgnore
-    private final String description = "Filters entries based on the channelName using a List of regular expressions";
+    /**
+     * @return the name shown to the user, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("filter.channelName.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("filter.channelName.description");
+    }
 
     private transient YamlConfigManager<ChannelNameFilterConfig> configManager;
 
@@ -91,7 +99,7 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
         return getExcludeRegexes().stream()
                 .filter(regex -> Pattern.matches(regex, removed.getName()))
                 .findFirst()
-                .map("matches %s"::formatted)
+                .map(regex -> Messages.get("filter.channelName.reason", regex))
                 .orElse(null);
     }
 

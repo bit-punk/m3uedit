@@ -4,15 +4,15 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Search by:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <Label text="%iptvorg.dialog.searchBy" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
             <ComboBox fx:id="groupingComboBox" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-            <Label text="Filter:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-            <TextField fx:id="filterTextField" promptText="name or code" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-            <Label text="Available:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <Label text="%iptvorg.dialog.filter" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <TextField fx:id="filterTextField" promptText="%iptvorg.dialog.filter.prompt" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            <Label text="%iptvorg.dialog.available" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
             <ListView fx:id="availablePlaylistListView" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS"/>
-            <Button fx:id="addPlaylistButton" text="Add" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+            <Button fx:id="addPlaylistButton" text="%common.add" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
             <Label fx:id="statusLabel" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-            <Label text="To import:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            <Label text="%iptvorg.dialog.selected" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
             <ListView fx:id="selectedPlaylistListView" GridPane.columnIndex="1" GridPane.rowIndex="4" GridPane.vgrow="ALWAYS"/>
             <columnConstraints>
                 <ColumnConstraints/>
@@ -22,6 +22,6 @@
         </GridPane>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

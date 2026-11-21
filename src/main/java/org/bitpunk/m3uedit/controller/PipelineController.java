@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.EntryDiff;
@@ -65,7 +66,7 @@ public class PipelineController extends VBox implements ModelAware {
     @Getter
     private PluginStageView<Output> outputStage;
     @Getter
-    private final Button writeButton = new Button("Write playlist");
+    private final Button writeButton = new Button(Messages.get("pipeline.write"));
     /**
      * Tells why the playlist cannot be written (a disabled button shows no tooltip).
      */
@@ -103,23 +104,27 @@ public class PipelineController extends VBox implements ModelAware {
         }
         this.dataModel = dataModel;
 
-        inputStage = new PluginStageView<>("Inputs", "are merged", dataModel.getInputs(), selectedStep, false,
+        inputStage = new PluginStageView<>(Messages.get("pipeline.stage.inputs"),
+                Messages.get("pipeline.stage.inputs.hint"), dataModel.getInputs(), selectedStep, false,
                 Input::getSource);
         inputStage.setAddAction(InputPluginService.getInstance().getAllPluginNames(), this::addInput);
         // the inputs are reloaded by the data model with each change of its list
         inputStage.setOnConfigured(input -> dataModel.reloadInputs());
 
         // the order of filters is fixed (see Filter#order), sorters sort completely, so only one is enabled
-        filterStage = new PluginStageView<>("Filters", "applied top to bottom", dataModel.getFilters(), selectedStep,
-                true, false, Plugin::getDescription);
+        filterStage = new PluginStageView<>(Messages.get("pipeline.stage.filters"),
+                Messages.get("pipeline.stage.filters.hint"), dataModel.getFilters(), selectedStep, true, false,
+                Plugin::getDescription);
         filterStage.setOnConfigured(filter -> dataModel.filterRawEntries());
 
-        sorterStage = new PluginStageView<>("Sorters", "one at a time", dataModel.getSorters(), selectedStep,
-                true, false, Plugin::getDescription);
+        sorterStage = new PluginStageView<>(Messages.get("pipeline.stage.sorters"),
+                Messages.get("pipeline.stage.sorters.hint"), dataModel.getSorters(), selectedStep, true, false,
+                Plugin::getDescription);
         sorterStage.setOnConfigured(sorter -> dataModel.sortFilteredEntries());
 
-        enricherStage = new PluginStageView<>("Enrichers", "complete the entries, add files", dataModel.getEnrichers(),
-                selectedStep, true, Plugin::getDescription);
+        enricherStage = new PluginStageView<>(Messages.get("pipeline.stage.enrichers"),
+                Messages.get("pipeline.stage.enrichers.hint"), dataModel.getEnrichers(), selectedStep, true,
+                Plugin::getDescription);
         enricherStage.setOnConfigured(enricher -> dataModel.enrichSortedEntries());
 
         filterStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getFilters(), enabled,
@@ -127,8 +132,9 @@ public class PipelineController extends VBox implements ModelAware {
         enricherStage.setEnableAllAction(enabled -> setAllEnabled(dataModel.getEnrichers(), enabled,
                 dataModel::enrichSortedEntries));
 
-        outputStage = new PluginStageView<>("Outputs", "receive the same playlist", dataModel.getOutputs(),
-                selectedStep, false, output -> describe(output.getOutput()));
+        outputStage = new PluginStageView<>(Messages.get("pipeline.stage.outputs"),
+                Messages.get("pipeline.stage.outputs.hint"), dataModel.getOutputs(), selectedStep, false,
+                output -> describe(output.getOutput()));
         outputStage.setAddAction(OutputPluginService.getInstance().getAllPluginNames(), this::addOutput);
 
         writeButton.setGraphic(icon(ICON_WRITE));
@@ -139,8 +145,8 @@ public class PipelineController extends VBox implements ModelAware {
         BooleanBinding noOutput = Bindings.isEmpty(dataModel.getOutputs());
         BooleanBinding noEntries = Bindings.isEmpty(dataModel.getSortedEntryList());
         writeButton.disableProperty().bind(dataModel.savingProperty().or(noOutput).or(noEntries));
-        writeHint.textProperty().bind(Bindings.when(noOutput).then("Add an output to write the playlist")
-                .otherwise(Bindings.when(noEntries).then("The playlist is empty, there is nothing to write")
+        writeHint.textProperty().bind(Bindings.when(noOutput).then(Messages.get("pipeline.write.hint.noOutput"))
+                .otherwise(Bindings.when(noEntries).then(Messages.get("pipeline.write.hint.noEntries"))
                         .otherwise("")));
         writeHint.getStyleClass().add("write-hint");
         writeHint.setWrapText(true);
@@ -249,13 +255,14 @@ public class PipelineController extends VBox implements ModelAware {
         });
         inputStage.setBadgeProvider(input -> inputBadge(input, entriesPerInput.getOrDefault(input, 0)));
         filterStage.setBadgeProvider(stepBadge(result, step -> step.removedCount() > 0
-                ? new Badge("−" + step.removedCount(), "badge-removed", "%d entries removed".formatted(step.removedCount()))
-                : new Badge("±0", "badge-zero", "nothing removed")));
+                ? new Badge("−" + step.removedCount(), "badge-removed", Messages.get("pipeline.filter.badge.removed", step.removedCount()))
+                : new Badge("±0", "badge-zero", Messages.get("pipeline.filter.badge.nothing"))));
         sorterStage.setBadgeProvider(stepBadge(result, step -> new Badge("⇅ " + step.movedCount(),
-                step.movedCount() > 0 ? "badge-moved" : "badge-zero", "%d entries moved".formatted(step.movedCount()))));
+                step.movedCount() > 0 ? "badge-moved" : "badge-zero", Messages.get("pipeline.sorter.badge.moved", step.movedCount()))));
         enricherStage.setBadgeProvider(stepBadge(result, step -> {
-            String tooltip = step.modifiedCount() > 0 ? "%d entries changed".formatted(step.modifiedCount())
-                    : "nothing changed";
+            String tooltip = step.modifiedCount() > 0
+                    ? Messages.get("pipeline.enricher.badge.changed", step.modifiedCount())
+                    : Messages.get("pipeline.enricher.badge.nothing");
             tooltip = step.summary() == null ? tooltip : tooltip + "\n" + step.summary();
             return step.modifiedCount() > 0 ? new Badge("✎ " + step.modifiedCount(), "badge-modified", tooltip)
                     : new Badge("±0", "badge-zero", tooltip);
@@ -264,19 +271,20 @@ public class PipelineController extends VBox implements ModelAware {
         updateInactive();
         long failedInputs = dataModel.getInputs().stream().filter(input -> dataModel.getInputError(input) != null)
                 .count();
-        inputStage.setStatusProvider(() -> "%s, %s%s".formatted(count(dataModel.getInputs().size(), "input"),
-                count(loaded, "entry", "entries"), failedInputs > 0 ? ", ⚠ %d with errors".formatted(failedInputs) : ""));
-        filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
-                dataModel.getFilters().size(), count(loaded - result.filtered().size(), "entry", "entries")));
+        inputStage.setStatusProvider(() -> Messages.get(failedInputs > 0 ? "pipeline.inputs.statusWithErrors"
+                : "pipeline.inputs.status", dataModel.getInputs().size(), loaded, failedInputs));
+        filterStage.setStatusProvider(() -> Messages.get("pipeline.filters.status", enabledCount(dataModel.getFilters()),
+                dataModel.getFilters().size(), loaded - result.filtered().size()));
         int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
         sorterStage.setStatusProvider(() -> dataModel.getSorters().stream().filter(sorter -> sorter.getEnabled().get())
-                .findFirst().map(sorter -> "%s, ⇅ %s".formatted(sorter.getName(), count(reordered, "entry", "entries")))
-                .orElse("not sorted"));
+                .findFirst().map(sorter -> Messages.get("pipeline.sorters.status", sorter.getName(), reordered))
+                .orElse(Messages.get("pipeline.sorters.status.none")));
         int changed = result.origins().size();
-        enricherStage.setStatusProvider(() -> "%d of %d enabled, ✎ %s".formatted(enabledCount(dataModel.getEnrichers()),
-                dataModel.getEnrichers().size(), count(changed, "entry", "entries")));
-        outputStage.setStatusProvider(() -> dataModel.getOutputs().isEmpty() ? "no output"
-                : count(dataModel.getOutputs().size(), "output"));
+        enricherStage.setStatusProvider(() -> Messages.get("pipeline.enrichers.status",
+                enabledCount(dataModel.getEnrichers()), dataModel.getEnrichers().size(), changed));
+        outputStage.setStatusProvider(() -> dataModel.getOutputs().isEmpty()
+                ? Messages.get("pipeline.outputs.status.none")
+                : Messages.get("pipeline.outputs.status", dataModel.getOutputs().size()));
         inputStage.refresh();
         filterStage.refresh();
         sorterStage.refresh();
@@ -302,8 +310,8 @@ public class PipelineController extends VBox implements ModelAware {
         }
         // the outputs write the playlist, also one created by hand without inputs
         boolean emptyPlaylist = dataModel.getSortedEntryList().isEmpty();
-        outputStage.setInactive(emptyPlaylist, noEntriesRead ? "Inactive: the playlist is empty, read entries from "
-                + "the inputs or add entries to the playlist" : "Inactive: the playlist is empty");
+        outputStage.setInactive(emptyPlaylist, Messages.get(noEntriesRead
+                ? "pipeline.outputs.inactive.noEntriesRead" : "pipeline.outputs.inactive"));
         connectors.getLast().pseudoClassStateChanged(PluginStageView.INACTIVE, emptyPlaylist);
     }
 
@@ -314,24 +322,16 @@ public class PipelineController extends VBox implements ModelAware {
     private Badge inputBadge(Input input, int entriesRead) {
         String error = dataModel.getInputError(input);
         if (error == null) {
-            return new Badge("+" + entriesRead, "badge-count", "%d entries read".formatted(entriesRead));
+            return new Badge("+" + entriesRead, "badge-count", Messages.get("pipeline.input.badge.read", entriesRead));
         }
         String tooltip = entriesRead > 0
-                ? "Partly read, %d entries read. Error: %s".formatted(entriesRead, error)
-                : "Could not be read: " + error;
+                ? Messages.get("pipeline.input.badge.partly", entriesRead, error)
+                : Messages.get("pipeline.input.badge.failed", error);
         return new Badge("⚠ +" + entriesRead, "badge-error", tooltip);
     }
 
     private static long enabledCount(List<? extends Plugin> plugins) {
         return plugins.stream().filter(plugin -> plugin.getEnabled().get()).count();
-    }
-
-    private static String count(int count, String singular) {
-        return count(count, singular, singular + "s");
-    }
-
-    private static String count(int count, String singular, String plural) {
-        return "%d %s".formatted(count, count == 1 ? singular : plural);
     }
 
     private static <T extends Plugin> Function<T, Badge> stepBadge(PipelineResult result, Function<StepResult, Badge> badge) {
@@ -340,10 +340,10 @@ public class PipelineController extends VBox implements ModelAware {
 
     private void updateFlowLabels() {
         PipelineResult result = dataModel.getPipelineResult();
-        loadedLabel.setText("%d entries loaded".formatted(result.raw().size()));
-        filteredLabel.setText("%d left after filtering".formatted(result.filtered().size()));
-        sortedLabel.setText("%d entries sorted".formatted(result.sorted().size()));
-        playlistLabel.setText("%d entries in the playlist".formatted(dataModel.getSortedEntryList().size()));
+        loadedLabel.setText(Messages.get("pipeline.flow.loaded", result.raw().size()));
+        filteredLabel.setText(Messages.get("pipeline.flow.filtered", result.filtered().size()));
+        sortedLabel.setText(Messages.get("pipeline.flow.sorted", result.sorted().size()));
+        playlistLabel.setText(Messages.get("pipeline.flow.playlist", dataModel.getSortedEntryList().size()));
     }
 
     private void addInput(String inputName) {
@@ -372,7 +372,7 @@ public class PipelineController extends VBox implements ModelAware {
 
     private static String describe(URI uri) {
         if (uri == null) {
-            return "not configured";
+            return Messages.get("pipeline.output.notConfigured");
         }
         return "file".equals(uri.getScheme()) ? uri.getPath() : uri.toString();
     }

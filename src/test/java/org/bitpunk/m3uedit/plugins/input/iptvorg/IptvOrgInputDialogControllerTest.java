@@ -49,7 +49,7 @@ class IptvOrgInputDialogControllerTest {
     void testDialogInitializationLoadsCountries() throws Exception {
         IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(STUB_CLIENT, null));
 
-        assertThat(controller.getTitle()).isEqualTo(IptvOrgInputDialogController.IPTV_ORG_DIALOG_TITLE);
+        assertThat(controller.getTitle()).isEqualTo("Select iptv-org playlist(s) or channel(s) to read entries from");
         ComboBox<PlaylistGrouping> groupingComboBox = getField(controller, "groupingComboBox");
         assertThat(groupingComboBox.getValue()).isEqualTo(PlaylistGrouping.COUNTRY);
         ListView<IptvOrgPlaylist> available = getField(controller, "availablePlaylistListView");

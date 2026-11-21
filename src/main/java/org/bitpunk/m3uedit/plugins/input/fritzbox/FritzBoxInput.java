@@ -1,10 +1,10 @@
 package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
@@ -30,10 +30,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Setter
 @Slf4j
 public class FritzBoxInput extends AbstractInput implements Input {
-    @JsonIgnore
-    private final String name = "FritzBox Input";
-    @JsonIgnore
-    private final String description = "Downloads a playlist from a FritzBox.";
     private List<StreamSource> selectedStreamSources;
     private FritzBoxConnection fritzBoxConnection = null;
     /**
@@ -46,6 +42,19 @@ public class FritzBoxInput extends AbstractInput implements Input {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(TIMEOUT)
             .build();
+
+    /**
+     * @return the name shown to the user; a constant, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("input.fritzbox.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("input.fritzbox.description");
+    }
 
     @Override
     public List<Entry> read() {
@@ -134,12 +143,12 @@ public class FritzBoxInput extends AbstractInput implements Input {
             log.debug("Status-code: [{}]", response.statusCode());
             if (response.statusCode() != 200) {
                 response.body().close();
-                throw new IOException("Unexpected status-code %d reading %s".formatted(response.statusCode(), uri));
+                throw new IOException(Messages.get("input.statusCode", response.statusCode(), uri));
             }
             return response.body();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while reading " + uri, e);
+            throw new IOException(Messages.get("input.interrupted", uri), e);
         }
     }
 

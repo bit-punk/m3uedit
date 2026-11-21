@@ -41,8 +41,8 @@ class SftpPasswordDialogTest {
         List<String> texts = onFxThread(() -> {
             SftpPasswordDialog dialog = new SftpPasswordDialog("root", "192.168.178.22", 22);
             return List.of(((Label) dialog.getDialogPane().lookup(".sftp-password-server")).getText(),
-                    ((Button) dialog.getDialogPane().lookupButton(SftpPasswordDialog.CONNECT)).getText(),
-                    ((Button) dialog.getDialogPane().lookupButton(SftpPasswordDialog.CANCEL)).getText());
+                    ((Button) dialog.getDialogPane().lookupButton(dialog.getConnectButtonType())).getText(),
+                    ((Button) dialog.getDialogPane().lookupButton(dialog.getCancelButtonType())).getText());
         });
 
         assertThat(texts).containsExactly("root@192.168.178.22:22", "Connect", "Cancel");
@@ -52,9 +52,9 @@ class SftpPasswordDialogTest {
     void testConnectNeedsAPassword() throws Exception {
         List<Boolean> disabled = onFxThread(() -> {
             SftpPasswordDialog dialog = new SftpPasswordDialog("root", "nas", 22);
-            boolean empty = dialog.getDialogPane().lookupButton(SftpPasswordDialog.CONNECT).isDisabled();
+            boolean empty = dialog.getDialogPane().lookupButton(dialog.getConnectButtonType()).isDisabled();
             dialog.getPasswordField().setText("secret");
-            return List.of(empty, dialog.getDialogPane().lookupButton(SftpPasswordDialog.CONNECT).isDisabled());
+            return List.of(empty, dialog.getDialogPane().lookupButton(dialog.getConnectButtonType()).isDisabled());
         });
 
         assertThat(disabled).containsExactly(true, false);
@@ -65,8 +65,8 @@ class SftpPasswordDialogTest {
         List<String> results = onFxThread(() -> {
             SftpPasswordDialog dialog = new SftpPasswordDialog("root", "nas", 22);
             dialog.getPasswordField().setText("secret");
-            return java.util.Arrays.asList(dialog.getResultConverter().call(SftpPasswordDialog.CONNECT),
-                    dialog.getResultConverter().call(SftpPasswordDialog.CANCEL));
+            return java.util.Arrays.asList(dialog.getResultConverter().call(dialog.getConnectButtonType()),
+                    dialog.getResultConverter().call(dialog.getCancelButtonType()));
         });
 
         assertThat(results).containsExactly("secret", null);

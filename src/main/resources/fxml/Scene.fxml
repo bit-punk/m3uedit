@@ -12,101 +12,101 @@
         <top>
             <VBox>
                 <MenuBar>
-                    <Menu text="File">
-                        <MenuItem fx:id="newProjectMenuItem" onAction="#handleNewProjectAction" text="New Project">
+                    <Menu text="%menu.file">
+                        <MenuItem fx:id="newProjectMenuItem" onAction="#handleNewProjectAction" text="%menu.file.newProject">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="N" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="openProjectMenuItem" onAction="#handleOpenProjectAction" text="Open Project">
+                        <MenuItem fx:id="openProjectMenuItem" onAction="#handleOpenProjectAction" text="%menu.file.openProject">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
-                        <Menu fx:id="recentProjectsMenu" text="Open Recent Projects"/>
-                        <MenuItem fx:id="saveProjectMenuItem" disable="true" onAction="#handleSaveProjectAction" text="Save Project">
+                        <Menu fx:id="recentProjectsMenu" text="%menu.file.openRecent"/>
+                        <MenuItem fx:id="saveProjectMenuItem" disable="true" onAction="#handleSaveProjectAction" text="%menu.file.saveProject">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="saveProjectAsMenuItem" disable="true" onAction="#handleSaveProjectAsAction" text="Save Project As...">
+                        <MenuItem fx:id="saveProjectAsMenuItem" disable="true" onAction="#handleSaveProjectAsAction" text="%menu.file.saveProjectAs">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="closeProjectMenuItem" disable="true" onAction="#handleCloseProjectAction" text="Close Project">
+                        <MenuItem fx:id="closeProjectMenuItem" disable="true" onAction="#handleCloseProjectAction" text="%menu.file.closeProject">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="W" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
                         <SeparatorMenuItem/>
-                        <MenuItem onAction="#handleConfigurationAction" text="Configuration…">
+                        <MenuItem onAction="#handleConfigurationAction" text="%menu.file.configuration">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="COMMA" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
                         <SeparatorMenuItem/>
-                        <MenuItem onAction="#handleExitAction" text="Exit"/>
+                        <MenuItem onAction="#handleExitAction" text="%menu.file.exit"/>
                     </Menu>
-                    <Menu fx:id="editMenu" text="Edit">
-                        <MenuItem fx:id="undoMenuItem" onAction="#handleUndoAction" text="Undo">
+                    <Menu fx:id="editMenu" text="%menu.edit">
+                        <MenuItem fx:id="undoMenuItem" onAction="#handleUndoAction" text="%menu.edit.undo">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="Z" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="redoMenuItem" onAction="#handleRedoAction" text="Redo">
+                        <MenuItem fx:id="redoMenuItem" onAction="#handleRedoAction" text="%menu.edit.redo">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="Y" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
                         <SeparatorMenuItem/>
-                        <MenuItem fx:id="cutMenuItem" onAction="#handleCutAction" text="Cut">
+                        <MenuItem fx:id="cutMenuItem" onAction="#handleCutAction" text="%menu.edit.cut">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="X" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="copyMenuItem" onAction="#handleCopyAction" text="Copy">
+                        <MenuItem fx:id="copyMenuItem" onAction="#handleCopyAction" text="%menu.edit.copy">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="C" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="pasteMenuItem" onAction="#handlePasteAction" text="Paste">
+                        <MenuItem fx:id="pasteMenuItem" onAction="#handlePasteAction" text="%menu.edit.paste">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="V" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="deleteMenuItem" onAction="#handleDeleteAction" text="Delete">
+                        <MenuItem fx:id="deleteMenuItem" onAction="#handleDeleteAction" text="%menu.edit.delete">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="DELETE" control="UP" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
                         <SeparatorMenuItem/>
-                        <MenuItem fx:id="selectAllMenuItem" onAction="#handleSelectAllAction" text="Select All">
+                        <MenuItem fx:id="selectAllMenuItem" onAction="#handleSelectAllAction" text="%menu.edit.selectAll">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="A" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="editEntryMenuItem" onAction="#handleEditEntryAction" text="Edit Entry…">
+                        <MenuItem fx:id="editEntryMenuItem" onAction="#handleEditEntryAction" text="%menu.edit.editEntry">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="ENTER" control="UP" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
                         <SeparatorMenuItem/>
                         <MenuItem fx:id="resetManualChangesMenuItem" onAction="#handleResetManualChangesAction"
-                                  text="Reset Manual Changes"/>
+                                  text="%menu.edit.resetManualChanges"/>
                     </Menu>
-                    <Menu fx:id="projectMenu" text="Project">
-                        <MenuItem fx:id="reloadInputsMenuItem" onAction="#handleReloadInputsAction" text="Reload Inputs">
+                    <Menu fx:id="projectMenu" text="%menu.project">
+                        <MenuItem fx:id="reloadInputsMenuItem" onAction="#handleReloadInputsAction" text="%menu.project.reloadInputs">
                             <accelerator>
                                 <KeyCodeCombination alt="UP" code="F5" control="UP" meta="UP" shift="UP" shortcut="UP" />
                             </accelerator>
                         </MenuItem>
-                        <MenuItem fx:id="writePlaylistMenuItem" onAction="#handleWritePlaylistAction" text="Write Playlist"/>
+                        <MenuItem fx:id="writePlaylistMenuItem" onAction="#handleWritePlaylistAction" text="%menu.project.writePlaylist"/>
                         <SeparatorMenuItem/>
-                        <MenuItem fx:id="programmeGuideMenuItem" onAction="#handleProgrammeGuideAction" text="Programme Guide"/>
+                        <MenuItem fx:id="programmeGuideMenuItem" onAction="#handleProgrammeGuideAction" text="%menu.project.programmeGuide"/>
                     </Menu>
-                    <Menu text="Help">
-                        <MenuItem onAction="#handleAboutAction" text="About"/>
+                    <Menu text="%menu.help">
+                        <MenuItem onAction="#handleAboutAction" text="%menu.help.about"/>
                     </Menu>
                 </MenuBar>
                 <!-- direct access to the most important functions, the same actions as the menus -->
@@ -134,21 +134,21 @@
                 <VBox fx:id="startScreen" styleClass="start-screen">
                     <Label text="m3uedit" styleClass="start-screen-title"/>
                     <HBox alignment="CENTER" spacing="25">
-                        <Button fx:id="newProjectButton" onAction="#handleNewProjectAction" contentDisplay="TOP" text="Neues Projekt" styleClass="start-screen-button">
+                        <Button fx:id="newProjectButton" onAction="#handleNewProjectAction" contentDisplay="TOP" text="%startScreen.newProject" styleClass="start-screen-button">
                             <graphic>
                                 <StackPane prefWidth="64" prefHeight="64">
                                     <SVGPath fx:id="newProjectIcon" scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
                                 </StackPane>
                             </graphic>
                         </Button>
-                        <Button fx:id="openProjectButton" onAction="#handleOpenProjectAction" contentDisplay="TOP" text="Projekt laden" styleClass="start-screen-button">
+                        <Button fx:id="openProjectButton" onAction="#handleOpenProjectAction" contentDisplay="TOP" text="%startScreen.openProject" styleClass="start-screen-button">
                             <graphic>
                                 <StackPane prefWidth="64" prefHeight="64">
                                     <SVGPath fx:id="openProjectIcon" scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
                                 </StackPane>
                             </graphic>
                         </Button>
-                        <Button fx:id="aboutButton" onAction="#handleAboutAction" contentDisplay="TOP" text="About" styleClass="start-screen-button">
+                        <Button fx:id="aboutButton" onAction="#handleAboutAction" contentDisplay="TOP" text="%startScreen.about" styleClass="start-screen-button">
                             <graphic>
                                 <StackPane prefWidth="64" prefHeight="64">
                                     <SVGPath fx:id="aboutIcon" scaleX="2.2" scaleY="2.2" styleClass="start-screen-icon"/>
@@ -157,15 +157,15 @@
                         </Button>
                     </HBox>
                     <VBox fx:id="recentProjectsBox" styleClass="recent-projects">
-                        <Label text="Zuletzt verwendete Projekte" styleClass="recent-projects-title"/>
+                        <Label text="%startScreen.recentProjects" styleClass="recent-projects-title"/>
                         <TableView fx:id="recentProjectsTable" styleClass="recent-projects-table">
                             <columnResizePolicy>
                                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
                             </columnResizePolicy>
                             <columns>
-                                <TableColumn fx:id="recentProjectNameColumn" text="Name" prefWidth="180"/>
-                                <TableColumn fx:id="recentProjectFolderColumn" text="Verzeichnis" prefWidth="400"/>
-                                <TableColumn fx:id="recentProjectLastOpenedColumn" text="Zuletzt geöffnet" prefWidth="130"/>
+                                <TableColumn fx:id="recentProjectNameColumn" text="%startScreen.column.name" prefWidth="180"/>
+                                <TableColumn fx:id="recentProjectFolderColumn" text="%startScreen.column.folder" prefWidth="400"/>
+                                <TableColumn fx:id="recentProjectLastOpenedColumn" text="%startScreen.column.lastOpened" prefWidth="130"/>
                             </columns>
                         </TableView>
                     </VBox>
