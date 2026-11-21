@@ -6,8 +6,10 @@ import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 
@@ -47,20 +49,24 @@ public class FritzBoxInput extends AbstractInput implements Input {
     @Override
     public List<Entry> read() {
         List<Entry> entriesRead = new ArrayList<>();
-        boolean allRead = selectedStreamSources != null && !selectedStreamSources.isEmpty();
+        List<String> failures = new ArrayList<>();
         if (selectedStreamSources != null) {
             for (StreamSource selectedStreamSource : selectedStreamSources) {
                 URI uri = resolveStreamSourceUri(selectedStreamSource);
                 try (InputStream playlist = fetch(uri)) {
                     entriesRead.addAll(readData(playlist));
-                } catch (IOException e) {
-                    allRead = false;
+                } catch (IOException | ParsingException e) {
                     log.error("Error reading playlist {} from FritzBox: {}", uri, e.getMessage(), e);
+                    failures.add("%s: %s".formatted(selectedStreamSource.getName(), e.getMessage()));
                 }
             }
         }
+        if (!failures.isEmpty()) {
+            // the streams read are kept, e.g. the SD streams if only the HD streams cannot be read
+            throw new InputReadException(String.join("; ", failures), entriesRead);
+        }
         // offered by the dialog as recently used connection, only if it works
-        if (allRead && fritzBoxConnection != null) {
+        if (selectedStreamSources != null && !selectedStreamSources.isEmpty() && fritzBoxConnection != null) {
             FritzBoxConnection used = new FritzBoxConnection();
             used.setBaseUrl(fritzBoxConnection.getBaseUrl());
             used.setSelectedStreamSources(new ArrayList<>(selectedStreamSources));

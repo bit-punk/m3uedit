@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.sftp;
 
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SftpInputTest {
 
@@ -53,7 +55,7 @@ class SftpInputTest {
     }
 
     @Test
-    void testReadSkippedWhenPasswordPromptCancelled() {
+    void testNotReadWhenPasswordPromptCancelled() {
         AtomicInteger prompts = new AtomicInteger();
         SftpInput sftpInput = new SftpInput() {
             @Override
@@ -71,7 +73,9 @@ class SftpInputTest {
         connection.setPassword(null);
         sftpInput.setSftpConnection(connection);
 
-        assertThat(sftpInput.read()).isEmpty();
+        // reported as error of the input, without a dialog of its own
+        assertThatThrownBy(sftpInput::read).isInstanceOf(InputReadException.class)
+                .hasMessageContaining("no password entered for root@192.168.178.22");
         assertThat(prompts.get()).isOne();
     }
 }

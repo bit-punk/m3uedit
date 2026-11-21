@@ -7,6 +7,7 @@ import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
 import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
 import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.output.Export;
 import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
@@ -61,7 +62,7 @@ class DataModelTest {
     private static class TestInput implements Input {
         private final String name;
         private final List<Entry> entries;
-        private final RuntimeException failure;
+        private RuntimeException failure;
         private final BooleanProperty enabled = new SimpleBooleanProperty(true);
         final AtomicInteger readCount = new AtomicInteger();
 
@@ -136,6 +137,48 @@ class DataModelTest {
         channelNameSorter = new ChannelNameSorter();
         dataModel.getFilters().add(uniqueNameFilter);
         dataModel.getSorters().add(channelNameSorter);
+    }
+
+    private static Entry named(String name) {
+        Entry entry = new Entry();
+        entry.setName(name);
+        entry.setChannelUri("http://example.com/" + name);
+        return entry;
+    }
+
+    @Test
+    void testTheEntriesOfAPartlyReadInputAreKeptAndItsErrorIsReported() {
+        TestInput fritzBox = new TestInput("FritzBox", List.of(), new InputReadException("tvhd.m3u: status-code 404",
+                List.of(named("ZDF"), named("ARD"))));
+        TestInput file = new TestInput("File", List.of(named("arte")));
+
+        dataModel.getInputs().addAll(fritzBox, file);
+        runAll();
+
+        assertThat(dataModel.getPipelineResult().raw()).extracting(Entry::getName).containsExactly("ZDF", "ARD", "arte");
+        assertThat(dataModel.getInputError(fritzBox)).isEqualTo("tvhd.m3u: status-code 404");
+        assertThat(dataModel.getInputError(file)).isNull();
+        assertThat(dataModel.getInputErrors()).singleElement().asString()
+                .isEqualTo("FritzBox (FritzBox-source): tvhd.m3u: status-code 404");
+        assertThat(errors).singleElement().asString().contains("Some inputs could not be read", "tvhd.m3u");
+    }
+
+    @Test
+    void theErrorOfAnInputDisappearsOnceItIsReadSuccessfully() {
+        TestInput fritzBox = new TestInput("FritzBox", List.of(named("ZDF")),
+                new InputReadException("switched off", List.of()));
+        dataModel.getInputs().add(fritzBox);
+        runAll();
+        assertThat(dataModel.getInputError(fritzBox)).isEqualTo("switched off");
+        assertThat(dataModel.getPipelineResult().raw()).isEmpty();
+
+        fritzBox.failure = null;
+        dataModel.reloadInputs();
+        runAll();
+
+        assertThat(dataModel.getInputError(fritzBox)).isNull();
+        assertThat(dataModel.getInputErrors()).isEmpty();
+        assertThat(dataModel.getPipelineResult().raw()).extracting(Entry::getName).containsExactly("ZDF");
     }
 
     private void runAll() {

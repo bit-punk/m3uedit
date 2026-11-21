@@ -173,6 +173,8 @@ public class PipelineController extends VBox implements ModelAware {
 
         initRecomputeListeners();
         dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> refresh());
+        // e.g. an input read successfully again: the entries, and so the result, may be the same as before
+        dataModel.inputErrorsByInputProperty().addListener((observable, oldErrors, newErrors) -> refresh());
         dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> {
             updateFlowLabels();
             // e.g. an entry added by the user
@@ -245,8 +247,7 @@ public class PipelineController extends VBox implements ModelAware {
                 entriesPerInput.merge(input, 1, Integer::sum);
             }
         });
-        inputStage.setBadgeProvider(input -> new Badge("+" + entriesPerInput.getOrDefault(input, 0), "badge-count",
-                "%d entries read".formatted(entriesPerInput.getOrDefault(input, 0))));
+        inputStage.setBadgeProvider(input -> inputBadge(input, entriesPerInput.getOrDefault(input, 0)));
         filterStage.setBadgeProvider(stepBadge(result, step -> step.removedCount() > 0
                 ? new Badge("−" + step.removedCount(), "badge-removed", "%d entries removed".formatted(step.removedCount()))
                 : new Badge("±0", "badge-zero", "nothing removed")));
@@ -261,8 +262,10 @@ public class PipelineController extends VBox implements ModelAware {
         }));
         int loaded = result.raw().size();
         updateInactive();
-        inputStage.setStatusProvider(() -> "%s, %s".formatted(count(dataModel.getInputs().size(), "input"),
-                count(loaded, "entry", "entries")));
+        long failedInputs = dataModel.getInputs().stream().filter(input -> dataModel.getInputError(input) != null)
+                .count();
+        inputStage.setStatusProvider(() -> "%s, %s%s".formatted(count(dataModel.getInputs().size(), "input"),
+                count(loaded, "entry", "entries"), failedInputs > 0 ? ", ⚠ %d with errors".formatted(failedInputs) : ""));
         filterStage.setStatusProvider(() -> "%d of %d enabled, −%s".formatted(enabledCount(dataModel.getFilters()),
                 dataModel.getFilters().size(), count(loaded - result.filtered().size(), "entry", "entries")));
         int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
@@ -302,6 +305,21 @@ public class PipelineController extends VBox implements ModelAware {
         outputStage.setInactive(emptyPlaylist, noEntriesRead ? "Inactive: the playlist is empty, read entries from "
                 + "the inputs or add entries to the playlist" : "Inactive: the playlist is empty");
         connectors.getLast().pseudoClassStateChanged(PluginStageView.INACTIVE, emptyPlaylist);
+    }
+
+    /**
+     * @return the number of entries read from the input, marked as error if the input (or a part of it) could not
+     * be read, the error is shown by the tooltip
+     */
+    private Badge inputBadge(Input input, int entriesRead) {
+        String error = dataModel.getInputError(input);
+        if (error == null) {
+            return new Badge("+" + entriesRead, "badge-count", "%d entries read".formatted(entriesRead));
+        }
+        String tooltip = entriesRead > 0
+                ? "Partly read, %d entries read. Error: %s".formatted(entriesRead, error)
+                : "Could not be read: " + error;
+        return new Badge("⚠ +" + entriesRead, "badge-error", tooltip);
     }
 
     private static long enabledCount(List<? extends Plugin> plugins) {

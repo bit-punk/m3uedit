@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import com.sun.net.httpserver.HttpServer;
@@ -21,6 +22,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class FritzBoxInputTest {
 
@@ -169,8 +172,9 @@ class FritzBoxInputTest {
         try {
             String baseUrl = "http://127.0.0.1:%d/dvb/m3u/".formatted(server.getAddress().getPort());
             // tvsd.m3u is not served
-            createInput(dir, baseUrl, new StreamSource("tvsd.m3u", "SD streams"),
-                    new StreamSource("tvhd.m3u", "HD streams")).read();
+            FritzBoxInput input = createInput(dir, baseUrl, new StreamSource("tvsd.m3u", "SD streams"),
+                    new StreamSource("tvhd.m3u", "HD streams"));
+            assertThatThrownBy(input::read).isInstanceOf(InputReadException.class);
 
             assertThat(new RecentFritzBoxConnections(dir.resolve(RecentFritzBoxConnections.CONFIG_FILE_NAME))
                     .getConnections()).isEmpty();
@@ -180,7 +184,7 @@ class FritzBoxInputTest {
     }
 
     @Test
-    void testReadSkipsStreamSourcesWithErrorStatus() throws IOException {
+    void testAStreamSourceWithErrorStatusIsReportedTheOthersAreKept() throws IOException {
         List<String> requestedPaths = new CopyOnWriteArrayList<>();
         HttpServer server = startServer(Map.of("/dvb/m3u/tvhd.m3u", PLAYLIST), requestedPaths);
         try {
@@ -189,10 +193,12 @@ class FritzBoxInputTest {
                     new StreamSource("tvsd.m3u", "SD streams"),     // not served -> 404
                     new StreamSource("tvhd.m3u", "HD streams"));
 
-            List<Entry> entries = input.read();
+            InputReadException error = catchThrowableOfType(InputReadException.class, input::read);
 
             assertThat(requestedPaths).containsExactly("/dvb/m3u/tvsd.m3u", "/dvb/m3u/tvhd.m3u");
-            assertThat(entries).extracting(Entry::getName).containsExactly("Das Erste HD", "ZDF HD");
+            assertThat(error).hasMessageStartingWith("tvsd.m3u: ").hasMessageContaining("404");
+            // the HD streams are kept
+            assertThat(error.getEntriesRead()).extracting(Entry::getName).containsExactly("Das Erste HD", "ZDF HD");
         } finally {
             server.stop(0);
         }

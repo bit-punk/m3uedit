@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
+import org.bitpunk.m3uedit.plugins.input.InputReadException;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.assertj.core.api.Assertions.tuple;
 
 class IptvOrgInputTest {
@@ -65,7 +67,7 @@ class IptvOrgInputTest {
     }
 
     @Test
-    void testReadEntriesOfAllSelectedPlaylistsAndSkipsMissingOnes() throws IOException {
+    void testAMissingPlaylistIsReportedTheOthersAreKept() throws IOException {
         try (IptvOrgTestServer server = new IptvOrgTestServer()
                 .serve("/countries/de.m3u", """
                         #EXTM3U
@@ -81,9 +83,10 @@ class IptvOrgInputTest {
             input.setPlaylistBaseUrl(server.getBaseUrl());
             input.setSelectedPlaylists(List.of(GERMANY, UNKNOWN, NEWS));
 
-            List<Entry> entries = input.read();
+            InputReadException error = catchThrowableOfType(InputReadException.class, input::read);
 
-            assertThat(entries)
+            assertThat(error).hasMessageContaining(UNKNOWN.getPath()).hasMessageContaining("status-code 404");
+            assertThat(error.getEntriesRead())
                     .extracting(Entry::getName, Entry::getChannelUri, Entry::getGroupTitle)
                     .containsExactly(
                             tuple("3sat", "https://example.com/3sat.m3u8", "General"),
