@@ -62,6 +62,13 @@ public class RecentFritzBoxConnections {
     }
 
     /**
+     * Removes all connections from the list.
+     */
+    public void clear() {
+        configManager.saveConfig(new RecentFritzBoxConnectionsConfig(new ArrayList<>()));
+    }
+
+    /**
      * Removes a connection from the list.
      */
     public void remove(FritzBoxConnection connection) {

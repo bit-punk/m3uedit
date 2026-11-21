@@ -88,6 +88,15 @@ public class RecentProjects {
         }
     }
 
+    /**
+     * Changes how many project-files are remembered; the oldest ones are dropped if there are more.
+     */
+    public void setMaxEntries(int maxEntries) {
+        reload();
+        this.maxEntries = Math.max(0, maxEntries);
+        save(new ArrayList<>(projects));
+    }
+
     public void clear() {
         reload();
         save(List.of());

@@ -1,0 +1,44 @@
+/* Dialog with the general settings: the fields grouped in sections, like the dialog editing an entry. */
+.configuration-dialog {
+    -configuration-muted: derive(-fx-text-base-color, 45%);
+    -configuration-line: derive(-fx-color, -12%);
+}
+
+.configuration-form {
+    -fx-hgap: 10;
+    -fx-vgap: 6;
+}
+
+.configuration-form .section-title {
+    -fx-font-weight: bold;
+    -fx-padding: 12 0 3 0;
+    -fx-border-color: transparent transparent -configuration-line transparent;
+}
+
+/* the first section starts at the top */
+.configuration-form > .section-title:first-child {
+    -fx-padding: 0 0 3 0;
+}
+
+.configuration-form .field-label {
+    -fx-text-fill: derive(-fx-text-base-color, 20%);
+}
+
+.configuration-form .field-hint {
+    -fx-text-fill: -configuration-muted;
+    -fx-font-size: 0.92em;
+}
+
+.configuration-form .field-row {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.configuration-form .short-field {
+    -fx-pref-width: 90;
+    -fx-max-width: 90;
+}
+
+.configuration-form .collected-label {
+    -fx-min-width: 180;
+}

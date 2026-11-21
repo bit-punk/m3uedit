@@ -54,6 +54,13 @@ public class RecentSftpServers {
     }
 
     /**
+     * Removes all targets from the list.
+     */
+    public void clear() {
+        configManager.saveConfig(new RecentSftpServersConfig(new ArrayList<>()));
+    }
+
+    /**
      * Removes a target from the list.
      */
     public void remove(RecentSftpServer server) {

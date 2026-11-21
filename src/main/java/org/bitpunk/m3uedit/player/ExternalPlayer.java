@@ -36,6 +36,20 @@ public class ExternalPlayer {
         return AppConfigPaths.getAppConfigPath(CONFIG_FILE_NAME);
     }
 
+    /**
+     * @return the configuration as stored now
+     */
+    public ExternalPlayerConfig loadConfig() {
+        return configManager.loadConfig();
+    }
+
+    /**
+     * Stores the configuration; it is used by the next {@link #play(Entry)}.
+     */
+    public void saveConfig(ExternalPlayerConfig config) {
+        configManager.saveConfig(config);
+    }
+
     public void play(Entry entry) throws IOException {
         // reload on every call so changes to the config file take effect without restart
         List<String> command = buildCommand(configManager.loadConfig(), entry);

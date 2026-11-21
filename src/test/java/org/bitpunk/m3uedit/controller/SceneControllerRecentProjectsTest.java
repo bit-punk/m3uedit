@@ -84,6 +84,7 @@ class SceneControllerRecentProjectsTest {
         RecentProjects recentProjects = new RecentProjects(new YamlConfigManager<>(tempDir.resolve("recent.yaml"),
                 RecentProjectsConfig.class, RecentProjectsConfig::new), Clock.systemUTC());
         controller.setRecentProjects(recentProjects);
+        controller.settings = new org.bitpunk.m3uedit.config.Settings(tempDir.resolve("settings.yaml"));
         List<String> errors = new ArrayList<>();
         controller.errorReporter = errors::add;
         Menu menu = (Menu) ((MenuBar) scene.lookup(".menu-bar")).getMenus().getFirst().getItems().stream()
@@ -221,6 +222,90 @@ class SceneControllerRecentProjectsTest {
             open.getItems().getLast().fire();
 
             assertThat(opened).containsExactly(first, second, first);
+        });
+    }
+
+    @Test
+    void testTheOpenProjectsAreReopenedAtTheNextStart() throws Exception {
+        Path tv = projectFile("tv");
+        Path radio = projectFile("radio");
+        Path deleted = projectFile("deleted");
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            f.controller().settings.setStartup(org.bitpunk.m3uedit.config.StartupMode.REOPEN_PROJECTS);
+            f.controller().projectLoader = path -> {
+                DataModel dataModel = loaded(path.getFileName().toString());
+                dataModel.setProjectFile(path);
+                return dataModel;
+            };
+            f.controller().openProject(tv);
+            f.controller().openProject(deleted);
+            f.controller().openProject(radio);
+            // never saved: no file to reopen
+            f.controller().addNewProjectTab(loaded("new"));
+            f.controller().exitConfirmation = unsaved -> true;
+
+            assertThat(f.controller().canApplicationBeClosed()).isTrue();
+        });
+        Files.delete(deleted);
+
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            List<Path> opened = new ArrayList<>();
+            f.controller().projectLoader = path -> {
+                opened.add(path);
+                return loaded(path.getFileName().toString());
+            };
+
+            f.controller().reopenProjects();
+
+            assertThat(opened).containsExactly(tv.toAbsolutePath().normalize(), radio.toAbsolutePath().normalize());
+            assertThat(f.tabPane().getTabs()).hasSize(2);
+            assertThat(f.errors()).isEmpty();
+        });
+    }
+
+    @Test
+    void testWithTheStartScreenNoProjectIsReopened() throws Exception {
+        Path tv = projectFile("tv");
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            f.controller().projectLoader = path -> {
+                DataModel dataModel = loaded(path.getFileName().toString());
+                dataModel.setProjectFile(path);
+                return dataModel;
+            };
+            f.controller().openProject(tv);
+            f.controller().canApplicationBeClosed();
+        });
+
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            f.controller().reopenProjects();
+
+            assertThat(f.tabPane().getTabs()).isEmpty();
+        });
+    }
+
+    @Test
+    void testTheConfigurationChangesTheRecentProjectsAtOnce() throws Exception {
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            f.controller().projectLoader = path -> loaded(path.getFileName().toString());
+            f.controller().openProject(projectFile("first"));
+            f.controller().openProject(projectFile("second"));
+            f.controller().configurationDialog = configuration -> {
+                org.bitpunk.m3uedit.config.Configuration.Values values = configuration.load();
+                return java.util.Optional.of(new ConfigurationDialog.Result(
+                        new org.bitpunk.m3uedit.config.Configuration.Values(values.playerCommand(),
+                                values.playerArguments(), values.passVlcOptions(), 1, values.startup()),
+                        java.util.Set.of()));
+            };
+
+            f.controller().handleConfigurationAction();
+
+            assertThat(f.table().getItems()).extracting(RecentProject::name).containsExactly("second");
+            assertThat(f.menuTexts()).containsExactly("second  –  " + tempDir, null, "Clear List");
         });
     }
 }
