@@ -195,4 +195,32 @@ class SceneControllerRecentProjectsTest {
             assertThat(f.menu().isDisable()).isTrue();
         });
     }
+
+    @Test
+    void testTheOpenButtonOfTheToolbarListsTheRecentProjects() throws Exception {
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            // the items of a toolbar not shown are no children yet, so they are not found by lookup
+            javafx.scene.control.SplitMenuButton open = ((javafx.scene.control.ToolBar) f.tabPane().getScene()
+                    .lookup(".main-toolbar")).getItems().stream()
+                    .filter(item -> "openProjectToolButton".equals(item.getId()))
+                    .map(javafx.scene.control.SplitMenuButton.class::cast).findFirst().orElseThrow();
+            Path first = projectFile("first");
+            Path second = projectFile("second");
+            List<Path> opened = new ArrayList<>();
+            f.controller().projectLoader = path -> {
+                opened.add(path);
+                return loaded(path.getFileName().toString());
+            };
+            f.controller().openProject(first);
+            f.controller().openProject(second);
+
+            assertThat(open.getItems()).extracting(MenuItem::getText)
+                    .containsExactly("second  –  " + tempDir, "first  –  " + tempDir);
+
+            open.getItems().getLast().fire();
+
+            assertThat(opened).containsExactly(first, second, first);
+        });
+    }
 }

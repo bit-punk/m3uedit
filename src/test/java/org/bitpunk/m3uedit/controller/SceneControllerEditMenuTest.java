@@ -84,11 +84,11 @@ class SceneControllerEditMenuTest {
     }
 
     @Test
-    void testTheEditMenuIsBetweenFileAndHelp() throws Exception {
+    void testTheEditMenuFollowsTheFileMenu() throws Exception {
         List<String> menus = inWindow((controller, items, stage) -> ((MenuBar) stage.getScene().lookup(".menu-bar"))
                 .getMenus().stream().map(Menu::getText).toList());
 
-        assertThat(menus).containsExactly("File", "Edit", "Help");
+        assertThat(menus).containsExactly("File", "Edit", "Project", "Help");
     }
 
     @Test

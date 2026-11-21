@@ -14,10 +14,13 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
@@ -25,6 +28,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.control.ToolBar;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -62,6 +67,14 @@ public class SceneController implements Initializable {
     private static final String NEW_PROJECT_ICON_RESOURCE = "/icons/new_project.svg";
     private static final String OPEN_PROJECT_ICON_RESOURCE = "/icons/open_project.svg";
     private static final String ABOUT_ICON_RESOURCE = "/icons/about.svg";
+    private static final String SAVE_ICON_RESOURCE = "/icons/save.svg";
+    private static final String UNDO_ICON_RESOURCE = "/icons/undo.svg";
+    private static final String REDO_ICON_RESOURCE = "/icons/redo.svg";
+    private static final String RELOAD_ICON_RESOURCE = "/icons/reload.svg";
+    private static final String WRITE_PLAYLIST_ICON_RESOURCE = "/icons/write_playlist.svg";
+    private static final String ADD_ENTRY_ICON_RESOURCE = "/icons/add_entry.svg";
+    private static final String PLAY_ICON_RESOURCE = "/icons/play.svg";
+    private static final String PROGRAMME_GUIDE_ICON_RESOURCE = "/icons/programme_guide.svg";
     private static final DateTimeFormatter LAST_OPENED = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     /**
@@ -116,6 +129,38 @@ public class SceneController implements Initializable {
     private MenuItem saveProjectAsMenuItem;
     @FXML
     private MenuItem closeProjectMenuItem;
+    @FXML
+    private MenuItem newProjectMenuItem;
+    @FXML
+    private MenuItem openProjectMenuItem;
+    @FXML
+    private MenuItem reloadInputsMenuItem;
+    @FXML
+    private MenuItem writePlaylistMenuItem;
+    @FXML
+    private MenuItem programmeGuideMenuItem;
+    @FXML
+    private ToolBar toolBar;
+    @FXML
+    private Button newProjectToolButton;
+    @FXML
+    private SplitMenuButton openProjectToolButton;
+    @FXML
+    private Button saveProjectToolButton;
+    @FXML
+    private Button undoToolButton;
+    @FXML
+    private Button redoToolButton;
+    @FXML
+    private Button reloadInputsToolButton;
+    @FXML
+    private Button writePlaylistToolButton;
+    @FXML
+    private Button addEntryToolButton;
+    @FXML
+    private Button playToolButton;
+    @FXML
+    private Button programmeGuideToolButton;
     @FXML
     private Menu editMenu;
     @FXML
@@ -247,6 +292,7 @@ public class SceneController implements Initializable {
         initIcons();
         initMenuItemDisableListeners();
         initEditMenu();
+        initToolBar();
         initTabPane();
         initStartScreen();
         initRecentProjectsTable();
@@ -296,11 +342,21 @@ public class SceneController implements Initializable {
 
     private void updateRecentProjectsMenu() {
         recentProjectsMenu.getItems().clear();
+        if (openProjectToolButton != null) {
+            openProjectToolButton.getItems().clear();
+        }
         for (RecentProject project : recentProjects.getProjects()) {
             MenuItem item = new MenuItem("%s  –  %s".formatted(project.name(), project.folder()));
             item.setMnemonicParsing(false);
             item.setOnAction(event -> openRecentProject(project));
             recentProjectsMenu.getItems().add(item);
+            // the dropdown of the open button of the toolbar lists them too
+            if (openProjectToolButton != null) {
+                MenuItem toolItem = new MenuItem(item.getText());
+                toolItem.setMnemonicParsing(false);
+                toolItem.setOnAction(event -> openRecentProject(project));
+                openProjectToolButton.getItems().add(toolItem);
+            }
         }
         if (!recentProjectsMenu.getItems().isEmpty()) {
             MenuItem clear = new MenuItem("Clear List");
@@ -387,12 +443,16 @@ public class SceneController implements Initializable {
         EntryListController playlist = selectedPlaylist();
         if (playlist == null) {
             for (MenuItem item : List.of(undoMenuItem, redoMenuItem, cutMenuItem, copyMenuItem, pasteMenuItem,
-                    deleteMenuItem, selectAllMenuItem, editEntryMenuItem, resetManualChangesMenuItem)) {
+                    deleteMenuItem, selectAllMenuItem, editEntryMenuItem, resetManualChangesMenuItem,
+                    reloadInputsMenuItem, writePlaylistMenuItem, programmeGuideMenuItem)) {
                 item.disableProperty().unbind();
                 item.setDisable(true);
             }
+            bindToolBar(null);
             return;
         }
+        bindProjectMenu(playlist);
+        bindToolBar(playlist);
         DataModel dataModel = playlist.getDataModel();
         BooleanBinding noSelection = playlist.noSelectionProperty().or(playlistFocused.not());
         undoMenuItem.disableProperty().bind(dataModel.canUndoProperty().not());
@@ -417,6 +477,120 @@ public class SceneController implements Initializable {
             }
         }
         playlistFocused.set(focused);
+    }
+
+    // ---------- Project menu and toolbar ----------
+
+    /**
+     * Enables the items of the Project menu: under the same conditions as the buttons of the project.
+     */
+    private void bindProjectMenu(EntryListController playlist) {
+        DataModel dataModel = playlist.getDataModel();
+        reloadInputsMenuItem.disableProperty().bind(Bindings.isEmpty(dataModel.getInputs())
+                .or(dataModel.busyProperty()));
+        writePlaylistMenuItem.disableProperty().bind(selectedPipeline().getWriteButton().disableProperty());
+        programmeGuideMenuItem.disableProperty().bind(playlist.epgButton().disableProperty());
+    }
+
+    private void initToolBar() {
+        setUpToolButton(newProjectToolButton, NEW_PROJECT_ICON_RESOURCE, "New Project", newProjectMenuItem);
+        setUpToolButton(openProjectToolButton, OPEN_PROJECT_ICON_RESOURCE,
+                "Open Project (recently used projects in the list)", openProjectMenuItem);
+        setUpToolButton(saveProjectToolButton, SAVE_ICON_RESOURCE, "Save Project", saveProjectMenuItem);
+        setUpToolButton(undoToolButton, UNDO_ICON_RESOURCE, "Undo", undoMenuItem);
+        setUpToolButton(redoToolButton, REDO_ICON_RESOURCE, "Redo", redoMenuItem);
+        setUpToolButton(reloadInputsToolButton, RELOAD_ICON_RESOURCE, "Reload Inputs", reloadInputsMenuItem);
+        setUpToolButton(writePlaylistToolButton, WRITE_PLAYLIST_ICON_RESOURCE, "Write Playlist", writePlaylistMenuItem);
+        setUpToolButton(addEntryToolButton, ADD_ENTRY_ICON_RESOURCE, "Add Entry", null);
+        setUpToolButton(playToolButton, PLAY_ICON_RESOURCE, "Play the selected entry", null);
+        setUpToolButton(programmeGuideToolButton, PROGRAMME_GUIDE_ICON_RESOURCE, "Programme Guide",
+                programmeGuideMenuItem);
+        saveProjectToolButton.disableProperty().bind(saveProjectMenuItem.disableProperty());
+        bindToolBar(null);
+    }
+
+    /**
+     * Shows the icon only, the tooltip names the function and the shortcut of its menu item.
+     */
+    private static void setUpToolButton(ButtonBase button, String icon, String name, MenuItem menuItem) {
+        SVGPath path = new SVGPath();
+        path.setContent(SvgUtil.loadSvgPath(icon));
+        path.getStyleClass().add("tool-icon");
+        button.setGraphic(path);
+        button.setText(null);
+        button.setFocusTraversable(false);
+        KeyCombination shortcut = menuItem == null ? null : menuItem.getAccelerator();
+        button.setTooltip(new Tooltip(shortcut == null ? name : "%s (%s)".formatted(name, shortcut.getDisplayText())));
+        button.setAccessibleText(name);
+    }
+
+    /**
+     * Enables the buttons of the toolbar for the project of the selected tab, under the same conditions as the
+     * functions they call.
+     */
+    private void bindToolBar(EntryListController playlist) {
+        List<Button> projectButtons = List.of(undoToolButton, redoToolButton, reloadInputsToolButton,
+                writePlaylistToolButton, addEntryToolButton, playToolButton, programmeGuideToolButton);
+        if (playlist == null) {
+            projectButtons.forEach(button -> {
+                button.disableProperty().unbind();
+                button.setDisable(true);
+            });
+            return;
+        }
+        undoToolButton.disableProperty().bind(undoMenuItem.disableProperty());
+        redoToolButton.disableProperty().bind(redoMenuItem.disableProperty());
+        reloadInputsToolButton.disableProperty().bind(reloadInputsMenuItem.disableProperty());
+        writePlaylistToolButton.disableProperty().bind(writePlaylistMenuItem.disableProperty());
+        addEntryToolButton.disableProperty().unbind();
+        addEntryToolButton.setDisable(false);
+        // unlike the Edit menu independent of the focus: clicking the button moves no focus
+        playToolButton.disableProperty().bind(playlist.noSelectionProperty());
+        programmeGuideToolButton.disableProperty().bind(programmeGuideMenuItem.disableProperty());
+    }
+
+    /**
+     * @return the pipeline of the project of the selected tab, null if no project is open
+     */
+    PipelineController selectedPipeline() {
+        Tab tab = tabPane.getSelectionModel().getSelectedItem();
+        return tab != null && tab.getContent() instanceof ProjectController project ? project.pipelineController : null;
+    }
+
+    @FXML
+    void handleReloadInputsAction() {
+        if (selectedPlaylist() != null) {
+            selectedPlaylist().getDataModel().reloadInputs();
+        }
+    }
+
+    @FXML
+    void handleWritePlaylistAction() {
+        if (selectedPipeline() != null) {
+            // the same as the button below the pipeline, also disabled under the same conditions
+            selectedPipeline().getWriteButton().fire();
+        }
+    }
+
+    @FXML
+    void handleAddEntryAction() {
+        if (selectedPlaylist() != null) {
+            selectedPlaylist().addNewEntry();
+        }
+    }
+
+    @FXML
+    void handlePlayAction() {
+        if (selectedPlaylist() != null) {
+            selectedPlaylist().playSelected();
+        }
+    }
+
+    @FXML
+    void handleProgrammeGuideAction() {
+        if (selectedPlaylist() != null) {
+            selectedPlaylist().epgButton().fire();
+        }
     }
 
     /**

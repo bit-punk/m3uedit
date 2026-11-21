@@ -351,8 +351,11 @@ public class EntryListController extends AbstractController  implements Initiali
                 .orElse(entry);
     }
 
+    /**
+     * Opens the dialog for a new entry, which is added at the end of the playlist.
+     */
     @FXML
-    private void addNewEntry() {
+    public void addNewEntry() {
         EntryDialogController<Entry> entryDialogController = new EntryDialogController<>();
         entryDialogController.showAndWait().ifPresent(entry -> {
             log.debug("adding new Entry: {}", entry);
@@ -476,6 +479,16 @@ public class EntryListController extends AbstractController  implements Initiali
         List<Integer> selected = entryTableView.getSelectionModel().getSelectedIndices().stream().sorted().toList();
         if (!selected.isEmpty()) {
             editEntryAt(selected.getFirst());
+        }
+    }
+
+    /**
+     * Plays the first selected entry in the external player.
+     */
+    public void playSelected() {
+        List<Entry> selected = selectedEntries();
+        if (!selected.isEmpty()) {
+            ListControllerUtil.playEntry(selected.getFirst());
         }
     }
 
