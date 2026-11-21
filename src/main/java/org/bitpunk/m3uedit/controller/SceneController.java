@@ -4,12 +4,16 @@ import lombok.extern.slf4j.Slf4j;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
@@ -20,7 +24,11 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
@@ -29,6 +37,7 @@ import org.bitpunk.m3uedit.config.RecentProjects;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.util.DialogUtil;
+import org.bitpunk.m3uedit.util.PlaylistClipboard;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.bitpunk.m3uedit.util.SvgUtil;
 
@@ -107,6 +116,37 @@ public class SceneController implements Initializable {
     private MenuItem saveProjectAsMenuItem;
     @FXML
     private MenuItem closeProjectMenuItem;
+    @FXML
+    private Menu editMenu;
+    @FXML
+    private MenuItem undoMenuItem;
+    @FXML
+    private MenuItem redoMenuItem;
+    @FXML
+    private MenuItem cutMenuItem;
+    @FXML
+    private MenuItem copyMenuItem;
+    @FXML
+    private MenuItem pasteMenuItem;
+    @FXML
+    private MenuItem deleteMenuItem;
+    @FXML
+    private MenuItem selectAllMenuItem;
+    @FXML
+    private MenuItem editEntryMenuItem;
+    @FXML
+    private MenuItem resetManualChangesMenuItem;
+    /**
+     * Set while the Edit menu is shown and the clipboard contains no entries: Paste is shown disabled then. It is not
+     * disabled otherwise, as the shortcut of a disabled menu item does nothing, and the clipboard may change at any
+     * time; pasting then tells that there are no entries.
+     */
+    private final BooleanProperty nothingToPaste = new SimpleBooleanProperty(false);
+    /**
+     * Set while the focus is in the playlist of the selected project (its table or its search): the functions working
+     * on its selection are only enabled then, so e.g. the Del key in the pipeline does not delete entries.
+     */
+    private final BooleanProperty playlistFocused = new SimpleBooleanProperty(false);
     @FXML
     private TabPane tabPane;
     @FXML
@@ -206,6 +246,7 @@ public class SceneController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         initIcons();
         initMenuItemDisableListeners();
+        initEditMenu();
         initTabPane();
         initStartScreen();
         initRecentProjectsTable();
@@ -309,6 +350,175 @@ public class SceneController implements Initializable {
         saveProjectMenuItem.disableProperty().bind(noProjectOpen);
         saveProjectAsMenuItem.disableProperty().bind(noProjectOpen);
         closeProjectMenuItem.disableProperty().bind(noProjectOpen);
+    }
+
+    // ---------- Edit menu ----------
+
+    private void initEditMenu() {
+        tabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, tab) -> bindEditMenu());
+        tabPane.getTabs().addListener((ListChangeListener<Tab>) change -> bindEditMenu());
+        editMenu.setOnShowing(event -> nothingToPaste.set(focusedText() == null
+                && PlaylistClipboard.fromM3u(Clipboard.getSystemClipboard().getString()).isEmpty()));
+        editMenu.setOnHidden(event -> nothingToPaste.set(false));
+        // the scene of Scene.fxml exists already when this controller is initialized
+        if (tabPane.getScene() != null) {
+            installOnScene(tabPane.getScene());
+        }
+        tabPane.sceneProperty().addListener((observable, oldScene, scene) -> {
+            if (scene != null) {
+                installOnScene(scene);
+            }
+        });
+        bindEditMenu();
+    }
+
+    private void installOnScene(Scene scene) {
+        // a second shortcut of Redo, common on Linux and macOS
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN,
+                KeyCombination.SHIFT_DOWN), this::handleRedoAction);
+        scene.focusOwnerProperty().addListener((focus, oldOwner, owner) -> updatePlaylistFocused());
+    }
+
+    /**
+     * Enables the items of the Edit menu for the project of the selected tab.
+     */
+    private void bindEditMenu() {
+        updatePlaylistFocused();
+        EntryListController playlist = selectedPlaylist();
+        if (playlist == null) {
+            for (MenuItem item : List.of(undoMenuItem, redoMenuItem, cutMenuItem, copyMenuItem, pasteMenuItem,
+                    deleteMenuItem, selectAllMenuItem, editEntryMenuItem, resetManualChangesMenuItem)) {
+                item.disableProperty().unbind();
+                item.setDisable(true);
+            }
+            return;
+        }
+        DataModel dataModel = playlist.getDataModel();
+        BooleanBinding noSelection = playlist.noSelectionProperty().or(playlistFocused.not());
+        undoMenuItem.disableProperty().bind(dataModel.canUndoProperty().not());
+        redoMenuItem.disableProperty().bind(dataModel.canRedoProperty().not());
+        cutMenuItem.disableProperty().bind(noSelection);
+        copyMenuItem.disableProperty().bind(noSelection);
+        pasteMenuItem.disableProperty().bind(nothingToPaste.or(playlistFocused.not()));
+        deleteMenuItem.disableProperty().bind(noSelection);
+        selectAllMenuItem.disableProperty().bind(playlistFocused.not());
+        editEntryMenuItem.disableProperty().bind(noSelection);
+        resetManualChangesMenuItem.disableProperty().bind(Bindings.isEmpty(dataModel.getManualChanges()));
+    }
+
+    private void updatePlaylistFocused() {
+        EntryListController playlist = selectedPlaylist();
+        Node owner = tabPane.getScene() == null ? null : tabPane.getScene().getFocusOwner();
+        boolean focused = false;
+        for (Node node = owner; playlist != null && node != null; node = node.getParent()) {
+            if (node == playlist) {
+                focused = true;
+                break;
+            }
+        }
+        playlistFocused.set(focused);
+    }
+
+    /**
+     * @return the playlist of the project of the selected tab, null if no project is open
+     */
+    EntryListController selectedPlaylist() {
+        Tab tab = tabPane.getSelectionModel().getSelectedItem();
+        return tab != null && tab.getContent() instanceof ProjectController project ? project.entryListController : null;
+    }
+
+    /**
+     * @return the text field the cursor is in, e.g. the search of the playlist: the editing functions work on its
+     * text then, as in any text field
+     */
+    private TextInputControl focusedText() {
+        Scene scene = tabPane.getScene();
+        return scene != null && scene.getFocusOwner() instanceof TextInputControl text ? text : null;
+    }
+
+    @FXML
+    void handleUndoAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.undo();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().getDataModel().undo();
+        }
+    }
+
+    @FXML
+    void handleRedoAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.redo();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().getDataModel().redo();
+        }
+    }
+
+    @FXML
+    void handleCutAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.cut();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().cutSelected();
+        }
+    }
+
+    @FXML
+    void handleCopyAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.copy();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().copySelected();
+        }
+    }
+
+    @FXML
+    void handlePasteAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.paste();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().paste();
+        }
+    }
+
+    @FXML
+    void handleDeleteAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.deleteNextChar();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().deleteSelectedAfterConfirmation();
+        }
+    }
+
+    @FXML
+    void handleSelectAllAction() {
+        TextInputControl text = focusedText();
+        if (text != null) {
+            text.selectAll();
+        } else if (selectedPlaylist() != null) {
+            selectedPlaylist().selectAll();
+        }
+    }
+
+    @FXML
+    void handleEditEntryAction() {
+        // Enter in a text field (e.g. the search) does not open the dialog
+        if (focusedText() == null && selectedPlaylist() != null) {
+            selectedPlaylist().editSelected();
+        }
+    }
+
+    @FXML
+    void handleResetManualChangesAction() {
+        if (selectedPlaylist() != null) {
+            selectedPlaylist().resetManualChangesAfterConfirmation();
+        }
     }
 
     private void initTabPane() {

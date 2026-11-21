@@ -3,6 +3,7 @@ package org.bitpunk.m3uedit.controller;
 import lombok.extern.slf4j.Slf4j;
 import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -22,12 +23,16 @@ import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
 import org.bitpunk.m3uedit.util.ChannelLogos;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
+import org.bitpunk.m3uedit.util.PlaylistClipboard;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -116,16 +121,7 @@ public class EntryListController extends AbstractController  implements Initiali
     private void setOnMouseClickedEventHandler(TableRow<Entry> row) {
         row.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                Entry entry = row.getItem();
-                int index = playlistPosition(row.getIndex());
-                entry.setIndex(index);
-                log.debug("double-clicked on: {}", entry);
-                Entry edited = editEntry(entry);
-                if (index != edited.getIndex()) {
-                    log.debug("index changed from {} to {}", index, edited.getIndex());
-                    moveEntryToNewPosition(edited);
-                }
-                entryTableView.refresh();
+                editEntryAt(row.getIndex());
             }
         });
     }
@@ -365,10 +361,145 @@ public class EntryListController extends AbstractController  implements Initiali
         });
     }
 
-    private void resetManualChanges() {
+    void resetManualChanges() {
         if (DialogUtil.canManualChangesBeReset(dataModel.getManualChanges().size())) {
             dataModel.resetManualChanges();
         }
+    }
+
+    // ---------- functions of the Edit menu, working on the playlist of this project ----------
+
+    /**
+     * Reads the text of the clipboard, null if it contains none.
+     */
+    Supplier<String> clipboardReader = () -> Clipboard.getSystemClipboard().getString();
+    /**
+     * Puts the text into the clipboard.
+     */
+    Consumer<String> clipboardWriter = text -> {
+        ClipboardContent content = new ClipboardContent();
+        content.putString(text);
+        Clipboard.getSystemClipboard().setContent(content);
+    };
+    /**
+     * Shows a message to the user, e.g. if the clipboard contains no entries.
+     */
+    Consumer<String> messageReporter = DialogUtil::showInformation;
+    /**
+     * Asks before the given entries are deleted.
+     */
+    Predicate<List<Entry>> deleteConfirmation = ListControllerUtil::confirmDeletion;
+
+    /**
+     * @return true while no entry is selected
+     */
+    public BooleanBinding noSelectionProperty() {
+        return Bindings.isEmpty(entryTableView.getSelectionModel().getSelectedItems());
+    }
+
+    public DataModel getDataModel() {
+        return dataModel;
+    }
+
+    /**
+     * @return the selected entries in the order of the playlist
+     */
+    List<Entry> selectedEntries() {
+        return entryTableView.getSelectionModel().getSelectedIndices().stream().sorted()
+                .map(index -> entryTableView.getItems().get(index)).toList();
+    }
+
+    public void copySelected() {
+        List<Entry> selected = selectedEntries();
+        if (!selected.isEmpty()) {
+            clipboardWriter.accept(PlaylistClipboard.toM3u(selected));
+        }
+    }
+
+    /**
+     * Copies the selected entries to the clipboard and removes them, as one step of the history.
+     */
+    public void cutSelected() {
+        List<Entry> selected = selectedEntries();
+        if (!selected.isEmpty()) {
+            clipboardWriter.accept(PlaylistClipboard.toM3u(selected));
+            dataModel.removeEntries(selected);
+            entryTableView.getSelectionModel().clearSelection();
+        }
+    }
+
+    /**
+     * Adds the entries of the clipboard behind the last selected entry, or at the end of the playlist if none is
+     * selected; they are selected afterwards (if the search shows them).
+     */
+    public void paste() {
+        List<Entry> pasted = PlaylistClipboard.fromM3u(clipboardReader.get());
+        if (pasted.isEmpty()) {
+            messageReporter.accept("The clipboard contains no entries of a playlist (M3U text) to paste.");
+            return;
+        }
+        List<Integer> selected = entryTableView.getSelectionModel().getSelectedIndices().stream().sorted().toList();
+        int position = selected.isEmpty() ? dataModel.getSortedEntryList().size()
+                : playlistPosition(selected.getLast());
+        dataModel.insertEntries(pasted, position);
+        entryTableView.getSelectionModel().clearSelection();
+        // by identity: pasted into the project they have been copied from, they equal their originals
+        for (int i = 0; i < entryTableView.getItems().size(); i++) {
+            Entry shown = entryTableView.getItems().get(i);
+            if (pasted.stream().anyMatch(entry -> entry == shown)) {
+                entryTableView.getSelectionModel().select(i);
+            }
+        }
+    }
+
+    /**
+     * Removes the selected entries after asking, like the Del key.
+     */
+    public void deleteSelectedAfterConfirmation() {
+        List<Entry> selected = selectedEntries();
+        if (!selected.isEmpty() && deleteConfirmation.test(selected)) {
+            deleteSelected();
+        }
+    }
+
+    /**
+     * Selects all entries shown, i.e. those found while searching.
+     */
+    public void selectAll() {
+        entryTableView.getSelectionModel().selectAll();
+    }
+
+    /**
+     * Opens the first selected entry in the edit dialog.
+     */
+    public void editSelected() {
+        List<Integer> selected = entryTableView.getSelectionModel().getSelectedIndices().stream().sorted().toList();
+        if (!selected.isEmpty()) {
+            editEntryAt(selected.getFirst());
+        }
+    }
+
+    public void resetManualChangesAfterConfirmation() {
+        resetManualChanges();
+    }
+
+    /**
+     * Opens the entry shown at the given row in the edit dialog; editing it and moving it to another position are
+     * one step of the history.
+     */
+    private void editEntryAt(int shownIndex) {
+        Entry entry = entryTableView.getItems().get(shownIndex);
+        int index = playlistPosition(shownIndex);
+        entry.setIndex(index);
+        log.debug("editing: {}", entry);
+        dataModel.runAsOneStep(() -> {
+            Entry edited = editEntry(entry);
+            if (index != edited.getIndex()) {
+                log.debug("index changed from {} to {}", index, edited.getIndex());
+                moveEntryToNewPosition(edited);
+            }
+        });
+        entryTableView.refresh();
     }
 
     @FXML

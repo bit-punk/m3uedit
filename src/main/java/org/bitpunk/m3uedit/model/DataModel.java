@@ -6,13 +6,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.validation.constraints.NotNull;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -39,9 +43,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -167,6 +173,42 @@ public class DataModel {
 
      */
     private transient List<String> inputErrors = List.of();
+    /**
+     * A step of the history of the changes made by hand: the changes before and after it.
+     */
+    private record HistoryStep(List<ManualChange> before, List<ManualChange> after) {
+    }
+
+    /**
+     * The steps that can be undone, the most recent last; the history starts when the project is opened.
+     */
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient Deque<HistoryStep> undoSteps = new ArrayDeque<>();
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient Deque<HistoryStep> redoSteps = new ArrayDeque<>();
+    /**
+     * Counts the changes of the history, so the bindings below are updated.
+     */
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient IntegerProperty historyVersion = new SimpleIntegerProperty();
+    /**
+     * The nesting of {@link #runAsOneStep}, the changes of the outermost call are one step.
+     */
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient int stepDepth;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient List<ManualChange> changesBeforeStep;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient BooleanBinding canUndo;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient BooleanBinding canRedo;
     /**
      * The error of each input that could not be read (or only partly) when the inputs have been read last.
      */
@@ -588,13 +630,15 @@ public class DataModel {
      * Must be called on the JavaFX application thread.
      */
     public void removeEntries(List<Entry> entries) {
-        for (Entry entry : List.copyOf(entries)) {
-            int index = indexOfSortedEntry(entry);
-            if (index >= 0) {
-                sortedEntryList.remove(index);
-                recordManualChange(ManualChange.remove(entry));
+        runAsOneStep(() -> {
+            for (Entry entry : List.copyOf(entries)) {
+                int index = indexOfSortedEntry(entry);
+                if (index >= 0) {
+                    sortedEntryList.remove(index);
+                    recordManualChange(ManualChange.remove(entry));
+                }
             }
-        }
+        });
     }
 
     /**
@@ -602,8 +646,29 @@ public class DataModel {
      * Must be called on the JavaFX application thread.
      */
     public void addEntry(Entry entry) {
-        sortedEntryList.add(entry);
-        recordManualChange(ManualChange.add(entry));
+        runAsOneStep(() -> {
+            sortedEntryList.add(entry);
+            recordManualChange(ManualChange.add(entry));
+        });
+    }
+
+    /**
+     * Adds the entries to the playlist at the given position, as one step of the history (e.g. pasted entries).
+     *
+     * @param position the index the first entry gets, the entries are added at the end if it is beyond the end
+     */
+    public void insertEntries(List<Entry> entries, int position) {
+        if (entries.isEmpty()) {
+            return;
+        }
+        runAsOneStep(() -> {
+            int end = sortedEntryList.size();
+            entries.forEach(this::addEntry);
+            // an entry is added at the end, then moved to the position
+            if (position < end) {
+                moveEntries(entries, position);
+            }
+        });
     }
 
     /**
@@ -619,8 +684,10 @@ public class DataModel {
         }
         Entry updated = new Entry();
         EntryMapper.mapEntry(edited, updated);
-        recordManualChange(ManualChange.edit(EntryKey.of(entry), updated));
-        sortedEntryList.set(index, updated);
+        runAsOneStep(() -> {
+            recordManualChange(ManualChange.edit(EntryKey.of(entry), updated));
+            sortedEntryList.set(index, updated);
+        });
         return updated;
     }
 
@@ -635,12 +702,14 @@ public class DataModel {
         if (moved.isEmpty()) {
             return;
         }
-        moved.forEach(entry -> sortedEntryList.remove(indexOfSortedEntry(entry)));
-        int index = Math.clamp(targetIndex, 0, sortedEntryList.size());
-        sortedEntryList.addAll(index, moved);
-        for (int i = index; i < index + moved.size(); i++) {
-            recordManualChange(ManualChange.move(sortedEntryList.get(i), i == 0 ? null : sortedEntryList.get(i - 1)));
-        }
+        runAsOneStep(() -> {
+            moved.forEach(entry -> sortedEntryList.remove(indexOfSortedEntry(entry)));
+            int index = Math.clamp(targetIndex, 0, sortedEntryList.size());
+            sortedEntryList.addAll(index, moved);
+            for (int i = index; i < index + moved.size(); i++) {
+                recordManualChange(ManualChange.move(sortedEntryList.get(i), i == 0 ? null : sortedEntryList.get(i - 1)));
+            }
+        });
     }
 
     /**
@@ -651,9 +720,84 @@ public class DataModel {
         if (manualChanges.isEmpty()) {
             return;
         }
-        manualChanges.clear();
+        // can be undone like any other change made by hand
+        runAsOneStep(manualChanges::clear);
         changed.set(true);
         sortFilteredEntries();
+    }
+
+    /**
+     * Runs changes of the playlist made by hand as one step of the history, e.g. adding and moving pasted entries:
+     * they are undone and redone together. Calls may be nested, the outermost one is the step.
+     */
+    public void runAsOneStep(Runnable changes) {
+        if (stepDepth++ == 0) {
+            changesBeforeStep = List.copyOf(manualChanges);
+        }
+        try {
+            changes.run();
+        } finally {
+            if (--stepDepth == 0) {
+                List<ManualChange> after = List.copyOf(manualChanges);
+                if (!after.equals(changesBeforeStep)) {
+                    undoSteps.push(new HistoryStep(changesBeforeStep, after));
+                    // a new change replaces the changes undone before
+                    redoSteps.clear();
+                    historyVersion.set(historyVersion.get() + 1);
+                }
+                changesBeforeStep = null;
+            }
+        }
+    }
+
+    /**
+     * @return true if a change of the playlist made by hand can be undone; not while the entries are re-computed,
+     * as the result being computed contains the change
+     */
+    public BooleanBinding canUndoProperty() {
+        if (canUndo == null) {
+            canUndo = Bindings.createBooleanBinding(() -> !undoSteps.isEmpty() && !busy.get(), historyVersion, busy);
+        }
+        return canUndo;
+    }
+
+    public BooleanBinding canRedoProperty() {
+        if (canRedo == null) {
+            canRedo = Bindings.createBooleanBinding(() -> !redoSteps.isEmpty() && !busy.get(), historyVersion, busy);
+        }
+        return canRedo;
+    }
+
+    /**
+     * Reverts the last change of the playlist made by hand (or the last step of several changes).
+     * Must be called on the JavaFX application thread.
+     */
+    public void undo() {
+        if (!canUndoProperty().get()) {
+            return;
+        }
+        HistoryStep step = undoSteps.pop();
+        redoSteps.push(step);
+        applyHistory(step.before());
+    }
+
+    /**
+     * Applies the last change undone again.
+     */
+    public void redo() {
+        if (!canRedoProperty().get()) {
+            return;
+        }
+        HistoryStep step = redoSteps.pop();
+        undoSteps.push(step);
+        applyHistory(step.after());
+    }
+
+    private void applyHistory(List<ManualChange> changes) {
+        manualChanges.setAll(changes);
+        sortedEntryList.setAll(ManualChange.applyAll(pipelineResult.get().enriched(), manualChanges));
+        changed.set(true);
+        historyVersion.set(historyVersion.get() + 1);
     }
 
     private void recordManualChange(ManualChange change) {
