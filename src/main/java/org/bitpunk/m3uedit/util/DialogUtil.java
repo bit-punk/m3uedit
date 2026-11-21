@@ -5,6 +5,7 @@ import javafx.beans.binding.Bindings;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -73,9 +74,9 @@ public class DialogUtil {
 
     public static String getNewProjectName() {
         TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Create a new project");
-        dialog.setHeaderText("New project name");
-        dialog.setContentText("Please enter the name of your new project:");
+        dialog.setTitle(Messages.get("dialog.newProject.title"));
+        dialog.setHeaderText(Messages.get("dialog.newProject.header"));
+        dialog.setContentText(Messages.get("dialog.newProject.content"));
         // Access the dialog's OK button
         Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
 
@@ -96,9 +97,9 @@ public class DialogUtil {
 
     public static boolean canProjectBeClosed(String projectName) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Close Project");
-        alert.setHeaderText("Project '" + projectName + "' contains unsaved data!");
-        alert.setContentText("Do you want to close the project without saving the changed data?");
+        alert.setTitle(Messages.get("dialog.closeProject.title"));
+        alert.setHeaderText(Messages.get("dialog.closeProject.header", projectName));
+        alert.setContentText(Messages.get("dialog.closeProject.content"));
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
@@ -110,9 +111,9 @@ public class DialogUtil {
      */
     public static boolean canFileBeOverwritten(Path file) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Save Project");
-        alert.setHeaderText("The file '" + file.getFileName() + "' already exists!");
-        alert.setContentText("Do you want to replace it?%n%n%s".formatted(file.toAbsolutePath()));
+        alert.setTitle(Messages.get("dialog.overwrite.title"));
+        alert.setHeaderText(Messages.get("dialog.overwrite.header", file.getFileName()));
+        alert.setContentText(Messages.get("dialog.overwrite.content", file.toAbsolutePath()));
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
@@ -124,10 +125,9 @@ public class DialogUtil {
      */
     public static boolean canManualChangesBeReset(int numberOfChanges) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Reset Changes");
-        alert.setHeaderText("Discard %d manual change(s) of the playlist?".formatted(numberOfChanges));
-        alert.setContentText("Entries removed, added, edited or moved manually are restored as computed "
-                + "from the inputs, filters and sorters.");
+        alert.setTitle(Messages.get("dialog.resetChanges.title"));
+        alert.setHeaderText(Messages.get("dialog.resetChanges.header", numberOfChanges));
+        alert.setContentText(Messages.get("dialog.resetChanges.content"));
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
@@ -139,10 +139,9 @@ public class DialogUtil {
      */
     public static boolean canApplicationBeClosed(List<String> unsavedProjectNames) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Exit");
-        alert.setHeaderText("There are projects with unsaved changes!");
-        alert.setContentText("Unsaved projects: %s%n%nDo you want to exit without saving the changed data?"
-                .formatted(String.join(", ", unsavedProjectNames)));
+        alert.setTitle(Messages.get("dialog.exit.title"));
+        alert.setHeaderText(Messages.get("dialog.exit.header"));
+        alert.setContentText(Messages.get("dialog.exit.content", String.join(", ", unsavedProjectNames)));
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
@@ -152,15 +151,15 @@ public class DialogUtil {
      */
     public static void showUnexpectedError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("An unexpected error occurred");
-        alert.setContentText(message + "\n\nSee the log for details.");
+        alert.setTitle(Messages.get("common.error"));
+        alert.setHeaderText(Messages.get("error.unexpected.header"));
+        alert.setContentText(Messages.get("error.unexpected.content", message));
         alert.showAndWait();
     }
 
     public static void showInformation(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Information");
+        alert.setTitle(Messages.get("common.information"));
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
@@ -168,7 +167,7 @@ public class DialogUtil {
 
     public static void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
+        alert.setTitle(Messages.get("common.error"));
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

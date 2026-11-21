@@ -11,19 +11,19 @@
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
             <VBox spacing="6">
-                <Label text="Profile:" style="-fx-font-weight: bold;"/>
+                <Label text="%sorter.preferredChannelOrder.config.profile" style="-fx-font-weight: bold;"/>
                 <HBox spacing="8" alignment="CENTER_LEFT">
                     <ComboBox fx:id="profileComboBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <Button fx:id="addProfileButton" text="New..."/>
-                    <Button fx:id="createFromPlaylistButton" text="From Playlist..."/>
-                    <Button fx:id="renameProfileButton" text="Rename..."/>
-                    <Button fx:id="deleteProfileButton" text="Delete"/>
+                    <Button fx:id="addProfileButton" text="%sorter.preferredChannelOrder.config.newProfile"/>
+                    <Button fx:id="createFromPlaylistButton" text="%sorter.preferredChannelOrder.config.fromPlaylist"/>
+                    <Button fx:id="renameProfileButton" text="%sorter.preferredChannelOrder.config.renameProfile"/>
+                    <Button fx:id="deleteProfileButton" text="%sorter.preferredChannelOrder.config.deleteProfile"/>
                 </HBox>
-                <CheckBox fx:id="defaultProfileCheckBox" text="Default profile"/>
+                <CheckBox fx:id="defaultProfileCheckBox" text="%sorter.preferredChannelOrder.config.defaultProfile"/>
             </VBox>
             <Separator/>
             <VBox spacing="6" VBox.vgrow="ALWAYS">
-                <Label text="Preferred Channel Order:" style="-fx-font-weight: bold;"/>
+                <Label text="%sorter.preferredChannelOrder.config.channels" style="-fx-font-weight: bold;"/>
                 <HBox spacing="8" VBox.vgrow="ALWAYS">
                     <ListView fx:id="channelsListView" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" prefHeight="280"/>
                     <VBox spacing="8" alignment="TOP_CENTER">
@@ -38,17 +38,17 @@
                             </graphic>
                         </Button>
                         <Separator/>
-                        <Button fx:id="removeChannelButton" text="Remove" minWidth="70"/>
+                        <Button fx:id="removeChannelButton" text="%common.remove" minWidth="70"/>
                     </VBox>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <TextField fx:id="newChannelTextField" promptText="Enter channel name to add..." HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="addChannelButton" text="Add"/>
+                    <TextField fx:id="newChannelTextField" promptText="%sorter.preferredChannelOrder.config.newChannel.prompt" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="addChannelButton" text="%common.add"/>
                 </HBox>
             </VBox>
         </VBox>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

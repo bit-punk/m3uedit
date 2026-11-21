@@ -76,7 +76,7 @@ class ConfigurationTest {
     @Test
     void testTheSettingsAreStoredInTheirFiles() throws Exception {
         configuration.apply(new Configuration.Values(" /usr/bin/mpv ", List.of("--fs", "--title=My TV"), false, 5,
-                StartupMode.REOPEN_PROJECTS), Set.of());
+                StartupMode.REOPEN_PROJECTS, Language.SYSTEM), Set.of());
 
         ExternalPlayerConfig playerConfig = player.loadConfig();
         assertThat(playerConfig.getCommand()).isEqualTo("/usr/bin/mpv");
@@ -85,12 +85,12 @@ class ConfigurationTest {
         assertThat(Files.readString(tempDir.resolve("recent_projects.yaml"))).contains("maxEntries: 5");
         assertThat(settings.getStartup()).isEqualTo(StartupMode.REOPEN_PROJECTS);
         assertThat(configuration.load()).isEqualTo(new Configuration.Values("/usr/bin/mpv",
-                List.of("--fs", "--title=My TV"), false, 5, StartupMode.REOPEN_PROJECTS));
+                List.of("--fs", "--title=My TV"), false, 5, StartupMode.REOPEN_PROJECTS, Language.SYSTEM));
     }
 
     @Test
     void testWithoutCommandTheDefaultPlayerIsUsed() {
-        configuration.apply(new Configuration.Values("  ", List.of(), true, 10, StartupMode.START_SCREEN), Set.of());
+        configuration.apply(new Configuration.Values("  ", List.of(), true, 10, StartupMode.START_SCREEN, Language.SYSTEM), Set.of());
 
         assertThat(player.loadConfig().getCommand()).isEqualTo("vlc");
     }
@@ -101,7 +101,7 @@ class ConfigurationTest {
         recentProjects.add(project("second"));
         recentProjects.add(project("third"));
 
-        configuration.apply(new Configuration.Values("vlc", List.of(), true, 2, StartupMode.START_SCREEN), Set.of());
+        configuration.apply(new Configuration.Values("vlc", List.of(), true, 2, StartupMode.START_SCREEN, Language.SYSTEM), Set.of());
 
         assertThat(recentProjects.getProjects()).extracting(RecentProject::name).containsExactly("third", "second");
     }

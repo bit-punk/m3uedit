@@ -44,7 +44,7 @@ class SceneControllerToolBarTest {
         Platform.runLater(() -> {
             Stage stage = new Stage();
             try {
-                FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(
+                FXMLLoader loader = org.bitpunk.m3uedit.i18n.Messages.fxmlLoader(Objects.requireNonNull(
                         SceneControllerToolBarTest.class.getClassLoader().getResource("fxml/Scene.fxml")));
                 Scene scene = loader.load();
                 stage.setScene(scene);

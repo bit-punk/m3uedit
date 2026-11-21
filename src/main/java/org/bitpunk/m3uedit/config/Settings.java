@@ -28,6 +28,9 @@ public class Settings {
         if (config.getStartup() == null) {
             config.setStartup(StartupMode.START_SCREEN);
         }
+        if (config.getLanguage() == null) {
+            config.setLanguage(Language.SYSTEM);
+        }
         if (config.getOpenProjects() == null) {
             config.setOpenProjects(new ArrayList<>());
         }
@@ -41,6 +44,16 @@ public class Settings {
     public void setStartup(StartupMode startup) {
         SettingsConfig config = load();
         config.setStartup(Objects.requireNonNull(startup));
+        configManager.saveConfig(config);
+    }
+
+    public Language getLanguage() {
+        return load().getLanguage();
+    }
+
+    public void setLanguage(Language language) {
+        SettingsConfig config = load();
+        config.setLanguage(Objects.requireNonNull(language));
         configManager.saveConfig(config);
     }
 

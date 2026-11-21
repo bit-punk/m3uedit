@@ -19,10 +19,18 @@ public class SftpConnection {
     public static final String REGEX_PATH = "^/.*$";
     public static final String REGEX_FILE_NAME = "^[^/]*$";
     public static final String DEFAULT_FILE_NAME = "playlist.m3u";
+    /**
+     * The messages of the validation, translated when they are shown.
+     */
+    public static final String HOST_NAME_EMPTY = "Hostname must not be empty";
+    public static final String PORT_NOT_POSITIVE = "Port must be a positive integer";
+    public static final String PATH_NOT_ABSOLUTE = "Path must start with '/'";
+    public static final String FILE_NAME_WITH_SLASH = "Filename must not contain '/'";
+    public static final String USER_NAME_EMPTY = "Username must not be empty";
     private String schema = SFTP_SCHEMA;
-    @NotEmpty(message = "Hostname must not be empty")
+    @NotEmpty(message = HOST_NAME_EMPTY)
     private String hostName;
-    @Positive(message = "Port must be a positive integer")
+    @Positive(message = PORT_NOT_POSITIVE)
     @Digits(message = "", integer = 5, fraction = 0)
     //    @Pattern(regexp = "\\d*", message = "The port-number must be a numeric input!")
     private int port;
@@ -30,15 +38,15 @@ public class SftpConnection {
      * Target directory. In project files written by older versions (where {@link #fileName} is null)
      * this may also be the complete file path.
      */
-    @Pattern(regexp = REGEX_PATH, message = "Path must start with '/'")
+    @Pattern(regexp = REGEX_PATH, message = PATH_NOT_ABSOLUTE)
     private String path;
     /**
      * Target file name inside {@link #path}; empty means {@link #DEFAULT_FILE_NAME}.
      * Null for connections from older project files.
      */
-    @Pattern(regexp = REGEX_FILE_NAME, message = "Filename must not contain '/'")
+    @Pattern(regexp = REGEX_FILE_NAME, message = FILE_NAME_WITH_SLASH)
     private String fileName;
-    @NotEmpty(message = "Username must not be empty")
+    @NotEmpty(message = USER_NAME_EMPTY)
     private String userName;
     /**
      * If false, the user is asked before an existing file on the server is overwritten.

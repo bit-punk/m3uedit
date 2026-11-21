@@ -10,7 +10,7 @@
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
-            <Label text="Filtered Channel Names / Patterns (Regular Expressions):" style="-fx-font-weight: bold;"/>
+            <Label text="%filter.channelName.config.patterns" style="-fx-font-weight: bold;"/>
             <HBox spacing="8" VBox.vgrow="ALWAYS">
                 <ListView fx:id="patternsListView" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" prefHeight="260"/>
                 <VBox spacing="8" alignment="TOP_CENTER">
@@ -25,16 +25,16 @@
                         </graphic>
                     </Button>
                     <Separator/>
-                    <Button fx:id="removePatternButton" text="Remove" minWidth="70"/>
+                    <Button fx:id="removePatternButton" text="%common.remove" minWidth="70"/>
                 </VBox>
             </HBox>
             <HBox spacing="8" alignment="CENTER_LEFT">
-                <TextField fx:id="newPatternTextField" promptText="Enter regex pattern or channel name to filter..." HBox.hgrow="ALWAYS"/>
-                <Button fx:id="addPatternButton" text="Add"/>
+                <TextField fx:id="newPatternTextField" promptText="%filter.channelName.config.newPattern.prompt" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="addPatternButton" text="%common.add"/>
             </HBox>
         </VBox>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

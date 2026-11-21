@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,8 +26,9 @@ public class EntryMapper {
      */
     public static String describeChanges(Entry before, Entry after) {
         java.util.List<String> changes = new java.util.ArrayList<>();
-        addChange(changes, "name", before.getName(), after.getName());
-        addChange(changes, "url", before.getChannelUri(), after.getChannelUri());
+        // the attributes of the M3U format (tvg-id, …) are named as they are written in the playlist
+        addChange(changes, Messages.get("diff.change.name"), before.getName(), after.getName());
+        addChange(changes, Messages.get("diff.change.url"), before.getChannelUri(), after.getChannelUri());
         addChange(changes, "tvg-id", before.getTvgId(), after.getTvgId());
         addChange(changes, "tvg-name", before.getTvgName(), after.getTvgName());
         addChange(changes, "tvg-logo", before.getTvgLogo(), after.getTvgLogo());
@@ -35,14 +37,14 @@ public class EntryMapper {
         addChange(changes, "radio", before.getRadio(), after.getRadio());
         addChange(changes, "duration", before.getDuration(), after.getDuration());
         if (!java.util.Objects.equals(emptyIfNull(before.getVlcOpts()), emptyIfNull(after.getVlcOpts()))) {
-            changes.add("vlc-options");
+            changes.add(Messages.get("diff.change.vlcOptions"));
         }
         return String.join(", ", changes);
     }
 
     private static void addChange(java.util.List<String> changes, String attribute, String before, String after) {
         if (!java.util.Objects.equals(before, after)) {
-            changes.add("%s: %s".formatted(attribute, after == null ? "removed" : after));
+            changes.add("%s: %s".formatted(attribute, after == null ? Messages.get("diff.change.removed") : after));
         }
     }
 

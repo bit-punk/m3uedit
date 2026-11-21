@@ -75,7 +75,7 @@ class ReachableUrlFilterConfigDialogControllerTest {
         runOnFxThread(() -> {
             var dialog = new ReachableUrlFilterConfigDialogController(filter);
 
-            assertThat(dialog.getTitle()).isEqualTo(ReachableUrlFilterConfigDialogController.DIALOG_TITLE);
+            assertThat(dialog.getTitle()).isEqualTo("Configure Reachable URL Filter");
             assertThat(dialog.getTimeoutSpinner().getValue()).isEqualTo(3500);
             assertThat(okButton(dialog).isDisabled()).isFalse();
         });

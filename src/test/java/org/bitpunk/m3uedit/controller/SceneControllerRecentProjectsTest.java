@@ -78,7 +78,7 @@ class SceneControllerRecentProjectsTest {
 
     @SuppressWarnings("unchecked")
     private Fixture loadScene() throws Exception {
-        FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
+        FXMLLoader loader = org.bitpunk.m3uedit.i18n.Messages.fxmlLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
         Scene scene = loader.load();
         SceneController controller = loader.getController();
         RecentProjects recentProjects = new RecentProjects(new YamlConfigManager<>(tempDir.resolve("recent.yaml"),
@@ -298,7 +298,8 @@ class SceneControllerRecentProjectsTest {
                 org.bitpunk.m3uedit.config.Configuration.Values values = configuration.load();
                 return java.util.Optional.of(new ConfigurationDialog.Result(
                         new org.bitpunk.m3uedit.config.Configuration.Values(values.playerCommand(),
-                                values.playerArguments(), values.passVlcOptions(), 1, values.startup()),
+                                values.playerArguments(), values.passVlcOptions(), 1, values.startup(),
+                                values.language()),
                         java.util.Set.of()));
             };
 

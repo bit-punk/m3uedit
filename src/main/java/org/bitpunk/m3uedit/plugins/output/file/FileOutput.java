@@ -1,10 +1,10 @@
 package org.bitpunk.m3uedit.plugins.output.file;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.extern.slf4j.Slf4j;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
@@ -30,12 +30,21 @@ import java.util.Map;
 @Getter
 @Slf4j
 public class FileOutput extends AbstractPlugin implements Output {
-    @JsonIgnore
-    private final String name = "File Output";
-    @JsonIgnore
-    private final String description = "Writes a playlist to a local file.";
     @Setter(AccessLevel.PACKAGE)
     private URI output = null;
+
+    /**
+     * @return the name shown to the user; a constant, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("output.file.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("output.file.description");
+    }
 
     @Override
     public void write(Export export) {
@@ -54,7 +63,7 @@ public class FileOutput extends AbstractPlugin implements Output {
                 Files.copy(content, target, StandardCopyOption.REPLACE_EXISTING);
                 written.put(file, target);
             } catch (IOException e) {
-                throw new OutputException("%s could not be written to %s: %s".formatted(file.name(), target,
+                throw new OutputException(Messages.get("output.file.fileWriteError", file.name(), target,
                         e.getMessage()), e);
             }
         }
@@ -65,8 +74,7 @@ public class FileOutput extends AbstractPlugin implements Output {
             writer.write(playlist, export.headerAttributes(file -> written.containsKey(file)
                     ? written.get(file).toUri().toString() : null), outputStream);
         } catch (IOException e) {
-            throw new OutputException("The playlist could not be written to %s: %s".formatted(
-                    playlistPath, e.getMessage()), e);
+            throw new OutputException(Messages.get("output.file.writeError", playlistPath, e.getMessage()), e);
         }
     }
 
@@ -81,7 +89,7 @@ public class FileOutput extends AbstractPlugin implements Output {
     private Path getOutputPathFromFileDialog() {
         // starts at the file written before
         Path current = output == null || !"file".equals(output.getScheme()) ? null : Path.of(output);
-        Path selected = DialogUtil.getSaveFilePath(current, "M3U-Playlist Files", "*.m3u");
+        Path selected = DialogUtil.getSaveFilePath(current, Messages.get("output.file.filter"), "*.m3u");
         log.debug("selected file: {}", selected);
         return selected;
     }

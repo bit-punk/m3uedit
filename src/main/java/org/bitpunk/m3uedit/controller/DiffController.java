@@ -17,6 +17,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.EntryDiff;
@@ -93,10 +94,10 @@ public class DiffController extends VBox {
 
     @Getter
     private final Label contextLabel = new Label();
-    private final Button showAllButton = new Button("Show whole pipeline");
+    private final Button showAllButton = new Button(Messages.get("diff.showAll"));
     private final HBox contextBar;
-    private final ToggleButton changesOnlyButton = new ToggleButton("Changes only");
-    private final ToggleButton allRowsButton = new ToggleButton("All rows");
+    private final ToggleButton changesOnlyButton = new ToggleButton(Messages.get("diff.changesOnly"));
+    private final ToggleButton allRowsButton = new ToggleButton(Messages.get("diff.allRows"));
     @Getter
     private final Label statsLabel = new Label();
     private final TextField searchField = new TextField();
@@ -138,7 +139,7 @@ public class DiffController extends VBox {
         HBox segmented = new HBox(changesOnlyButton, allRowsButton);
         segmented.getStyleClass().add("segmented");
         statsLabel.getStyleClass().add("diff-stats");
-        searchField.setPromptText("Search channel");
+        searchField.setPromptText(Messages.get("diff.search.prompt"));
         searchField.textProperty().addListener((observable, oldText, newText) -> rebuildItems());
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -202,18 +203,18 @@ public class DiffController extends VBox {
         diff = EntryDiff.compute(scope.left(), scope.right(), scope.origin());
         List<String> stats = new ArrayList<>();
         if (diff.getRemovedCount() > 0) {
-            stats.add("−%d removed".formatted(diff.getRemovedCount()));
+            stats.add(Messages.get("diff.stats.removed", diff.getRemovedCount()));
         }
         if (diff.getMovedCount() > 0) {
-            stats.add("↕ %d moved".formatted(diff.getMovedCount()));
+            stats.add(Messages.get("diff.stats.moved", diff.getMovedCount()));
         }
         if (diff.getAddedCount() > 0) {
-            stats.add("+%d added".formatted(diff.getAddedCount()));
+            stats.add(Messages.get("diff.stats.added", diff.getAddedCount()));
         }
         if (diff.getModifiedCount() > 0) {
-            stats.add("✎ %d changed".formatted(diff.getModifiedCount()));
+            stats.add(Messages.get("diff.stats.changed", diff.getModifiedCount()));
         }
-        stats.add("%d unchanged".formatted(diff.getUnchangedCount()));
+        stats.add(Messages.get("diff.stats.unchanged", diff.getUnchangedCount()));
         statsLabel.setText(String.join("   ", stats));
         rebuildItems();
     }
@@ -222,14 +223,14 @@ public class DiffController extends VBox {
         List<Entry> playlist = List.copyOf(dataModel.getSortedEntryList());
         Function<Entry, String> globalReason = entry -> {
             String reason = result.removalReason(entry);
-            return reason != null ? reason : "removed or edited manually";
+            return reason != null ? reason : Messages.get("diff.reason.removedManually");
         };
         if (step instanceof Input input) {
             List<Entry> fromInput = result.entriesOf(input);
             List<Entry> inPlaylist = playlist.stream().filter(entry -> result.sourceOf(entry) == input).toList();
-            return new Scope("%s delivers %d entries, %d of them are in the playlist.".formatted(input.getName(),
-                    fromInput.size(), inPlaylist.size()), input.getName(), fromInput, "In the playlist", inPlaylist,
-                    globalReason, result::originOf);
+            return new Scope(Messages.get("diff.context.input", input.getName(), fromInput.size(), inPlaylist.size()),
+                    input.getName(), fromInput, Messages.get("diff.title.inPlaylist"), inPlaylist, globalReason,
+                    result::originOf);
         }
         if (step instanceof Filter filter) {
             Optional<StepResult> stepResult = result.step(filter);
@@ -239,10 +240,11 @@ public class DiffController extends VBox {
             StepResult filterStep = stepResult.get();
             Function<Entry, String> reason = entry -> {
                 String description = filter.describeRemoval(entry, filterStep.input());
-                return description != null ? description : "removed";
+                return description != null ? description : Messages.get("diff.reason.removed");
             };
-            return new Scope("%s removes %d of %d entries.".formatted(filter.getName(), filterStep.removedCount(),
-                    filterStep.input().size()), "Before", filterStep.input(), "After", filterStep.output(), reason);
+            return new Scope(Messages.get("diff.context.filter", filter.getName(), filterStep.removedCount(),
+                    filterStep.input().size()), Messages.get("diff.title.before"), filterStep.input(),
+                    Messages.get("diff.title.after"), filterStep.output(), reason);
         }
         if (step instanceof Sorter sorter) {
             Optional<StepResult> stepResult = result.step(sorter);
@@ -250,8 +252,9 @@ public class DiffController extends VBox {
                 return disabledScope(sorter);
             }
             StepResult sorterStep = stepResult.get();
-            return new Scope("%s moves %d of %d entries.".formatted(sorter.getName(), sorterStep.movedCount(),
-                    sorterStep.input().size()), "Before", sorterStep.input(), "After", sorterStep.output(), entry -> null);
+            return new Scope(Messages.get("diff.context.sorter", sorter.getName(), sorterStep.movedCount(),
+                    sorterStep.input().size()), Messages.get("diff.title.before"), sorterStep.input(),
+                    Messages.get("diff.title.after"), sorterStep.output(), entry -> null);
         }
         if (step instanceof Enricher enricher) {
             Optional<StepResult> stepResult = result.step(enricher);
@@ -264,11 +267,11 @@ public class DiffController extends VBox {
                 origins.put(enricherStep.output().get(i), enricherStep.input().get(i));
             }
             Map<Entry, String> notes = enricherStep.notes();
-            String context = "%s changes %d of %d entries.".formatted(enricher.getName(), enricherStep.modifiedCount(),
+            String context = Messages.get("diff.context.enricher", enricher.getName(), enricherStep.modifiedCount(),
                     enricherStep.input().size());
             return new Scope(enricherStep.summary() == null ? context : context + " " + enricherStep.summary(),
-                    "Before", enricherStep.input(), "After", enricherStep.output(),
-                    entry -> null, entry -> origins.getOrDefault(entry, entry), (before, after) -> {
+                    Messages.get("diff.title.before"), enricherStep.input(), Messages.get("diff.title.after"),
+                    enricherStep.output(), entry -> null, entry -> origins.getOrDefault(entry, entry), (before, after) -> {
                 String changes = EntryMapper.describeChanges(before, after);
                 String reason = enricher.describeChange(before, after);
                 if (reason == null) {
@@ -277,14 +280,14 @@ public class DiffController extends VBox {
                 return reason == null ? changes : changes.isEmpty() ? reason : "%s (%s)".formatted(changes, reason);
             }, notes::get);
         }
-        String context = "All steps: the entries loaded from the inputs compared to the playlist."
-                + " Select a step of the pipeline to see its effect.";
-        return new Scope(context, "Loaded", result.raw(), "Playlist", playlist, globalReason, result::originOf);
+        return new Scope(Messages.get("diff.context.all"), Messages.get("diff.title.loaded"), result.raw(),
+                Messages.get("diff.title.playlist"), playlist, globalReason, result::originOf);
     }
 
     private static Scope disabledScope(Plugin plugin) {
-        return new Scope("%s is disabled. Enable it to see its effect.".formatted(plugin.getName()),
-                "Before", List.of(), "After", List.of(), entry -> null);
+        return new Scope(Messages.get("diff.context.disabled", plugin.getName()),
+                Messages.get("diff.title.before"), List.of(), Messages.get("diff.title.after"), List.of(),
+                entry -> null);
     }
 
     private void rebuildItems() {
@@ -302,9 +305,9 @@ public class DiffController extends VBox {
         } else {
             foldUnchangedRows(rows, items);
         }
-        placeholder.setText(scope.left().isEmpty() && scope.right().isEmpty() ? "No entries."
-                : !search.isEmpty() ? "No channel matches \"%s\".".formatted(searchField.getText().trim())
-                : "No differences.");
+        placeholder.setText(scope.left().isEmpty() && scope.right().isEmpty() ? Messages.get("diff.empty.noEntries")
+                : !search.isEmpty() ? Messages.get("diff.empty.noMatch", searchField.getText().trim())
+                : Messages.get("diff.empty.noDifferences"));
         diffListView.getItems().setAll(items);
     }
 
@@ -410,7 +413,7 @@ public class DiffController extends VBox {
                     setGraphic(rowBox);
                 }
                 case FoldItem fold -> {
-                    foldButton.setText("⋯ show %d unchanged entries".formatted(fold.hiddenRows().size()));
+                    foldButton.setText(Messages.get("diff.fold", fold.hiddenRows().size()));
                     setGraphic(foldButton);
                 }
             }
@@ -483,8 +486,8 @@ public class DiffController extends VBox {
                 case MOVED -> {
                     getStyleClass().add("moved");
                     gutterText = "↕";
-                    noteText = leftSide ? "to #%d".formatted(positionInRight(entry))
-                            : "from #%d".formatted(positionInLeft(entry));
+                    noteText = leftSide ? Messages.get("diff.note.movedTo", positionInRight(entry))
+                            : Messages.get("diff.note.movedFrom", positionInLeft(entry));
                 }
                 case MODIFIED -> {
                     getStyleClass().add("modified");
@@ -496,7 +499,7 @@ public class DiffController extends VBox {
                 case ADDED -> {
                     getStyleClass().add("added");
                     gutterText = "+";
-                    noteText = "added or edited manually";
+                    noteText = Messages.get("diff.note.added");
                 }
                 case UNCHANGED -> {
                     if (!leftSide) {

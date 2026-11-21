@@ -1,11 +1,11 @@
 package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import com.jcraft.jsch.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import lombok.Setter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
@@ -40,11 +40,20 @@ import java.util.Optional;
 @Slf4j
 public class SftpOutput extends AbstractPlugin implements Output {
     public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
-    @JsonIgnore
-    private final String name = "SFTP Output";
-    @JsonIgnore
-    private final String description = "writes a playlist to a SFTP server.";
     private SftpConnection sftpConnection = null;
+
+    /**
+     * @return the name shown to the user; a constant, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("output.sftp.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("output.sftp.description");
+    }
 
     static {
         initJschLogger();
@@ -156,7 +165,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
             try (InputStream inputStream = Files.newInputStream(file.content())) {
                 channelSftp.put(inputStream, directory + fileName);
             } catch (IOException e) {
-                throw new OutputException("%s could not be read: %s".formatted(file.name(), e.getMessage()), e);
+                throw new OutputException(Messages.get("output.sftp.fileReadError", file.name(), e.getMessage()), e);
             }
             fileNames.put(file, fileName);
         }
@@ -200,7 +209,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
             }
             String modified = LocalDateTime.ofInstant(Instant.ofEpochSecond(attrs.getMTime()), ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            return "Existing file: " + attrs.getSize() + " bytes, last modified " + modified;
+            return Messages.get("output.sftp.existingFile", attrs.getSize(), modified);
         } catch (SftpException e) {
             return null; // does not exist (or cannot be read; then the upload reports the error)
         }
@@ -407,7 +416,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     }
 
     private String describeFailure(Exception e) {
-        return "Upload to %s@%s:%d failed. %s".formatted(sftpConnection.getUserName(), sftpConnection.getHostName(),
+        return Messages.get("output.sftp.uploadFailed", sftpConnection.getUserName(), sftpConnection.getHostName(),
                 sftpConnection.getPort(), SftpClient.describeError(e));
     }
 

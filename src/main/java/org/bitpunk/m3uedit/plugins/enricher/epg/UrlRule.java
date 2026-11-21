@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -58,17 +59,18 @@ public record UrlRule(@JsonProperty("regex") String regex, @JsonProperty("channe
     static UrlRule parse(String line) {
         int separator = line.lastIndexOf(SEPARATOR);
         if (separator < 0) {
-            throw new IllegalArgumentException("'%s' is missing in '%s'".formatted(SEPARATOR, line));
+            throw new IllegalArgumentException(Messages.get("epgEnricher.urlRule.separatorMissing", SEPARATOR, line));
         }
         String regex = line.substring(0, separator).strip();
         String channelId = line.substring(separator + SEPARATOR.length()).strip();
         if (regex.isEmpty() || channelId.isEmpty()) {
-            throw new IllegalArgumentException("Expression and channel id are required: '%s'".formatted(line));
+            throw new IllegalArgumentException(Messages.get("epgEnricher.urlRule.incomplete", line));
         }
         try {
             Pattern.compile(regex);
         } catch (PatternSyntaxException e) {
-            throw new IllegalArgumentException("Invalid expression '%s': %s".formatted(regex, e.getDescription()));
+            throw new IllegalArgumentException(Messages.get("epgEnricher.urlRule.invalidExpression", regex,
+                    e.getDescription()));
         }
         return new UrlRule(regex, channelId);
     }

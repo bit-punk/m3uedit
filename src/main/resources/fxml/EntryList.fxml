@@ -5,7 +5,7 @@
 <fx:root type="javafx.scene.layout.VBox" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.2-ea">
     <!-- filters the entries shown, the playlist itself is not changed -->
     <HBox fx:id="searchBar" spacing="6" alignment="CENTER_LEFT" styleClass="playlist-search">
-        <TextField fx:id="searchField" promptText="Search name, group, tvg-id or URL (Ctrl+F)" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="searchField" promptText="%playlist.search.prompt" HBox.hgrow="ALWAYS"/>
         <Button fx:id="clearSearchButton" text="✕" mnemonicParsing="false" focusTraversable="false"/>
         <Label fx:id="searchResultLabel" styleClass="playlist-search-result"/>
     </HBox>
@@ -15,16 +15,16 @@
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
         </columnResizePolicy>
         <columns>
-            <TableColumn fx:id="indexColumn" maxWidth="70" text="Index"/>
-            <TableColumn fx:id="channelNameColumn" maxWidth="700" minWidth="50" prefWidth="200" text="Channel Name"/>
-            <TableColumn fx:id="tvgIdColumn" maxWidth="400" minWidth="50" prefWidth="120" text="tvg-id"/>
-            <TableColumn fx:id="channelUriColumn" maxWidth="700" minWidth="50" prefWidth="300" text="Channel URI"/>
+            <TableColumn fx:id="indexColumn" maxWidth="70" text="%playlist.column.index"/>
+            <TableColumn fx:id="channelNameColumn" maxWidth="700" minWidth="50" prefWidth="200" text="%playlist.column.channelName"/>
+            <TableColumn fx:id="tvgIdColumn" maxWidth="400" minWidth="50" prefWidth="120" text="%playlist.column.tvgId"/>
+            <TableColumn fx:id="channelUriColumn" maxWidth="700" minWidth="50" prefWidth="300" text="%playlist.column.channelUri"/>
         </columns>
     </TableView>
     <HBox spacing="8">
-        <Button fx:id="addNewEntryButton" mnemonicParsing="false" text="Add new Entry"/>
-        <Button fx:id="resetManualChangesButton" mnemonicParsing="false" text="Reset manual Changes"/>
-        <Button fx:id="epgButton" mnemonicParsing="false" text="EPG"/>
+        <Button fx:id="addNewEntryButton" mnemonicParsing="false" text="%playlist.addEntry"/>
+        <Button fx:id="resetManualChangesButton" mnemonicParsing="false" text="%playlist.resetManualChanges"/>
+        <Button fx:id="epgButton" mnemonicParsing="false" text="%playlist.epg"/>
     </HBox>
 
 </fx:root>

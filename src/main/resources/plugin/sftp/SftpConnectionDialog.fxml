@@ -4,44 +4,44 @@
 
     <content>
         <GridPane hgap="5" vgap="5">
-            <Label text="Recent:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <ComboBox fx:id="recentServersComboBox" promptText="recently used servers" maxWidth="Infinity"
+            <Label text="%sftp.connection.recent" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <ComboBox fx:id="recentServersComboBox" promptText="%sftp.connection.recent.prompt" maxWidth="Infinity"
                       GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.columnSpan="2"/>
-            <Button fx:id="removeRecentServerButton" text="Remove" onAction="#handleRemoveRecentServer"
+            <Button fx:id="removeRecentServerButton" text="%common.remove" onAction="#handleRemoveRecentServer"
                     maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
 
             <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="4"/>
 
-            <Label text="Host:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-            <TextField fx:id="hostnameTextField" promptText="hostname or IP address"
+            <Label text="%sftp.connection.host" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextField fx:id="hostnameTextField" promptText="%sftp.connection.host.prompt"
                        GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-            <Label text="Port:" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+            <Label text="%sftp.connection.port" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
             <TextField fx:id="hostPortTextField" text="22" prefColumnCount="5"
                        GridPane.columnIndex="3" GridPane.rowIndex="2"/>
 
-            <Label text="Directory:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+            <Label text="%sftp.connection.directory" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
             <TextField fx:id="hostPathTextField" text="/" promptText="/path/on/server"
                        GridPane.columnIndex="1" GridPane.rowIndex="3" GridPane.columnSpan="2"/>
-            <Button fx:id="browseButton" text="Browse…" onAction="#handleBrowse" maxWidth="Infinity"
+            <Button fx:id="browseButton" text="%sftp.connection.browse" onAction="#handleBrowse" maxWidth="Infinity"
                     GridPane.columnIndex="3" GridPane.rowIndex="3"/>
 
-            <Label text="Filename:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            <Label text="%sftp.connection.fileName" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
             <TextField fx:id="fileNameTextField" promptText="playlist.m3u"
                        GridPane.columnIndex="1" GridPane.rowIndex="4" GridPane.columnSpan="3"/>
 
-            <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+            <Label text="%sftp.connection.userName" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
             <TextField fx:id="usernameTextField" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="5"
                        GridPane.fillWidth="false"/>
 
-            <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
-            <PasswordField fx:id="passwordField" prefWidth="200" promptText="empty: ask when writing"
+            <Label text="%sftp.connection.password" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+            <PasswordField fx:id="passwordField" prefWidth="200" promptText="%sftp.connection.password.prompt"
                            GridPane.columnIndex="1" GridPane.rowIndex="6" GridPane.fillWidth="false"/>
 
-            <CheckBox fx:id="overwriteWithoutAskingCheckBox" text="Overwrite existing file without asking"
+            <CheckBox fx:id="overwriteWithoutAskingCheckBox" text="%sftp.connection.overwriteWithoutAsking"
                       GridPane.columnIndex="1" GridPane.rowIndex="7" GridPane.columnSpan="3"/>
 
-            <Label fx:id="playerBaseUrlLabel" text="Player URL:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
-            <TextField fx:id="playerBaseUrlTextField" promptText="optional, e.g. http://nas.local/iptv/ (for additional files, e.g. the EPG)"
+            <Label fx:id="playerBaseUrlLabel" text="%sftp.connection.playerBaseUrl" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
+            <TextField fx:id="playerBaseUrlTextField" promptText="%sftp.connection.playerBaseUrl.prompt"
                        GridPane.columnIndex="1" GridPane.rowIndex="8" GridPane.columnSpan="3"/>
             <columnConstraints>
                 <ColumnConstraints/>
@@ -50,6 +50,6 @@
         </GridPane>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

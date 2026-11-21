@@ -134,7 +134,7 @@ class PipelineControllerTest {
         // filters, sorters and enrichers only work on entries read from inputs
         assertThat(manualPipeline.stages()).extracting(PluginStageView::isInactive)
                 .containsExactly(false, true, true, true, false);
-        assertThat(manualPipeline.getFilterStage().getInactiveReason()).isEqualTo(PluginStageView.NO_ENTRIES_READ);
+        assertThat(manualPipeline.getFilterStage().getInactiveReason()).isEqualTo(PluginStageView.noEntriesRead());
         List<Node> connectors = manualPipeline.getChildren().stream()
                 .filter(node -> node.getStyleClass().contains("pipeline-connector")).toList();
         assertThat(connectors.getLast().getPseudoClassStates()).doesNotContain(PluginStageView.INACTIVE);

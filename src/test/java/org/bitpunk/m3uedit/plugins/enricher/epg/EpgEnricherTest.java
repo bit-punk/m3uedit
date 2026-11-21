@@ -73,7 +73,7 @@ class EpgEnricherTest {
         assertThat(enrichment.notes()).containsEntry(entries.get(1), "by tvg-id")
                 .containsEntry(entries.get(2), "by name")
                 .containsEntry(entries.get(3), "by URL rule")
-                .containsEntry(unmatched, EpgEnricher.NO_EPG_DATA)
+                .containsEntry(unmatched, "no EPG data")
                 .doesNotContainKey(byTvgId);
         assertThat(enrichment.summary()).isEqualTo("4 of 5 entries have EPG data (4 channels in 1 of 1 sources).");
         assertThat(enrichment.epgUrls()).containsExactly(source);
@@ -181,7 +181,7 @@ class EpgEnricherTest {
         Enrichment enrichment = enricher.enrich(List.of(entry("Das Erste HD", null, "http://e/1")));
 
         assertThat(enrichment.attachments()).singleElement().satisfies(attachment -> {
-            assertThat(attachment.name()).isEqualTo(EpgEnricher.GUIDE_NAME);
+            assertThat(attachment.name()).isEqualTo("EPG guide");
             assertThat(attachment.suffix()).isEqualTo(".xml.gz");
             assertThat(attachment.headerAttributes()).containsExactly("x-tvg-url", "url-tvg");
         });

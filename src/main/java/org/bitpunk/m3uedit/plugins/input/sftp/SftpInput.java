@@ -2,11 +2,11 @@ package org.bitpunk.m3uedit.plugins.input.sftp;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
@@ -32,16 +32,25 @@ import java.util.List;
 @Setter
 public class SftpInput extends AbstractInput implements Input {
 
-    @JsonIgnore
-    private final String name = "SFTP Input";
-    @JsonIgnore
-    private final String description = "Reads a playlist from a SFTP server.";
     private SftpConnection sftpConnection;
 
     /**
      * Reads the playlist. Errors are shown to the user and result in an empty list,
      * so a temporarily unreachable server does not break loading the other inputs.
      */
+    /**
+     * @return the name shown to the user; a constant, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("input.sftp.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("input.sftp.description");
+    }
+
     @Override
     public List<Entry> read() {
         if (sftpConnection == null) {
@@ -51,7 +60,7 @@ public class SftpInput extends AbstractInput implements Input {
         String target = describeTarget();
         if (!userInteraction.ensurePassword(sftpConnection)) {
             log.warn("Reading from {} skipped: no password entered", target);
-            throw new InputReadException("no password entered for " + target, List.of());
+            throw new InputReadException(Messages.get("input.sftp.noPassword", target), List.of());
         }
         String path = sftpConnection.getTargetPath();
         try (SftpClient client = SftpClient.connect(sftpConnection, userInteraction);

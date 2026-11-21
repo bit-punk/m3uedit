@@ -1,7 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
 import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
@@ -46,7 +45,7 @@ class SceneControllerTest {
     void testSceneFxmlLoadsAndStartScreenIsVisibleInitially() throws Exception {
         runOnFxThread(() -> {
             try {
-                Scene scene = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml")));
+                Scene scene = org.bitpunk.m3uedit.i18n.Messages.fxmlLoader(Objects.requireNonNull(getClass().getClassLoader().getResource("fxml/Scene.fxml"))).load();
                 assertThat(scene).isNotNull();
 
                 VBox startScreen = (VBox) scene.lookup("#startScreen");

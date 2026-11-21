@@ -1,8 +1,8 @@
 package org.bitpunk.m3uedit.plugins.filter.uniquename;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
 import lombok.Getter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -12,10 +12,18 @@ import java.util.List;
 @Getter
 @Setter
 public class UniqueNameFilter extends AbstractUniqueFilter implements Filter {
-    @JsonIgnore
-    private final String name = "Unique Name Filter";
-    @JsonIgnore
-    private final String description = "Filters for unique entries (criteria: channelName)";
+    /**
+     * @return the name shown to the user, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("filter.uniqueName.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("filter.uniqueName.description");
+    }
 
     @Override
     public int order() {
@@ -31,7 +39,7 @@ public class UniqueNameFilter extends AbstractUniqueFilter implements Filter {
 
     @Override
     public String describeRemoval(Entry removed, List<Entry> input) {
-        return describeDuplicate(removed, input, Entry::getName, "name");
+        return describeDuplicate(removed, input, Entry::getName, "filter.uniqueName.reason");
     }
 
 }

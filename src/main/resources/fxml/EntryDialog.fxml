@@ -13,53 +13,53 @@
                 <ColumnConstraints hgrow="ALWAYS"/>
             </columnConstraints>
 
-            <Label text="Channel" styleClass="section-title" GridPane.rowIndex="0" GridPane.columnSpan="2"/>
-            <Label text="Name" styleClass="field-label" GridPane.rowIndex="1"/>
-            <TextField fx:id="nameTextField" promptText="the name shown in the player" GridPane.columnIndex="1"
+            <Label text="%entryDialog.section.channel" styleClass="section-title" GridPane.rowIndex="0" GridPane.columnSpan="2"/>
+            <Label text="%entryDialog.name" styleClass="field-label" GridPane.rowIndex="1"/>
+            <TextField fx:id="nameTextField" promptText="%entryDialog.name.prompt" GridPane.columnIndex="1"
                        GridPane.rowIndex="1"/>
-            <Label text="Stream URL" styleClass="field-label" GridPane.rowIndex="2"/>
-            <TextField fx:id="channelUriTextField" promptText="e.g. http://… or rtsp://…" GridPane.columnIndex="1"
+            <Label text="%entryDialog.streamUrl" styleClass="field-label" GridPane.rowIndex="2"/>
+            <TextField fx:id="channelUriTextField" promptText="%entryDialog.streamUrl.prompt" GridPane.columnIndex="1"
                        GridPane.rowIndex="2"/>
 
-            <Label text="Programme guide and logo" styleClass="section-title" GridPane.rowIndex="3"
+            <Label text="%entryDialog.section.guide" styleClass="section-title" GridPane.rowIndex="3"
                    GridPane.columnSpan="2"/>
-            <Label text="tvg-id" styleClass="field-label" GridPane.rowIndex="4"/>
-            <TextField fx:id="tvgIdTextField" promptText="the channel in the programme guide, e.g. DasErste.de"
+            <Label text="%entryDialog.tvgId" styleClass="field-label" GridPane.rowIndex="4"/>
+            <TextField fx:id="tvgIdTextField" promptText="%entryDialog.tvgId.prompt"
                        GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-            <Label text="tvg-name" styleClass="field-label" GridPane.rowIndex="5"/>
+            <Label text="%entryDialog.tvgName" styleClass="field-label" GridPane.rowIndex="5"/>
             <TextField fx:id="tvgNameTextField" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-            <Label text="tvg-logo" styleClass="field-label" GridPane.rowIndex="6"/>
+            <Label text="%entryDialog.tvgLogo" styleClass="field-label" GridPane.rowIndex="6"/>
             <HBox styleClass="field-row" GridPane.columnIndex="1" GridPane.rowIndex="6">
-                <TextField fx:id="tvgLogoTextField" promptText="URL of the logo" HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="tvgLogoTextField" promptText="%entryDialog.tvgLogo.prompt" HBox.hgrow="ALWAYS"/>
                 <StackPane styleClass="logo-preview">
                     <ImageView fx:id="logoPreview" fitWidth="48" fitHeight="28" preserveRatio="true"/>
                 </StackPane>
             </HBox>
-            <Label text="tvg-shift" styleClass="field-label" GridPane.rowIndex="7"/>
-            <TextField fx:id="tvgShiftTextField" styleClass="short-field" promptText="hours, e.g. -1"
+            <Label text="%entryDialog.tvgShift" styleClass="field-label" GridPane.rowIndex="7"/>
+            <TextField fx:id="tvgShiftTextField" styleClass="short-field" promptText="%entryDialog.tvgShift.prompt"
                        GridPane.columnIndex="1" GridPane.rowIndex="7"/>
 
-            <Label text="Playlist" styleClass="section-title" GridPane.rowIndex="8" GridPane.columnSpan="2"/>
-            <Label text="Group" styleClass="field-label" GridPane.rowIndex="9"/>
-            <TextField fx:id="groupTitleTextField" promptText="group-title, e.g. News" GridPane.columnIndex="1"
+            <Label text="%entryDialog.section.playlist" styleClass="section-title" GridPane.rowIndex="8" GridPane.columnSpan="2"/>
+            <Label text="%entryDialog.group" styleClass="field-label" GridPane.rowIndex="9"/>
+            <TextField fx:id="groupTitleTextField" promptText="%entryDialog.group.prompt" GridPane.columnIndex="1"
                        GridPane.rowIndex="9"/>
-            <Label text="Duration" styleClass="field-label" GridPane.rowIndex="10"/>
-            <TextField fx:id="durationTextField" styleClass="short-field" promptText="-1 for streams"
+            <Label text="%entryDialog.duration" styleClass="field-label" GridPane.rowIndex="10"/>
+            <TextField fx:id="durationTextField" styleClass="short-field" promptText="%entryDialog.duration.prompt"
                        GridPane.columnIndex="1" GridPane.rowIndex="10"/>
-            <Label text="Radio" styleClass="field-label" GridPane.rowIndex="11"/>
-            <TextField fx:id="radioTextField" styleClass="short-field" promptText="true for radio"
+            <Label text="%entryDialog.radio" styleClass="field-label" GridPane.rowIndex="11"/>
+            <TextField fx:id="radioTextField" styleClass="short-field" promptText="%entryDialog.radio.prompt"
                        GridPane.columnIndex="1" GridPane.rowIndex="11"/>
-            <Label fx:id="indexLabel" text="Position" styleClass="field-label" GridPane.rowIndex="12"/>
+            <Label fx:id="indexLabel" text="%entryDialog.position" styleClass="field-label" GridPane.rowIndex="12"/>
             <HBox fx:id="indexHBox" styleClass="field-row" GridPane.columnIndex="1" GridPane.rowIndex="12">
                 <TextField fx:id="indexTextField" styleClass="short-field"/>
                 <Label fx:id="maxIndexLabel" text="of MAX" styleClass="field-hint"/>
             </HBox>
 
-            <Label text="VLC options" styleClass="section-title" GridPane.rowIndex="13" GridPane.columnSpan="2"/>
+            <Label text="%entryDialog.section.vlcOptions" styleClass="section-title" GridPane.rowIndex="13" GridPane.columnSpan="2"/>
             <MapEditorController fx:id="mapEditorController" GridPane.rowIndex="14" GridPane.columnSpan="2"/>
         </GridPane>
     </content>
 
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

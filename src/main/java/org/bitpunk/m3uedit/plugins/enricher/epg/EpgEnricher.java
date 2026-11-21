@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
 import org.bitpunk.m3uedit.plugins.enricher.Attachment;
@@ -50,10 +51,8 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
     static final int DEFAULT_CACHE_HOURS = 12;
     static final int DEFAULT_GUIDE_DAYS_AHEAD = 7;
     static final int DEFAULT_GUIDE_HOURS_PAST = 6;
-    static final String GUIDE_NAME = "EPG guide";
     static final String CONFIG_FILE_NAME = "epg_enricher.yaml";
     static final String CONFIG_RESOURCE = "plugin/enricher/epg/epg_enricher.yaml";
-    static final String NO_EPG_DATA = "no EPG data";
 
     /**
      * The channels read from a cached source, kept as long as the file does not change.
@@ -72,10 +71,18 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
 
     private static final Map<Path, CachedChannels> CHANNELS = new ConcurrentHashMap<>();
 
-    @JsonIgnore
-    private final String name = "EPG Enricher";
-    @JsonIgnore
-    private final String description = "Sets the tvg-id of the entries to the channels of EPG sources (XMLTV)";
+    /**
+     * @return the name shown to the user, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("epgEnricher.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("epgEnricher.description");
+    }
 
     /**
      * The urls of the XMLTV files, in the order of their priority. Project files without sources (e.g. written before
@@ -152,7 +159,7 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
     public Enrichment enrich(List<Entry> entries) {
         List<String> urls = configuredSources();
         if (urls.isEmpty()) {
-            return new Enrichment(entries, List.of(), null, "No EPG sources configured.", null, null);
+            return new Enrichment(entries, List.of(), null, Messages.get("epgEnricher.summary.noSources"), null, null);
         }
         LoadedSources loaded = loadSources(urls);
         List<String> warnings = loaded.warnings();
@@ -168,7 +175,7 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
             EpgMatcher.Match match = matcher.match(entry);
             if (match == null) {
                 enriched.add(entry);
-                notes.put(entry, NO_EPG_DATA);
+                notes.put(entry, Messages.get("epgEnricher.note.noEpgData"));
                 continue;
             }
             if (match.inSources()) {
@@ -178,15 +185,15 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
             if (!match.channelId().equals(entry.getTvgId())) {
                 result = EntryMapper.copyOf(entry);
                 result.setTvgId(match.channelId());
-                notes.put(result, "by " + match.strategy().getLabel());
+                notes.put(result, Messages.get("epgEnricher.note.matched", match.strategy().getLabel()));
             }
             if (!match.inSources()) {
-                notes.put(result, "by %s, not in the EPG sources".formatted(match.strategy().getLabel()));
+                notes.put(result, Messages.get("epgEnricher.note.notInSources", match.strategy().getLabel()));
             }
             enriched.add(result);
         }
-        String summary = "%d of %d entries have EPG data (%d channels in %d of %d sources).".formatted(withEpgData,
-                entries.size(), index.size(), channelsPerSource.size(), urls.size());
+        String summary = Messages.get("epgEnricher.summary", withEpgData, entries.size(), index.size(),
+                channelsPerSource.size(), urls.size());
         List<Attachment> attachments = compileGuide && index.size() > 0 ? List.of(guideAttachment(urls)) : List.of();
         return new Enrichment(enriched, attachments, notes, summary, warnings, urls);
     }
@@ -207,7 +214,7 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
                     files.add(source.file());
                 } catch (IOException e) {
                     log.warn("EPG source {} cannot be read: {}", url, e.getMessage());
-                    warnings.add("%s cannot be read: %s".formatted(url, e.getMessage()));
+                    warnings.add(Messages.get("epgEnricher.warning.unreadable", url, e.getMessage()));
                 }
             }
         }
@@ -223,7 +230,7 @@ public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGu
         Duration past = guideHoursPast > 0 ? Duration.ofHours(guideHoursPast) : null;
         boolean compressed = compressGuide;
         Clock compileClock = getClock();
-        return new Attachment(GUIDE_NAME, compressed ? ".xml.gz" : ".xml", List.of("x-tvg-url", "url-tvg"),
+        return new Attachment(Messages.get("epgEnricher.guide.name"), compressed ? ".xml.gz" : ".xml", List.of("x-tvg-url", "url-tvg"),
                 (playlist, outputStream) -> {
                     LoadedSources loaded = loadSources(urls);
                     List<GuideCompiler.SourceSelection> selections = selectChannels(playlist, loaded);

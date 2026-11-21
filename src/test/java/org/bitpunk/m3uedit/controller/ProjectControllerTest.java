@@ -79,7 +79,7 @@ class ProjectControllerTest {
         projectController.setStatusLabel(label);
 
         dataModel.reloadInputs();
-        assertThat(label.getText()).isEqualTo(ProjectController.LOADING_MESSAGE);
+        assertThat(label.getText()).isEqualTo(ProjectController.loadingMessage());
         assertThat(label.getGraphic()).isInstanceOf(ProgressIndicator.class);
 
         backgroundTasks.forEach(Runnable::run);

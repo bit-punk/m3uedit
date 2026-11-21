@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.text.Text;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.util.AppVersion;
 
 import java.net.URL;
@@ -12,7 +13,7 @@ public class AboutDialogController<T> extends AbstractDialogController<T> {
     public static final String FXML_ABOUT_DIALOG = "fxml/AboutDialog.fxml";
 
     public AboutDialogController() {
-        super(FXML_ABOUT_DIALOG, "About m3uedit");
+        super(FXML_ABOUT_DIALOG, Messages.get("about.title"));
     }
 
     @FXML
@@ -22,8 +23,8 @@ public class AboutDialogController<T> extends AbstractDialogController<T> {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        versionText.setText("version: " + AppVersion.version());
-        buildTimeText.setText("build-time: " + AppVersion.buildTime());
+        versionText.setText(Messages.get("about.version", AppVersion.version()));
+        buildTimeText.setText(Messages.get("about.buildTime", AppVersion.buildTime()));
     }
 
     Text versionText() {

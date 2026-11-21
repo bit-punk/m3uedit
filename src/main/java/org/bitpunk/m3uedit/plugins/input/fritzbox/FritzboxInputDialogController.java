@@ -12,6 +12,7 @@ import javafx.util.Callback;
 import javafx.util.StringConverter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
@@ -29,7 +30,6 @@ import java.util.Set;
 @Slf4j
 public class FritzboxInputDialogController extends AbstractDialogController<FritzBoxConnection> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_FRITZBOX = "plugin/input/fritzbox/FritzboxInputDialog.fxml";
-    public static final String FRITZBOX_DIALOG_TITLE = "Enter FritzBox-Inputs data";
     @Getter
     private final FritzBoxConnection fritzBoxConnection = new FritzBoxConnection();
     @FXML
@@ -54,7 +54,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     private RecentFritzBoxConnections recentConnections;
 
     public FritzboxInputDialogController() {
-        super(FXML_PLUGIN_INPUT_FRITZBOX, FRITZBOX_DIALOG_TITLE);
+        super(FXML_PLUGIN_INPUT_FRITZBOX, Messages.get("fritzbox.dialog.title"));
         setResultConverter(getURIResultConverter());
     }
 
@@ -196,9 +196,32 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
             String fieldName = error.getPropertyPath().toString();
             log.trace("Field: {} Message: {}", fieldName, errorMessage);
             if (fieldName.equals("baseUrl")) {
-                markFieldInvalid(baseUrlTextField, errorMessage);
+                markFieldInvalid(baseUrlTextField, describe(error));
             }
         }
+    }
+
+    /**
+     * @return the message of a validation error in the language of the user interface
+     */
+    private static String describe(ConstraintViolation<FritzBoxConnection> error) {
+        return switch (error.getMessage()) {
+            case FritzBoxConnection.BASE_URL_EMPTY -> Messages.get("fritzbox.invalid.baseUrlEmpty");
+            case FritzBoxConnection.BASE_URL_INVALID -> Messages.get("fritzbox.invalid.baseUrl");
+            default -> error.getMessage();
+        };
+    }
+
+    /**
+     * @return the description of a stream shown to the user, e.g. "SD streams" (the description stored with the
+     * stream is not translated, it is part of the project-file)
+     */
+    static String describe(StreamSource streamSource) {
+        return switch (streamSource.getName()) {
+            case "tvsd.m3u" -> Messages.get("fritzbox.stream.sd");
+            case "tvhd.m3u" -> Messages.get("fritzbox.stream.hd");
+            default -> streamSource.getDescription();
+        };
     }
 
     private void resetTextFields() {
@@ -227,7 +250,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
                     checkBox.selectedProperty().bindBidirectional(bound);
                     setGraphic(checkBox);
                     setText(streamSource.getName());
-                    setTooltip(new Tooltip(streamSource.getDescription()));
+                    setTooltip(new Tooltip(describe(streamSource)));
                 }
             }
         });

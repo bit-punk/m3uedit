@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import org.bitpunk.m3uedit.config.AppConfigPaths;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,10 +33,7 @@ public final class EpgCache {
          * @return e.g. "125.3 MB in 2 files", or "empty"
          */
         public String describe() {
-            if (files == 0) {
-                return "empty";
-            }
-            return "%s in %d %s".formatted(formatSize(bytes), files, files == 1 ? "file" : "files");
+            return Messages.get("configuration.epgCache.usage", files == 0 ? "" : formatSize(bytes), files);
         }
     }
 
@@ -80,7 +78,7 @@ public final class EpgCache {
 
     static String formatSize(long bytes) {
         if (bytes < 1024) {
-            return bytes + " bytes";
+            return Messages.get("configuration.epgCache.bytes", bytes);
         }
         String[] units = {"KB", "MB", "GB", "TB"};
         double size = bytes;
@@ -89,6 +87,7 @@ public final class EpgCache {
             size /= 1024;
             unit++;
         }
-        return String.format(java.util.Locale.ROOT, "%.1f %s", size, units[unit]);
+        // with the decimal separator of the language of the user interface
+        return String.format(Messages.locale(), "%.1f %s", size, units[unit]);
     }
 }

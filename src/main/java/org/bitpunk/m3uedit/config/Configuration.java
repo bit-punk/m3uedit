@@ -2,6 +2,7 @@ package org.bitpunk.m3uedit.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.player.ExternalPlayer;
 import org.bitpunk.m3uedit.player.ExternalPlayerConfig;
 import org.bitpunk.m3uedit.plugins.enricher.epg.EpgCache;
@@ -31,9 +32,10 @@ public class Configuration {
      * @param passVlcOptions    whether the VLC options of the entries are passed to the player
      * @param maxRecentProjects how many recently used projects are remembered
      * @param startup           what is shown at startup
+     * @param language          the language of the user interface, used after a restart
      */
     public record Values(String playerCommand, List<String> playerArguments, boolean passVlcOptions,
-                         int maxRecentProjects, StartupMode startup) {
+                         int maxRecentProjects, StartupMode startup, Language language) {
         public Values {
             playerArguments = List.copyOf(playerArguments);
         }
@@ -76,7 +78,7 @@ public class Configuration {
         recentProjects.reload();
         return new Values(StringUtils.defaultIfBlank(playerConfig.getCommand(), ExternalPlayerConfig.DEFAULT_COMMAND),
                 Objects.requireNonNullElse(playerConfig.getArguments(), List.of()), playerConfig.isPassVlcOptions(),
-                recentProjects.getMaxEntries(), settings.getStartup());
+                recentProjects.getMaxEntries(), settings.getStartup(), settings.getLanguage());
     }
 
     /**
@@ -101,7 +103,7 @@ public class Configuration {
     }
 
     private static String entries(int count) {
-        return count == 0 ? "empty" : count == 1 ? "1 entry" : count + " entries";
+        return Messages.get("configuration.collected.entries", count);
     }
 
     /**
@@ -121,6 +123,7 @@ public class Configuration {
             recentProjects.setMaxEntries(values.maxRecentProjects());
         }
         settings.setStartup(values.startup());
+        settings.setLanguage(values.language());
 
         if (toClear.contains(Collected.RECENT_PROJECTS)) {
             recentProjects.clear();
@@ -136,8 +139,7 @@ public class Configuration {
                 EpgCache.clear(epgCache);
             } catch (IOException e) {
                 log.warn("could not clear the EPG cache {}", epgCache, e);
-                problems.add("The EPG cache could not be cleared completely (%s), maybe a source is being downloaded."
-                        .formatted(e.getMessage()));
+                problems.add(Messages.get("configuration.problem.epgCache", e.getMessage()));
             }
         }
         return problems;

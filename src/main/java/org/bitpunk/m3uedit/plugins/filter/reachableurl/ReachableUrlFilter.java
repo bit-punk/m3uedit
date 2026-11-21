@@ -1,11 +1,11 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Setter;
 import lombok.Getter;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
@@ -31,10 +31,18 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
      */
     private static final int MAX_CONCURRENT_CHECKS = 64;
 
-    @JsonIgnore
-    private final String name = "Reachable URL Filter";
-    @JsonIgnore
-    private final String description = "Filters for entries whose stream cannot be played";
+    /**
+     * @return the name shown to the user, not part of a project-file
+     */
+    @Override
+    public String getName() {
+        return Messages.get("filter.reachableUrl.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Messages.get("filter.reachableUrl.description");
+    }
 
     private transient YamlConfigManager<ReachableUrlFilterConfig> configManager;
 
@@ -81,7 +89,7 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     @Override
     public String describeRemoval(Entry removed, List<Entry> input) {
         // the check is not repeated here, it would block the user interface
-        return "stream not playable: %s".formatted(removed.getChannelUri());
+        return Messages.get("filter.reachableUrl.reason", removed.getChannelUri());
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,16 +84,16 @@ class EpgSourceCache {
         try {
             uri = URI.create(url.strip());
         } catch (IllegalArgumentException e) {
-            return new CachedSource(null, "invalid url %s".formatted(url));
+            return new CachedSource(null, Messages.get("epgEnricher.source.invalidUrl", url));
         }
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
         if ("file".equals(scheme)) {
             Path file = Path.of(uri);
             return Files.isReadable(file) ? new CachedSource(file, null)
-                    : new CachedSource(null, "%s cannot be read".formatted(file));
+                    : new CachedSource(null, Messages.get("epgEnricher.source.unreadableFile", file));
         }
         if (!"http".equals(scheme) && !"https".equals(scheme)) {
-            return new CachedSource(null, "unsupported url %s".formatted(url));
+            return new CachedSource(null, Messages.get("epgEnricher.source.unsupportedUrl", url));
         }
         Path file = cacheFileOf(url);
         boolean cached = Files.isRegularFile(file);
@@ -111,12 +112,11 @@ class EpgSourceCache {
             failedAttempts.put(url, clock.instant());
             log.warn("EPG source {} could not be downloaded: {}", url, e.getMessage());
             return cached
-                    ? new CachedSource(file, "%s could not be updated (%s), the copy downloaded before is used"
-                    .formatted(url, e.getMessage()))
-                    : new CachedSource(null, "%s could not be downloaded: %s".formatted(url, e.getMessage()));
+                    ? new CachedSource(file, Messages.get("epgEnricher.source.updateFailed", url, e.getMessage()))
+                    : new CachedSource(null, Messages.get("epgEnricher.source.downloadFailed", url, e.getMessage()));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return new CachedSource(cached ? file : null, "downloading %s has been interrupted".formatted(url));
+            return new CachedSource(cached ? file : null, Messages.get("epgEnricher.source.interrupted", url));
         }
     }
 
@@ -152,7 +152,7 @@ class EpgSourceCache {
                 return;
             }
             if (response.statusCode() / 100 != 2) {
-                throw new IOException("HTTP status " + response.statusCode());
+                throw new IOException(Messages.get("epgEnricher.source.httpStatus", response.statusCode()));
             }
             Files.createDirectories(file.getParent());
             Path temporary = Files.createTempFile(file.getParent(), file.getFileName().toString(), ".part");

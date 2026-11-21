@@ -11,10 +11,10 @@
                 <Text styleClass="text-id">m3uedit</Text>
                 <Text fx:id="versionText"/>
                 <Text fx:id="buildTimeText"/>
-                <Hyperlink text="MIT license">https://opensource.org/license/mit/</Hyperlink>
+                <Hyperlink text="%about.license">https://opensource.org/license/mit/</Hyperlink>
             </VBox>
         </TextFlow>
     </content>
-    <ButtonType fx:id="okButtonType" text="Ok" buttonData="OK_DONE"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType fx:id="okButtonType" text="%common.ok" buttonData="OK_DONE"/>
+    <ButtonType text="%common.cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.enricher.Programme;
 
 import javax.xml.stream.XMLInputFactory;
@@ -97,7 +98,7 @@ final class XmltvFiles {
                 reader.close();
             }
         } catch (XMLStreamException e) {
-            throw new IOException("No valid XMLTV file: " + e.getMessage(), e);
+            throw new IOException(Messages.get("epgEnricher.xmltv.invalid", e.getMessage()), e);
         }
         return channels;
     }
@@ -129,7 +130,7 @@ final class XmltvFiles {
                 reader.close();
             }
         } catch (XMLStreamException e) {
-            throw new IOException("No valid XMLTV file: " + e.getMessage(), e);
+            throw new IOException(Messages.get("epgEnricher.xmltv.invalid", e.getMessage()), e);
         }
         return programmes;
     }

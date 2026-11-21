@@ -16,6 +16,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.util.converter.IntegerStringConverter;
+import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.util.PojoValidator;
 
@@ -82,7 +83,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     private BooleanBinding isInputValid;
 
     public EntryDialogController() {
-        super(FXML_ENTRY_DIALOG, "Add new Entry");
+        super(FXML_ENTRY_DIALOG, Messages.get("entryDialog.title.add"));
         setResultConverter();
         disableOkButtonOnInvalidInput();
         setOnShowing(this::requestFocus);
@@ -90,7 +91,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     public EntryDialogController(Entry entry, int size) {
-        super(FXML_ENTRY_DIALOG, "Edit Entry");
+        super(FXML_ENTRY_DIALOG, Messages.get("entryDialog.title.edit"));
         setResultConverter();
         disableOkButtonOnInvalidInput();
         setOnShowing(this::requestFocus);
@@ -223,12 +224,25 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
         return errors.isEmpty();
     }
 
+    /**
+     * @return the message of the validation in the language of the user interface
+     */
+    static String translate(String message) {
+        return switch (message) {
+            case Entry.INDEX_NOT_POSITIVE -> Messages.get("entryDialog.invalid.index");
+            case Entry.DURATION_NOT_NUMERIC -> Messages.get("entryDialog.invalid.duration");
+            case Entry.URL_INVALID -> Messages.get("entryDialog.invalid.url");
+            case Entry.NAME_EMPTY -> Messages.get("entryDialog.invalid.name");
+            default -> message;
+        };
+    }
+
     private void displayValidationErrors(Set<ConstraintViolation<Entry>> errors) {
         resetTextFields();
         for (ConstraintViolation<Entry> error : errors) {
             String fieldName = error.getPropertyPath().toString();
-            String errorMessage = error.getMessage();
-            log.trace("Field: {} Message: {}", fieldName, errorMessage);
+            String errorMessage = translate(error.getMessage());
+            log.trace("Field: {} Message: {}", fieldName, error.getMessage());
             switch (fieldName) {
                 case "index" -> markFieldInvalid(indexTextField, errorMessage);
                 case "duration" -> markFieldInvalid(durationTextField, errorMessage);
@@ -269,7 +283,7 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     private void setMaxIndexLabel(int maxIndex) {
-        maxIndexLabel.setText("of " + maxIndex);
+        maxIndexLabel.setText(Messages.get("entryDialog.position.max", maxIndex));
     }
 
     private void setIndexVisible(boolean visible) {

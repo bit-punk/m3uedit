@@ -1,6 +1,5 @@
 package org.bitpunk.m3uedit.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,12 +11,15 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class SettingsConfig {
     /**
      * What is shown when m3uedit is started.
      */
     private StartupMode startup = StartupMode.START_SCREEN;
+    /**
+     * The language of the user interface, used after a restart.
+     */
+    private Language language = Language.SYSTEM;
     /**
      * The project-files open when m3uedit was closed the last time, reopened with
      * {@link StartupMode#REOPEN_PROJECTS}.
