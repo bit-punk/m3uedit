@@ -202,7 +202,7 @@ class EntryListControllerTest {
             controller.showEpg(providers);
             Entry zdf = entry("ZDF");
             zdf.setTvgId("ZDF.de");
-            controller.entryTableView().getItems().add(zdf);
+            controller.playlist().add(zdf);
         });
 
         // the window is updated once the playlist has not changed for a moment
@@ -218,5 +218,146 @@ class EntryListControllerTest {
 
         assertThat(channels).containsExactly("ARD", "ZDF");
         runOnFxThread(() -> controller.epgWindow().close());
+    }
+
+    private static Entry channel(String name, String group, String tvgId, String uri) {
+        Entry entry = new Entry();
+        entry.setName(name);
+        entry.setGroupTitle(group);
+        entry.setTvgId(tvgId);
+        entry.setChannelUri(uri);
+        return entry;
+    }
+
+    private static EntryListController searchable() {
+        return controllerWith(
+                channel("Das Erste HD", "Public", "DasErste.de", "http://example.com/ard"),
+                channel("ZDF HD", "Public", "ZDF.de", "http://example.com/zdf"),
+                channel("QVC", "Shopping", "QVC.de", "http://shop.example.com/qvc"),
+                channel("arte HD", "Culture", "arte.de", "http://example.com/arte"));
+    }
+
+    private static List<String> shownNames(EntryListController controller) {
+        return controller.entryTableView().getItems().stream().map(Entry::getName).toList();
+    }
+
+    @Test
+    void testTheSearchFiltersByNameGroupTvgIdAndUrl() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            controller.searchField().setText("hd");
+            assertThat(shownNames(controller)).containsExactly("Das Erste HD", "ZDF HD", "arte HD");
+            assertThat(controller.searchResultLabel().getText()).isEqualTo("3 of 4");
+
+            controller.searchField().setText("PUBLIC");
+            assertThat(shownNames(controller)).containsExactly("Das Erste HD", "ZDF HD");
+
+            controller.searchField().setText("arte.de");
+            assertThat(shownNames(controller)).containsExactly("arte HD");
+
+            controller.searchField().setText("shop.example");
+            assertThat(shownNames(controller)).containsExactly("QVC");
+
+            controller.searchField().clear();
+            assertThat(shownNames(controller)).hasSize(4);
+            assertThat(controller.searchResultLabel().getText()).isEmpty();
+            assertThat(controller.isSearching()).isFalse();
+        });
+    }
+
+    @Test
+    void testTheSearchDoesNotChangeThePlaylist() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            controller.searchField().setText("qvc");
+
+            assertThat(controller.playlist()).hasSize(4);
+            // the positions in the playlist are shown, QVC is the third entry
+            assertThat(controller.playlistPosition(0)).isEqualTo(3);
+            assertThat(controller.isSearching()).as("reordering is disabled").isTrue();
+        });
+    }
+
+    @Test
+    void testTheIndexColumnShowsThePositionInThePlaylistWhileSearching() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setScene(new javafx.scene.Scene(new javafx.scene.Group(controller), 600, 300));
+            stage.show();
+            controller.searchField().setText("arte");
+            controller.entryTableView().layout();
+
+            List<String> indices = controller.entryTableView().lookupAll(".table-cell").stream()
+                    .filter(cell -> cell instanceof javafx.scene.control.TableCell<?, ?> tableCell
+                            && tableCell.getTableColumn() == controller.entryTableView().getColumns().getFirst()
+                            && !tableCell.isEmpty()
+                            // only the rows shown, not the hidden row the table measures its cells with
+                            && tableCell.getIndex() >= 0 && tableCell.getParent().isVisible())
+                    .map(cell -> ((javafx.scene.control.TableCell<?, ?>) cell).getText()).toList();
+            stage.close();
+
+            assertThat(indices).containsExactly("4");
+        });
+    }
+
+    @Test
+    void testAnEntryFoundIsDeletedFromThePlaylist() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            controller.searchField().setText("qvc");
+            controller.entryTableView().getSelectionModel().selectFirst();
+
+            controller.deleteSelected();
+
+            assertThat(controller.playlist()).extracting(Entry::getName)
+                    .containsExactly("Das Erste HD", "ZDF HD", "arte HD");
+            assertThat(shownNames(controller)).isEmpty();
+            assertThat(controller.searchResultLabel().getText()).isEqualTo("0 of 3");
+        });
+    }
+
+    @Test
+    void testTheSearchFollowsChangesOfThePlaylist() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            controller.searchField().setText("hd");
+
+            // e.g. the inputs read again
+            controller.playlist().add(channel("3sat HD", "Culture", "3sat.de", "http://example.com/3sat"));
+
+            assertThat(shownNames(controller)).containsExactly("Das Erste HD", "ZDF HD", "arte HD", "3sat HD");
+            assertThat(controller.searchResultLabel().getText()).isEqualTo("4 of 5");
+        });
+    }
+
+    @Test
+    void testEscapeClearsTheSearchAndCtrlFMovesToIt() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setScene(new javafx.scene.Scene(new javafx.scene.Group(controller), 600, 300));
+            stage.show();
+            controller.entryTableView().requestFocus();
+
+            javafx.event.Event.fireEvent(controller.entryTableView(), new javafx.scene.input.KeyEvent(
+                    javafx.scene.input.KeyEvent.KEY_PRESSED, "", "", javafx.scene.input.KeyCode.F,
+                    false, !isMac(), false, isMac()));
+            boolean focused = controller.searchField().isFocused();
+
+            controller.searchField().setText("zdf");
+            javafx.event.Event.fireEvent(controller.searchField(), new javafx.scene.input.KeyEvent(
+                    javafx.scene.input.KeyEvent.KEY_PRESSED, "", "", javafx.scene.input.KeyCode.ESCAPE,
+                    false, false, false, false));
+            String text = controller.searchField().getText();
+            stage.close();
+
+            assertThat(focused).as("Ctrl+F").isTrue();
+            assertThat(text).as("Esc").isEmpty();
+        });
+    }
+
+    private static boolean isMac() {
+        return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("mac");
     }
 }

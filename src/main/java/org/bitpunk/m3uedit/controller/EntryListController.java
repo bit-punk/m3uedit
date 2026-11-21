@@ -5,6 +5,7 @@ import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -25,7 +26,9 @@ import org.bitpunk.m3uedit.util.ListControllerUtil;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.stream.Stream;
 
 @Slf4j
 public class EntryListController extends AbstractController  implements Initializable, ModelAware {
@@ -55,6 +58,17 @@ public class EntryListController extends AbstractController  implements Initiali
     @FXML
     @SuppressWarnings({"UnusedDeclaration"})
     private Button epgButton;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Button clearSearchButton;
+    @FXML
+    private Label searchResultLabel;
+    /**
+     * The entries of the playlist shown: those matching the search, all without search. Created by
+     * {@link #initModel}, the playlist itself is never changed by the search.
+     */
+    private FilteredList<Entry> shownEntries;
     private EpgWindow epgWindow;
     /**
      * Updates an open programme guide window once the playlist has not changed for a moment: a re-computation of
@@ -103,7 +117,7 @@ public class EntryListController extends AbstractController  implements Initiali
         row.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2 && (!row.isEmpty())) {
                 Entry entry = row.getItem();
-                int index = row.getIndex() + 1;
+                int index = playlistPosition(row.getIndex());
                 entry.setIndex(index);
                 log.debug("double-clicked on: {}", entry);
                 Entry edited = editEntry(entry);
@@ -119,6 +133,104 @@ public class EntryListController extends AbstractController  implements Initiali
     // package-private for tests
     TableView<Entry> entryTableView() {
         return entryTableView;
+    }
+
+    // package-private for tests: the playlist, the table only shows the entries matching the search
+    ObservableList<Entry> playlist() {
+        return dataModel.getSortedEntryList();
+    }
+
+    // package-private for tests
+    TextField searchField() {
+        return searchField;
+    }
+
+    // package-private for tests
+    Label searchResultLabel() {
+        return searchResultLabel;
+    }
+
+    /**
+     * @param shownIndex the index of an entry in the table
+     * @return its position in the playlist (starting with 1), which differs from the row while searching
+     */
+    int playlistPosition(int shownIndex) {
+        return shownEntries.getSourceIndex(shownIndex) + 1;
+    }
+
+    /**
+     * @return true while the search hides entries
+     */
+    boolean isSearching() {
+        return searchField.getText() != null && !searchField.getText().isBlank();
+    }
+
+    private void initSearch() {
+        searchField.textProperty().addListener((observable, oldText, text) -> applySearch());
+        shownEntries.addListener((ListChangeListener<Entry>) change -> updateSearchResult());
+        dataModel.getSortedEntryList().addListener((ListChangeListener<Entry>) change -> updateSearchResult());
+        clearSearchButton.setOnAction(event -> {
+            searchField.clear();
+            searchField.requestFocus();
+        });
+        clearSearchButton.visibleProperty().bind(searchField.textProperty().isNotEmpty());
+        searchField.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                searchField.clear();
+                event.consume();
+            }
+        });
+        // Ctrl+F moves to the search of the project shown, not of the other tabs
+        sceneProperty().addListener((observable, oldScene, scene) -> {
+            if (oldScene != null) {
+                oldScene.removeEventFilter(KeyEvent.KEY_PRESSED, focusSearchFilter);
+            }
+            if (scene != null) {
+                scene.addEventFilter(KeyEvent.KEY_PRESSED, focusSearchFilter);
+            }
+        });
+        applySearch();
+    }
+
+    private final javafx.event.EventHandler<KeyEvent> focusSearchFilter = event -> {
+        if (FOCUS_SEARCH.match(event) && isShown()) {
+            searchField.requestFocus();
+            searchField.selectAll();
+            event.consume();
+        }
+    };
+
+    private static final KeyCombination FOCUS_SEARCH = new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN);
+
+    /**
+     * @return true if this playlist is shown, i.e. its project tab is selected
+     */
+    private boolean isShown() {
+        for (javafx.scene.Node node = this; node != null; node = node.getParent()) {
+            if (!node.isVisible()) {
+                return false;
+            }
+        }
+        return getScene() != null;
+    }
+
+    private void applySearch() {
+        String text = searchField.getText() == null ? "" : searchField.getText().strip().toLowerCase(Locale.ROOT);
+        shownEntries.setPredicate(text.isEmpty() ? null : entry -> matches(entry, text));
+        updateSearchResult();
+    }
+
+    /**
+     * @param text the search text in lower case
+     */
+    static boolean matches(Entry entry, String text) {
+        return Stream.of(entry.getName(), entry.getGroupTitle(), entry.getTvgId(), entry.getChannelUri())
+                .anyMatch(value -> value != null && value.toLowerCase(Locale.ROOT).contains(text));
+    }
+
+    private void updateSearchResult() {
+        searchResultLabel.setText(isSearching()
+                ? "%d of %d".formatted(shownEntries.size(), dataModel.getSortedEntryList().size()) : "");
     }
 
     // package-private for tests
@@ -198,8 +310,12 @@ public class EntryListController extends AbstractController  implements Initiali
         });
     }
 
-    private static void setOnDragDetectedEventHandler(TableRow<Entry> row) {
+    private void setOnDragDetectedEventHandler(TableRow<Entry> row) {
         row.setOnDragDetected(event -> {
+            // the position among the entries hidden by the search would be unclear
+            if (isSearching()) {
+                return;
+            }
             if (!row.isEmpty()) {
                 // Serialize the list of indices instead of a single index
                 IndicesList selectedIndices = new IndicesList(row.getTableView().getSelectionModel().getSelectedIndices());
@@ -216,7 +332,11 @@ public class EntryListController extends AbstractController  implements Initiali
     private void addIndexColumn() {
         indexColumn.setCellFactory(col -> {
             TableCell<Entry, String> cell = new TableCell<>();
-            cell.textProperty().bind(Bindings.when(cell.emptyProperty()).then("").otherwise(cell.indexProperty().add(1).asString()));
+            // the position in the playlist, also while the search hides entries
+            cell.textProperty().bind(Bindings.createStringBinding(
+                    () -> cell.isEmpty() || cell.getIndex() < 0 || cell.getIndex() >= shownEntries.size() ? ""
+                            : Integer.toString(playlistPosition(cell.getIndex())),
+                    cell.emptyProperty(), cell.indexProperty(), shownEntries));
             return cell;
         });
     }
@@ -259,6 +379,16 @@ public class EntryListController extends AbstractController  implements Initiali
         keyEvent.consume();
         List<Entry> selected = List.copyOf(entryTableView.getSelectionModel().getSelectedItems());
         if (!selected.isEmpty() && ListControllerUtil.confirmDeletion(selected)) {
+            deleteSelected();
+        }
+    }
+
+    /**
+     * Removes the selected entries from the playlist, also while the search hides other entries.
+     */
+    void deleteSelected() {
+        List<Entry> selected = List.copyOf(entryTableView.getSelectionModel().getSelectedItems());
+        if (!selected.isEmpty()) {
             dataModel.removeEntries(selected);
             entryTableView.getSelectionModel().clearSelection();
         }
@@ -333,7 +463,9 @@ public class EntryListController extends AbstractController  implements Initiali
     @Override
     public void initModel(DataModel dataModel) {
         this.dataModel = dataModel;
-        entryTableView.setItems(this.dataModel.getSortedEntryList());
+        shownEntries = new FilteredList<>(this.dataModel.getSortedEntryList());
+        entryTableView.setItems(shownEntries);
+        initSearch();
         resetManualChangesButton.disableProperty().bind(Bindings.isEmpty(this.dataModel.getManualChanges()));
         // enabling an enricher re-computes the pipeline
         this.dataModel.pipelineResultProperty().addListener((observable, oldResult, newResult) -> {
