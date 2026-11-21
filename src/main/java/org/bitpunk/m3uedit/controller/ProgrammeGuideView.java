@@ -13,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -144,6 +145,18 @@ public class ProgrammeGuideView extends VBox {
         Pane channelClip = clipped(channelColumn);
         channelClip.setMinWidth(CHANNEL_WIDTH);
         channelClip.setPrefWidth(CHANNEL_WIDTH);
+        // the channel column and the time axis are not part of the scroll pane, they only follow its scrolling:
+        // scrolling over them scrolls the programmes
+        channelClip.setOnScroll(event -> {
+            scrollByPixels(horizontalDelta(event), event.isShiftDown() ? 0 : event.getDeltaY());
+            event.consume();
+        });
+        headerClip.setOnScroll(event -> {
+            // the time axis only moves in time: the mouse wheel scrolls horizontally there
+            double delta = horizontalDelta(event);
+            scrollByPixels(delta != 0 ? delta : event.getDeltaY(), 0);
+            event.consume();
+        });
         grid.getStyleClass().add("guide-grid");
         scrollPane.getStyleClass().add("guide-scroll");
         scrollPane.setFocusTraversable(false);
@@ -219,6 +232,35 @@ public class ProgrammeGuideView extends VBox {
     /**
      * @return the horizontal position of the programmes at the left edge of the viewport
      */
+    /**
+     * Scrolls the programmes by the given distance, like the scroll pane itself does for scrolling over them.
+     *
+     * @param deltaX positive to show earlier programmes (to the left)
+     * @param deltaY positive to show the channels above
+     */
+    void scrollByPixels(double deltaX, double deltaY) {
+        Bounds viewport = scrollPane.getViewportBounds();
+        double scrollableWidth = grid.getPrefWidth() - viewport.getWidth();
+        double scrollableHeight = grid.getPrefHeight() - viewport.getHeight();
+        if (deltaX != 0 && scrollableWidth > 0) {
+            scrollPane.setHvalue(Math.clamp(scrollPane.getHvalue() - deltaX / scrollableWidth, 0, 1));
+        }
+        if (deltaY != 0 && scrollableHeight > 0) {
+            scrollPane.setVvalue(Math.clamp(scrollPane.getVvalue() - deltaY / scrollableHeight, 0, 1));
+        }
+    }
+
+    /**
+     * @return the horizontal part of a scroll event: of a touchpad, or the mouse wheel while Shift is pressed
+     * (reported as vertical scrolling on some platforms)
+     */
+    private static double horizontalDelta(ScrollEvent event) {
+        if (event.getDeltaX() != 0) {
+            return event.getDeltaX();
+        }
+        return event.isShiftDown() ? event.getDeltaY() : 0;
+    }
+
     double scrollX() {
         double scrollable = grid.getPrefWidth() - scrollPane.getViewportBounds().getWidth();
         return scrollable > 0 ? scrollPane.getHvalue() * scrollable : 0;
