@@ -1,0 +1,58 @@
+/*
+ * The colours of the application, added to every window (see org.bitpunk.m3uedit.util.Themes).
+ *
+ * The light theme is Modena with a few colours of the application; the dark theme is switched on by the style class
+ * "dark" on the root of a window. The stylesheets of the windows use the variables below instead of fixed colours or
+ * of colours derived towards white, so they look right in both themes; their own variables are switched by
+ * ".dark .their-class" rules (e.g. project.css, epg.css).
+ */
+.root {
+    /* errors, e.g. an input that could not be read, an invalid value */
+    -app-error: #b42318;
+    -app-error-background: #f9dcdc;
+    -app-invalid-background: #ffc0c0;
+    /* texts of less importance: hints, empty lists */
+    -app-muted: derive(-fx-text-base-color, 45%);
+    /* labels of fields, icons */
+    -app-text-secondary: derive(-fx-text-base-color, 18%);
+    /* lines separating sections and rows */
+    -app-line: derive(-fx-color, -12%);
+    -app-line-strong: derive(-fx-color, -20%);
+    /* backgrounds tinted by the accent colour: hovered buttons, selected steps */
+    -app-accent-tint: derive(-fx-accent, 85%);
+    -app-accent-tint-strong: derive(-fx-accent, 70%);
+    -app-selected-background: derive(-fx-accent, 88%);
+}
+
+.dark {
+    /* Modena derives all its colours from these */
+    -fx-base: #303238;
+    -fx-background: #1f2024;
+    -fx-control-inner-background: #26282d;
+    -fx-control-inner-background-alt: #2b2d33;
+    -fx-accent: #3d7be0;
+    -fx-default-button: #2f5ea8;
+    -fx-focus-color: #5b93ef;
+    -fx-faint-focus-color: #5b93ef33;
+    -fx-dark-text-color: #1f2024;
+    -fx-mid-text-color: #c9ccd4;
+    -fx-light-text-color: #e8eaf0;
+    /* the selection of a table without focus: Modena uses a fixed light grey */
+    -fx-selection-bar-non-focused: derive(-fx-base, 22%);
+
+    -app-error: #ff8f85;
+    -app-error-background: #4d2222;
+    -app-invalid-background: #5c2a2a;
+    -app-muted: derive(-fx-text-base-color, -38%);
+    -app-text-secondary: derive(-fx-text-base-color, -12%);
+    -app-line: derive(-fx-color, 22%);
+    -app-line-strong: derive(-fx-color, 32%);
+    -app-accent-tint: derive(-fx-accent, -55%);
+    -app-accent-tint-strong: derive(-fx-accent, -40%);
+    -app-selected-background: derive(-fx-accent, -60%);
+}
+
+/* the prompt text of Modena is derived towards black, invisible on a dark field */
+.dark .text-input {
+    -fx-prompt-text-fill: derive(-fx-control-inner-background, 55%);
+}

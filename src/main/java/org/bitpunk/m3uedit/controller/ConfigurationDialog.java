@@ -24,6 +24,7 @@ import org.bitpunk.m3uedit.config.Configuration;
 import org.bitpunk.m3uedit.config.Configuration.Collected;
 import org.bitpunk.m3uedit.config.Language;
 import org.bitpunk.m3uedit.config.StartupMode;
+import org.bitpunk.m3uedit.config.Theme;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.player.PlayerArguments;
 
@@ -52,6 +53,8 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
 
     @Getter
     private final ComboBox<Language> languageComboBox = new ComboBox<>();
+    @Getter
+    private final ComboBox<Theme> themeComboBox = new ComboBox<>();
     @Getter
     private final TextField playerCommandField = new TextField();
     @Getter
@@ -98,6 +101,23 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
             }
         });
         languageComboBox.setValue(values.language());
+        themeComboBox.getItems().setAll(Theme.values());
+        themeComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Theme theme) {
+                return theme == null ? "" : switch (theme) {
+                    case LIGHT -> Messages.get("configuration.theme.light");
+                    case DARK -> Messages.get("configuration.theme.dark");
+                    case SYSTEM -> Messages.get("configuration.theme.system");
+                };
+            }
+
+            @Override
+            public Theme fromString(String text) {
+                return null;
+            }
+        });
+        themeComboBox.setValue(values.theme());
         playerCommandField.setText(values.playerCommand());
         playerCommandField.setPromptText(Messages.get("configuration.player.command.prompt"));
         choosePlayerButton.setOnAction(event -> choosePlayer());
@@ -123,6 +143,7 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
         int row = 0;
 
         form.add(section(Messages.get("configuration.section.appearance")), 0, row++, 2, 1);
+        form.addRow(row++, field(Messages.get("configuration.theme")), themeComboBox);
         form.addRow(row++, field(Messages.get("configuration.language")), withHint(languageComboBox,
                 Messages.get("configuration.language.hint")));
 
@@ -177,7 +198,7 @@ public class ConfigurationDialog extends Dialog<ConfigurationDialog.Result> {
         return new Result(new Configuration.Values(playerCommandField.getText(),
                 PlayerArguments.split(playerArgumentsField.getText()), passVlcOptionsCheckBox.isSelected(),
                 maxRecentProjects, reopenProjectsRadioButton.isSelected() ? StartupMode.REOPEN_PROJECTS
-                : StartupMode.START_SCREEN, languageComboBox.getValue()), toClear);
+                : StartupMode.START_SCREEN, languageComboBox.getValue(), themeComboBox.getValue()), toClear);
     }
 
     /**

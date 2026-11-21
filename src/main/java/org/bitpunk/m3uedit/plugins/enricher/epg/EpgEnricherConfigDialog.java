@@ -101,7 +101,7 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         }
         compressGuideCheckBox.disableProperty().bind(compileGuideCheckBox.selectedProperty().not());
 
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.setStyle("-fx-text-fill: -app-error;");
         errorLabel.setWrapText(true);
 
         GridPane grid = new GridPane();

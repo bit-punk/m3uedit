@@ -1,7 +1,7 @@
 /* Dialog editing a single entry of the playlist: the fields grouped in sections. */
 .entry-dialog {
-    -entry-muted: derive(-fx-text-base-color, 45%);
-    -entry-line: derive(-fx-color, -12%);
+    -entry-muted: -app-muted;
+    -entry-line: -app-line;
 }
 
 .entry-form {
@@ -22,7 +22,7 @@
 }
 
 .field-label {
-    -fx-text-fill: derive(-fx-text-base-color, 20%);
+    -fx-text-fill: -app-text-secondary;
 }
 
 .field-hint {

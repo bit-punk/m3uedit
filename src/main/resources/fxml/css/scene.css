@@ -17,7 +17,7 @@
     -fx-pref-height: 140px;
     -fx-background-color: -fx-control-inner-background;
     -fx-background-radius: 10px;
-    -fx-border-color: derive(-fx-color, -20%);
+    -fx-border-color: -app-line-strong;
     -fx-border-radius: 10px;
     -fx-border-width: 2px;
     -fx-font-size: 14px;
@@ -28,13 +28,13 @@
 }
 
 .start-screen-button:hover {
-    -fx-background-color: derive(-fx-accent, 85%);
+    -fx-background-color: -app-accent-tint;
     -fx-border-color: -fx-accent;
     -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.15), 10, 0, 0, 4);
 }
 
 .start-screen-button:pressed {
-    -fx-background-color: derive(-fx-accent, 70%);
+    -fx-background-color: -app-accent-tint-strong;
 }
 
 .start-screen-icon {
@@ -88,7 +88,7 @@
 }
 
 .main-toolbar .tool-icon {
-    -fx-fill: derive(-fx-text-base-color, 15%);
+    -fx-fill: -app-text-secondary;
     -fx-scale-x: 0.85;
     -fx-scale-y: 0.85;
 }

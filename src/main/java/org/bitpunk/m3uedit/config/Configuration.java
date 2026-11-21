@@ -33,9 +33,10 @@ public class Configuration {
      * @param maxRecentProjects how many recently used projects are remembered
      * @param startup           what is shown at startup
      * @param language          the language of the user interface, used after a restart
+     * @param theme             the appearance of the user interface
      */
     public record Values(String playerCommand, List<String> playerArguments, boolean passVlcOptions,
-                         int maxRecentProjects, StartupMode startup, Language language) {
+                         int maxRecentProjects, StartupMode startup, Language language, Theme theme) {
         public Values {
             playerArguments = List.copyOf(playerArguments);
         }
@@ -78,7 +79,8 @@ public class Configuration {
         recentProjects.reload();
         return new Values(StringUtils.defaultIfBlank(playerConfig.getCommand(), ExternalPlayerConfig.DEFAULT_COMMAND),
                 Objects.requireNonNullElse(playerConfig.getArguments(), List.of()), playerConfig.isPassVlcOptions(),
-                recentProjects.getMaxEntries(), settings.getStartup(), settings.getLanguage());
+                recentProjects.getMaxEntries(), settings.getStartup(), settings.getLanguage(),
+                settings.getTheme());
     }
 
     /**
@@ -124,6 +126,7 @@ public class Configuration {
         }
         settings.setStartup(values.startup());
         settings.setLanguage(values.language());
+        settings.setTheme(values.theme());
 
         if (toClear.contains(Collected.RECENT_PROJECTS)) {
             recentProjects.clear();

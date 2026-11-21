@@ -1,7 +1,7 @@
 /* Dialog with the general settings: the fields grouped in sections, like the dialog editing an entry. */
 .configuration-dialog {
-    -configuration-muted: derive(-fx-text-base-color, 45%);
-    -configuration-line: derive(-fx-color, -12%);
+    -configuration-muted: -app-muted;
+    -configuration-line: -app-line;
 }
 
 .configuration-form {
@@ -21,7 +21,7 @@
 }
 
 .configuration-form .field-label {
-    -fx-text-fill: derive(-fx-text-base-color, 20%);
+    -fx-text-fill: -app-text-secondary;
 }
 
 .configuration-form .field-hint {

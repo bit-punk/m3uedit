@@ -127,7 +127,7 @@ The general settings are changed in the dialog *File → Configuration…* (Ctrl
 
 | Section         | Settings                                                                                         |
 |-----------------|--------------------------------------------------------------------------------------------------|
-| Appearance      | the language of the user interface: the one of the system (German or English), English or German; it is changed when m3uedit is started the next time |
+| Appearance      | the theme: light, dark or the one of the system (also followed when it changes while m3uedit is running), applied to all windows at once; the language of the user interface: the one of the system (German or English), English or German; it is changed when m3uedit is started the next time |
 | External player | the command (e.g. `vlc`, `mpv` or the path of the program), additional arguments and whether the VLC options of the entries are passed |
 | Recently used   | how many recently used projects are remembered; clearing the lists of recently used projects, SFTP servers and FritzBoxes |
 | EPG cache       | the space taken by the downloaded EPG sources; clearing it (the sources are downloaded again when needed) |
@@ -144,7 +144,7 @@ default values on first use and can be edited by hand:
 |----------------------------------------|-------------------------------------------------------------|
 | `external_player.yaml`                 | command and arguments of the external player (vlc)          |
 | `recent_projects.yaml`                 | recently used projects, `maxEntries` sets how many (10)     |
-| `settings.yaml`                        | the language (`SYSTEM`, `ENGLISH` or `GERMAN`), what is shown at startup (`START_SCREEN` or `REOPEN_PROJECTS`) and the projects open at the last exit |
+| `settings.yaml`                        | the theme (`LIGHT`, `DARK` or `SYSTEM`), the language (`SYSTEM`, `ENGLISH` or `GERMAN`), what is shown at startup (`START_SCREEN` or `REOPEN_PROJECTS`) and the projects open at the last exit |
 | `plugins/channel_name_filter.yaml`     | regular expressions of channel names to filter              |
 | `plugins/epg_enricher.yaml`            | EPG sources a new EPG Enricher starts with                  |
 | `plugins/fritzbox_recent_connections.yaml` | recently used FritzBoxes and their streams              |
@@ -202,6 +202,10 @@ on Windows/macOS.
   [ServiceLoader](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ServiceLoader.html) via the
   files in `src/main/resources/META-INF/services`. The pipeline they form is described in
   [src/main/doc/Playlist.md](src/main/doc/Playlist.md).
+* The colours are defined in `src/main/resources/fxml/css/theme.css`, which `org.bitpunk.m3uedit.util.Themes` adds to
+  every window; the dark theme adds the style class `dark` to the root of each window. Stylesheets use the variables
+  of `theme.css` (e.g. `-app-muted`, `-app-error`) instead of fixed colours, and switch their own colours with
+  `.dark .their-class` rules.
 * The texts of the user interface are kept in `src/main/resources/i18n/messages.properties` (English) and
   `messages_de.properties` (German) and read by `org.bitpunk.m3uedit.i18n.Messages`; FXML files refer to them as
   `%key`. `MessagesTest` checks that both languages contain the same keys and that every key used exists. The
