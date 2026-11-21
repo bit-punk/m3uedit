@@ -360,4 +360,151 @@ class EntryListControllerTest {
     private static boolean isMac() {
         return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("mac");
     }
+
+    /**
+     * The playlist of a project with a clipboard of its own instead of the system clipboard.
+     */
+    private static EntryListController withClipboard(AtomicReference<String> clipboard, List<String> messages,
+                                                     Entry... entries) {
+        EntryListController controller = controllerWith(entries);
+        controller.clipboardReader = clipboard::get;
+        controller.clipboardWriter = clipboard::set;
+        controller.messageReporter = messages::add;
+        controller.deleteConfirmation = selected -> true;
+        return controller;
+    }
+
+    private static List<String> names(EntryListController controller) {
+        return controller.playlist().stream().map(Entry::getName).toList();
+    }
+
+    @Test
+    void testCopiedEntriesArePastedBehindTheSelectedEntry() throws Exception {
+        AtomicReference<String> clipboard = new AtomicReference<>();
+        List<String> messages = new java.util.ArrayList<>();
+        EntryListController controller = withClipboard(clipboard, messages, entry("A"), entry("B"), entry("C"));
+        runOnFxThread(() -> {
+            controller.entryTableView().getSelectionModel().select(2);
+            controller.entryTableView().getSelectionModel().select(0);
+            controller.copySelected();
+            // copied in the order of the playlist
+            assertThat(clipboard.get()).containsSubsequence(",A", ",C");
+
+            controller.entryTableView().getSelectionModel().clearAndSelect(1);
+            controller.paste();
+
+            assertThat(names(controller)).containsExactly("A", "B", "A", "C", "C");
+            // the pasted entries are selected
+            assertThat(controller.selectedEntries()).extracting(Entry::getName).containsExactly("A", "C");
+            assertThat(controller.selectedEntries().getFirst()).isNotSameAs(controller.playlist().getFirst());
+            assertThat(messages).isEmpty();
+        });
+    }
+
+    @Test
+    void testWithoutSelectionEntriesArePastedAtTheEnd() throws Exception {
+        AtomicReference<String> clipboard = new AtomicReference<>("#EXTINF:-1,X\nhttp://example.com/x\n");
+        EntryListController controller = withClipboard(clipboard, new java.util.ArrayList<>(), entry("A"), entry("B"));
+        runOnFxThread(() -> {
+            controller.paste();
+
+            assertThat(names(controller)).containsExactly("A", "B", "X");
+        });
+    }
+
+    @Test
+    void testEntriesAreCopiedIntoAnotherProject() throws Exception {
+        AtomicReference<String> clipboard = new AtomicReference<>();
+        Entry ard = entry("Das Erste HD");
+        ard.setTvgId("DasErste.de");
+        ard.setVlcOpts(java.util.Map.of("network-caching", "1000"));
+        EntryListController source = withClipboard(clipboard, new java.util.ArrayList<>(), ard, entry("ZDF"));
+        EntryListController target = withClipboard(clipboard, new java.util.ArrayList<>(), entry("arte"));
+        runOnFxThread(() -> {
+            source.entryTableView().getSelectionModel().select(0);
+            source.copySelected();
+
+            target.paste();
+
+            assertThat(names(target)).containsExactly("arte", "Das Erste HD");
+            Entry pasted = target.playlist().getLast();
+            assertThat(pasted.getTvgId()).isEqualTo("DasErste.de");
+            assertThat(pasted.getChannelUri()).isEqualTo(ard.getChannelUri());
+            assertThat(pasted.getVlcOpts()).containsEntry("network-caching", "1000");
+            assertThat(names(source)).as("copied, not moved").containsExactly("Das Erste HD", "ZDF");
+        });
+    }
+
+    /**
+     * The playlist read from an input, as in a project: undo computes it again from the entries of the pipeline.
+     */
+    private static EntryListController readFromInput(AtomicReference<String> clipboard, Entry... entries) {
+        DataModel dataModel = DataModelFactory.createDataModel("test");
+        dataModel.setBackgroundExecutor(Runnable::run);
+        dataModel.setFxExecutor(Runnable::run);
+        EntryListController controller = new ProjectController(dataModel).entryListController;
+        dataModel.getInputs().add(new TestPlugins.TestInput("input", List.of(entries)));
+        controller.clipboardReader = clipboard::get;
+        controller.clipboardWriter = clipboard::set;
+        controller.messageReporter = message -> {
+        };
+        return controller;
+    }
+
+    @Test
+    void testCutEntriesAreRemovedAndCanBeRestoredByUndo() throws Exception {
+        AtomicReference<String> clipboard = new AtomicReference<>();
+        EntryListController controller = readFromInput(clipboard, entry("A"), entry("B"), entry("C"));
+        runOnFxThread(() -> {
+            controller.entryTableView().getSelectionModel().selectIndices(0, 2);
+            controller.cutSelected();
+            assertThat(names(controller)).containsExactly("B");
+            assertThat(clipboard.get()).contains(",A", ",C");
+
+            controller.getDataModel().undo();
+
+            assertThat(names(controller)).containsExactly("A", "B", "C");
+        });
+    }
+
+    @Test
+    void testPastingTextWithoutEntriesShowsAMessage() throws Exception {
+        List<String> messages = new java.util.ArrayList<>();
+        EntryListController controller = withClipboard(new AtomicReference<>("no playlist here"), messages, entry("A"));
+        runOnFxThread(() -> {
+            controller.paste();
+
+            assertThat(names(controller)).containsExactly("A");
+            assertThat(messages).singleElement().asString().contains("no entries");
+        });
+    }
+
+    @Test
+    void testSelectAllSelectsTheEntriesFoundWhileSearching() throws Exception {
+        EntryListController controller = searchable();
+        runOnFxThread(() -> {
+            controller.searchField().setText("hd");
+
+            controller.selectAll();
+
+            assertThat(controller.selectedEntries()).extracting(Entry::getName)
+                    .containsExactly("Das Erste HD", "ZDF HD", "arte HD");
+        });
+    }
+
+    @Test
+    void testDeleteAsksAndRemovesTheSelectedEntries() throws Exception {
+        List<List<Entry>> asked = new java.util.ArrayList<>();
+        EntryListController controller = withClipboard(new AtomicReference<>(), new java.util.ArrayList<>(),
+                entry("A"), entry("B"));
+        controller.deleteConfirmation = asked::add;
+        runOnFxThread(() -> {
+            controller.entryTableView().getSelectionModel().select(1);
+
+            controller.deleteSelectedAfterConfirmation();
+
+            assertThat(asked).singleElement().asList().hasSize(1);
+            assertThat(names(controller)).containsExactly("A");
+        });
+    }
 }
