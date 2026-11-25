@@ -39,8 +39,6 @@ public class SftpInput extends AbstractInput implements Input {
     /**
      * Reads the playlist. Errors are shown to the user and result in an empty list,
      * so a temporarily unreachable server does not break loading the other inputs.
-     */
-    /**
      * @return the name shown to the user; a constant, not part of a project-file
      */
     @Override

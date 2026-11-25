@@ -168,11 +168,13 @@ class PluginTypesTest {
         String yaml = Files.readString(projectFile);
         assertThat(IDS.values()).allSatisfy(id -> assertThat(yaml).contains("type: " + id + "\n"));
         List<Plugin> plugins = new ArrayList<>();
-        plugins.addAll(loaded.getInputs());
-        plugins.addAll(loaded.getOutputs());
-        plugins.addAll(loaded.getFilters());
-        plugins.addAll(loaded.getSorters());
-        plugins.addAll(loaded.getEnrichers());
+        if (loaded != null) {
+            plugins.addAll(loaded.getInputs());
+            plugins.addAll(loaded.getOutputs());
+            plugins.addAll(loaded.getFilters());
+            plugins.addAll(loaded.getSorters());
+            plugins.addAll(loaded.getEnrichers());
+        }
         assertThat(plugins).extracting(plugin -> plugin.getClass().getName())
                 .containsExactlyInAnyOrderElementsOf(IDS.keySet());
     }

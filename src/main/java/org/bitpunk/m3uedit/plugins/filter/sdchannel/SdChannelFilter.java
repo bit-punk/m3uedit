@@ -2,7 +2,6 @@ package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
@@ -18,7 +17,6 @@ import java.util.regex.Pattern;
  * e.g. "ZDF" is removed if "ZDF HD" exists. Other channels starting with the same name, like "ZDFneo" or
  * "RTL ZWEI", do not make a channel an SD channel.
  */
-@Slf4j
 @Getter
 @Setter
 @PluginType(id = "SdChannelFilter", nameKey = "filter.sdChannel.name")

@@ -73,10 +73,6 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
         return config;
     }
 
-    public void setConfig(ChannelNameFilterConfig config) {
-        this.config = config;
-    }
-
     public List<String> getExcludeRegexes() {
         ChannelNameFilterConfig currentConfig = getConfig();
         if (currentConfig != null && currentConfig.getExcludeRegexes() != null) {

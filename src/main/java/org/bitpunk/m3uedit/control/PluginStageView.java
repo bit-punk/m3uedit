@@ -199,8 +199,6 @@ public class PluginStageView<T extends Plugin> extends VBox {
 
     /**
      * While collapsed, only the header is shown, with the status of the stage instead of its hint.
-     */
-    /**
      * @param number the position of the stage in the pipeline, shown before its name; 0 to show none
      */
     public void setNumber(int number) {
