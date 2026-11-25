@@ -1,13 +1,20 @@
 package org.bitpunk.m3uedit.plugins.output.sftp;
 
+import org.bitpunk.m3uedit.api.Export;
+import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnectionSettings;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
+import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.Test;
-
-import org.bitpunk.m3uedit.model.Entry;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.net.URI;
-import java.util.Collections;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,7 +24,7 @@ class SftpOutputTest {
 
     @Test
     void testResolveTargetPath() {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
 
         assertThat(sftpOutput.resolveTargetPath(null, null)).isEqualTo(SftpOutput.DEFAULT_PLAYLIST_FILENAME);
         assertThat(sftpOutput.resolveTargetPath(null, "")).isEqualTo(SftpOutput.DEFAULT_PLAYLIST_FILENAME);
@@ -28,7 +35,7 @@ class SftpOutputTest {
 
     @Test
     void testGetOutput() {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         assertThat(sftpOutput.getOutput()).isNull();
 
         SftpConnection connection = new SftpConnection();
@@ -46,14 +53,14 @@ class SftpOutputTest {
 
     @Test
     void testWriteNullOrEmptyPlaylistDoesNotThrow() {
-        SftpOutput sftpOutput = new SftpOutput();
-        sftpOutput.write((List<Entry>) null);
-        sftpOutput.write(Collections.emptyList());
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
+        sftpOutput.write(Export.of(null));
+        sftpOutput.write(Export.of(List.of()));
     }
 
     @Test
     void testEnsureParentDirectoriesExistNullChannelDoesNotThrow() {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         sftpOutput.ensureParentDirectoriesExist(null, null);
         sftpOutput.ensureParentDirectoriesExist(null, "playlist.m3u");
         sftpOutput.ensureParentDirectoriesExist(null, "/var/playlists/playlist.m3u");
@@ -61,7 +68,7 @@ class SftpOutputTest {
 
     @Test
     void testGetSftpErrorName() {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         assertThat(sftpOutput.getSftpErrorName(0)).isEqualTo("SSH_FX_OK (0)");
         assertThat(sftpOutput.getSftpErrorName(1)).isEqualTo("SSH_FX_EOF (1)");
         assertThat(sftpOutput.getSftpErrorName(2)).isEqualTo("SSH_FX_NO_SUCH_FILE (2)");
@@ -72,7 +79,7 @@ class SftpOutputTest {
 
     @Test
     void testBuildContextDetailsWithoutChannel() {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         SftpConnection connection = new SftpConnection();
         connection.setHostName("myserver.local");
         connection.setPort(2222);
@@ -140,7 +147,7 @@ class SftpOutputTest {
     }
 
     private static SftpOutput outputWith(SftpConnection connection) {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         sftpOutput.setSftpConnection(connection);
         return sftpOutput;
     }
@@ -151,6 +158,7 @@ class SftpOutputTest {
         private String lastTarget;
 
         OverwriteInteraction(OverwriteDecision decision) {
+            super(new DefaultPluginContext(SftpOutput.class));
             this.decision = decision;
         }
 
@@ -164,7 +172,7 @@ class SftpOutputTest {
 
     @Test
     void testPlayerUrlOfAdditionalFiles() {
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         SftpConnection connection = new SftpConnection();
         sftpOutput.setSftpConnection(connection);
 
@@ -174,5 +182,66 @@ class SftpOutputTest {
         connection.setPlayerBaseUrl(" http://nas.local/iptv/ ");
         assertThat(sftpOutput.playerUrlOf("tv.xml.gz")).isEqualTo("http://nas.local/iptv/tv.xml.gz");
         assertThat(sftpOutput.playerUrlOf(null)).as("file not written").isNull();
+    }
+
+    @Test
+    void testSettingsRoundTripWithoutPassword() {
+        SftpOutput sftpOutput = outputWith(createConnection());
+        sftpOutput.getSftpConnection().setPassword("topSecret42");
+        sftpOutput.getSftpConnection().setOverwriteWithoutAsking(true);
+        sftpOutput.getSftpConnection().setPlayerBaseUrl("http://nas.local/iptv/");
+
+        SftpOutputSettings settings = (SftpOutputSettings) sftpOutput.getSettings();
+        assertThat(settings.sftpConnection()).isEqualTo(new SftpConnectionSettings("sftp", "example.com", 22,
+                "/playlists/tv.m3u", null, "user", true, "http://nas.local/iptv/"));
+        assertThat(settings.toString()).doesNotContain("topSecret42");
+
+        SftpOutput loaded = TestPluginSupport.create(SftpOutput::new);
+        loaded.setSettings(settings);
+        assertThat(loaded.getOutput()).hasToString("sftp://user@example.com:22/playlists/tv.m3u");
+        assertThat(loaded.getSftpConnection().isOverwriteWithoutAsking()).isTrue();
+        assertThat(loaded.getSftpConnection().getPlayerBaseUrl()).isEqualTo("http://nas.local/iptv/");
+        assertThat(loaded.getSftpConnection().getPassword()).isNull();
+        assertThat(loaded.getSettings()).isEqualTo(settings);
+    }
+
+    @Test
+    void testDefaultsForMissingSettings() {
+        SftpOutput sftpOutput = outputWith(createConnection());
+
+        sftpOutput.setSettings(new SftpOutputSettings(null));
+
+        assertThat(sftpOutput.getSftpConnection()).isNull();
+        assertThat(sftpOutput.getOutput()).isNull();
+    }
+
+    @Test
+    void testProjectFileOfTodayIsRead(@TempDir Path tempDir) throws Exception {
+        Path projectFile = tempDir.resolve("sftp.m3uproj");
+        Files.writeString(projectFile, """
+                ---
+                name: test
+                outputs:
+                  - type: SftpOutput
+                    enabled: true
+                    sftpConnection:
+                      schema: sftp
+                      hostName: example.com
+                      port: 22
+                      path: /playlists
+                      fileName: tv.m3u
+                      userName: user
+                      overwriteWithoutAsking: true
+                      playerBaseUrl: http://nas.local/iptv/
+                """);
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+
+        SftpOutput sftpOutput = (SftpOutput) loaded.getOutputs().getFirst();
+        assertThat(PluginStates.enabled(sftpOutput).get()).isTrue();
+        assertThat(sftpOutput.getOutput()).hasToString("sftp://user@example.com:22/playlists/tv.m3u");
+        assertThat(sftpOutput.getSftpConnection().isOverwriteWithoutAsking()).isTrue();
+        assertThat(sftpOutput.getSftpConnection().getPlayerBaseUrl()).isEqualTo("http://nas.local/iptv/");
+        assertThat(sftpOutput.getSftpConnection().getPassword()).isNull();
     }
 }

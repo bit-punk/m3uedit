@@ -52,7 +52,7 @@ class GuideCompilerTest {
                 + programme("c.at", "20261113120000 +0000", "20261113130000 +0000", "C1 &amp; more")
                 + "<channel id=\"c.at\"><display-name>C</display-name><icon src=\"http://x/c.png\"/></channel>"
                 + "</tv>");
-        GuideCompiler compiler = new GuideCompiler(NOW, null, null, ZoneOffset.UTC);
+        GuideCompiler compiler = new GuideCompiler(XmltvTestFiles.CONTEXT, NOW, null, null, ZoneOffset.UTC);
 
         String guide = write(compiler, List.of(new GuideCompiler.SourceSelection(first, Map.of("A", "A")),
                 new GuideCompiler.SourceSelection(second, Map.of("c.at", "C.at"))));
@@ -64,7 +64,7 @@ class GuideCompilerTest {
                         "channel=\"C.at\"><title>C1 &amp; more</title>", "<title>A1</title>")
                 .doesNotContain("B1", "A again", "\"B\"");
         Path written = XmltvTestFiles.write(tempDir.resolve("written.xml"), guide);
-        assertThat(XmltvFiles.readChannels(written)).extracting(XmltvChannel::id).containsExactly("A", "C.at");
+        assertThat(XmltvFiles.readChannels(XmltvTestFiles.CONTEXT, written)).extracting(XmltvChannel::id).containsExactly("A", "C.at");
     }
 
     @Test
@@ -78,7 +78,7 @@ class GuideCompilerTest {
                 + programme("A", "20261120110000 +0000", "20261120120000 +0000", "in a week")
                 + programme("A", "unknown", "unknown", "unknown times")
                 + "</tv>");
-        GuideCompiler compiler = new GuideCompiler(NOW, Duration.ofHours(6), Duration.ofDays(2), ZoneOffset.UTC);
+        GuideCompiler compiler = new GuideCompiler(XmltvTestFiles.CONTEXT, NOW, Duration.ofHours(6), Duration.ofDays(2), ZoneOffset.UTC);
 
         String guide = write(compiler, List.of(new GuideCompiler.SourceSelection(source, Map.of("A", "A"))));
 
@@ -88,7 +88,7 @@ class GuideCompilerTest {
 
     @Test
     void testEmptySelectionGivesAnEmptyGuide() throws IOException {
-        String guide = write(new GuideCompiler(NOW, null, null, ZoneOffset.UTC), List.of());
+        String guide = write(new GuideCompiler(XmltvTestFiles.CONTEXT, NOW, null, null, ZoneOffset.UTC), List.of());
 
         assertThat(guide).contains("<tv generator-info-name=\"m3uedit\">").contains("</tv>");
     }

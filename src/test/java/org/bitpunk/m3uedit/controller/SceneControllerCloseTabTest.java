@@ -10,6 +10,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -204,7 +205,7 @@ class SceneControllerCloseTabTest {
             assertThat(tab.getText()).isEqualTo("tv");
 
             // e.g. a filter enabled
-            dataModel.getFilters().getFirst().getEnabled().set(!dataModel.getFilters().getFirst().getEnabled().get());
+            PluginStates.enabled(dataModel.getFilters().getFirst()).set(!PluginStates.enabled(dataModel.getFilters().getFirst()).get());
             assertThat(tab.getText()).isEqualTo("tv *");
 
             f.controller().projectSaver = model -> ProjectPersisterUtil.SaveResult.CANCELLED;

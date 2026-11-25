@@ -83,7 +83,7 @@ class EpgSourceCacheTest {
         server.start();
         url = "http://127.0.0.1:" + server.getAddress().getPort() + "/guide.xml";
         clock = new TestClock();
-        cache = new EpgSourceCache(tempDir.resolve("cache"), HttpClient.newHttpClient(), clock);
+        cache = new EpgSourceCache(XmltvTestFiles.CONTEXT, tempDir.resolve("cache"), HttpClient.newHttpClient(), clock);
     }
 
     @AfterEach

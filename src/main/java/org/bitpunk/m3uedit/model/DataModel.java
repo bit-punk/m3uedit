@@ -24,18 +24,21 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Playlist;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.plugins.Plugin;
-import org.bitpunk.m3uedit.plugins.enricher.Attachment;
-import org.bitpunk.m3uedit.plugins.enricher.Enricher;
-import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.input.InputReadException;
-import org.bitpunk.m3uedit.plugins.output.Export;
-import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
-import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.api.Attachment;
+import org.bitpunk.m3uedit.api.Enricher;
+import org.bitpunk.m3uedit.api.Enrichment;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.Input;
+import org.bitpunk.m3uedit.api.InputReadException;
+import org.bitpunk.m3uedit.api.Export;
+import org.bitpunk.m3uedit.api.Export.ExportFile;
+import org.bitpunk.m3uedit.api.Output;
+import org.bitpunk.m3uedit.api.Sorter;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.util.EntryMapper;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
@@ -301,14 +304,14 @@ public class DataModel {
         inputsRecomputeListener = change -> reloadInputs();
         sorterEnabledListener = (observable, wasEnabled, enabled) -> {
             if (enabled) {
-                sorters.stream().filter(sorter -> sorter.getEnabled() == observable).findFirst()
+                sorters.stream().filter(sorter -> PluginStates.enabled(sorter) == observable).findFirst()
                         .ifPresent(this::onSorterEnabled);
             }
         };
         sorterListListener = change -> {
             while (change.next()) {
-                change.getRemoved().forEach(sorter -> sorter.getEnabled().removeListener(sorterEnabledListener));
-                change.getAddedSubList().forEach(sorter -> sorter.getEnabled().addListener(sorterEnabledListener));
+                change.getRemoved().forEach(sorter -> PluginStates.enabled(sorter).removeListener(sorterEnabledListener));
+                change.getAddedSubList().forEach(sorter -> PluginStates.enabled(sorter).addListener(sorterEnabledListener));
             }
             keepOneSorterEnabled(sorters);
         };
@@ -322,20 +325,20 @@ public class DataModel {
     }
 
     private void observePluginList(ObservableList<? extends Plugin> plugins) {
-        plugins.forEach(plugin -> plugin.getEnabled().addListener(pluginEnabledListener));
+        plugins.forEach(plugin -> PluginStates.enabled(plugin).addListener(pluginEnabledListener));
         plugins.addListener(pluginListListener);
     }
 
     private void stopObservingPluginList(ObservableList<? extends Plugin> plugins) {
-        plugins.forEach(plugin -> plugin.getEnabled().removeListener(pluginEnabledListener));
+        plugins.forEach(plugin -> PluginStates.enabled(plugin).removeListener(pluginEnabledListener));
         plugins.removeListener(pluginListListener);
     }
 
     private void onPluginListChanged(ListChangeListener.Change<? extends Plugin> change) {
         changed.set(true);
         while (change.next()) {
-            change.getRemoved().forEach(plugin -> plugin.getEnabled().removeListener(pluginEnabledListener));
-            change.getAddedSubList().forEach(plugin -> plugin.getEnabled().addListener(pluginEnabledListener));
+            change.getRemoved().forEach(plugin -> PluginStates.enabled(plugin).removeListener(pluginEnabledListener));
+            change.getAddedSubList().forEach(plugin -> PluginStates.enabled(plugin).addListener(pluginEnabledListener));
         }
     }
 
@@ -360,7 +363,7 @@ public class DataModel {
     public void setSorters(ObservableList<Sorter> sorters) {
         stopObservingPluginList(this.sorters);
         this.sorters.removeListener(sorterListListener);
-        this.sorters.forEach(sorter -> sorter.getEnabled().removeListener(sorterEnabledListener));
+        this.sorters.forEach(sorter -> PluginStates.enabled(sorter).removeListener(sorterEnabledListener));
         this.sorters = sorters;
         keepOneSorterEnabled(this.sorters);
         observePluginList(this.sorters);
@@ -390,13 +393,13 @@ public class DataModel {
     private static void keepOneSorterEnabled(List<Sorter> sorters) {
         Sorter last = null;
         for (Sorter sorter : sorters) {
-            if (sorter.getEnabled().get()) {
+            if (PluginStates.enabled(sorter).get()) {
                 last = sorter;
             }
         }
         for (Sorter sorter : sorters) {
             if (sorter != last) {
-                sorter.getEnabled().set(false);
+                PluginStates.enabled(sorter).set(false);
             }
         }
     }
@@ -405,14 +408,14 @@ public class DataModel {
      * Enabling a sorter disables the other ones.
      */
     private void observeSorters() {
-        sorters.forEach(sorter -> sorter.getEnabled().addListener(sorterEnabledListener));
+        sorters.forEach(sorter -> PluginStates.enabled(sorter).addListener(sorterEnabledListener));
         sorters.addListener(sorterListListener);
     }
 
     private void onSorterEnabled(Sorter enabledSorter) {
         for (Sorter sorter : sorters) {
             if (sorter != enabledSorter) {
-                sorter.getEnabled().set(false);
+                PluginStates.enabled(sorter).set(false);
             }
         }
     }
@@ -505,10 +508,10 @@ public class DataModel {
 
         // take snapshots on the calling (JavaFX) thread, the background thread must not access the observable lists
         List<Input> inputsSnapshot = new ArrayList<>(inputs);
-        List<Filter> enabledFilters = filters.stream().filter(filter -> filter.getEnabled().get())
+        List<Filter> enabledFilters = filters.stream().filter(filter -> PluginStates.enabled(filter).get())
                 .sorted(Comparator.comparingInt(Filter::order)).toList();
-        List<Sorter> enabledSorters = sorters.stream().filter(sorter -> sorter.getEnabled().get()).toList();
-        List<Enricher> enabledEnrichers = enrichers.stream().filter(enricher -> enricher.getEnabled().get()).toList();
+        List<Sorter> enabledSorters = sorters.stream().filter(sorter -> PluginStates.enabled(sorter).get()).toList();
+        List<Enricher> enabledEnrichers = enrichers.stream().filter(enricher -> PluginStates.enabled(enricher).get()).toList();
         List<Entry> rawSnapshot = new ArrayList<>(rawEntryList);
         List<Entry> filteredSnapshot = new ArrayList<>(filteredEntryList);
         // the results of the steps not re-computed are taken over from the previous computation (immutable)
@@ -855,7 +858,9 @@ public class DataModel {
         for (Input currentInput : inputs) {
             log.debug("reading from: {}", currentInput.getName());
             try {
-                addEntries(currentInput, currentInput.read(), loadedEntries, sources, epgUrls);
+                Playlist playlist = currentInput.read();
+                addEntries(currentInput, playlist.entries(), loadedEntries, sources, epgUrls);
+                epgUrls.addAll(playlist.epgUrls());
             } catch (InputReadException e) {
                 // a part of the input could not be read: the entries of the other parts are kept
                 log.error("Error reading input {} ({}): {}", currentInput.getName(), currentInput.getSource(),
@@ -874,9 +879,6 @@ public class DataModel {
     private static void addEntries(Input input, List<Entry> entries, List<Entry> loadedEntries,
                                    Map<Entry, Input> sources, Set<String> epgUrls) {
         loadedEntries.addAll(entries);
-        if (entries instanceof EntryList entryList) {
-            epgUrls.addAll(entryList.getEpgUrls());
-        }
         entries.forEach(entry -> sources.putIfAbsent(entry, input));
     }
 
@@ -1116,7 +1118,7 @@ public class DataModel {
     }
 
     /**
-     * Projects are compared by identity, see {@link org.bitpunk.m3uedit.plugins.AbstractPlugin#toString()}.
+     * Projects are compared by identity, like plugins (see {@link org.bitpunk.m3uedit.api.Plugin}).
      */
     @Override
     public String toString() {

@@ -5,8 +5,9 @@ import javafx.collections.ObservableList;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -145,7 +146,7 @@ class EntryListControllerTest {
      */
     static class GuideEnricher extends TestPlugins.TestEnricher implements ProgrammeGuideProvider {
         @Override
-        public List<org.bitpunk.m3uedit.plugins.enricher.Programme> readProgrammes(List<Entry> playlist) {
+        public List<org.bitpunk.m3uedit.api.Programme> readProgrammes(List<Entry> playlist) {
             return List.of();
         }
     }
@@ -154,7 +155,7 @@ class EntryListControllerTest {
     void testEpgButtonIsDisabledWithoutEntries() throws Exception {
         EntryListController controller = controllerWith(entry("ZDF"));
         GuideEnricher enricher = new GuideEnricher();
-        enricher.getEnabled().set(true);
+        PluginStates.enabled(enricher).set(true);
 
         runOnFxThread(() -> {
             controller.getDataModel().getEnrichers().add(enricher);

@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.model;
 
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.model.EntryDiff.Kind;
 import org.bitpunk.m3uedit.model.EntryDiff.Row;
 import org.junit.jupiter.api.Test;

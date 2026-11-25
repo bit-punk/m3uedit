@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.util;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

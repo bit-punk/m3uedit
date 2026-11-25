@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MessagesTest {
     private static final Pattern ARGUMENT = Pattern.compile("\\{(\\d+)[^}]*}");
     private static final Pattern FXML_KEY = Pattern.compile("=\"%([^\"]+)\"");
-    private static final Pattern JAVA_KEY = Pattern.compile("Messages\\.get\\(\\s*\"([^\"]+)\"");
+    private static final Pattern JAVA_KEY = Pattern.compile("(?:Messages\\.get|\\btext)\\(\\s*\"([^\"]+)\"");
 
     @AfterEach
     void useEnglish() {

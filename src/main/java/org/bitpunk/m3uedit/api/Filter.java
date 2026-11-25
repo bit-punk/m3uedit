@@ -1,14 +1,9 @@
-package org.bitpunk.m3uedit.plugins.filter;
-
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.Plugin;
+package org.bitpunk.m3uedit.api;
 
 import java.util.List;
 
-
 /**
- * The Filter interface represents a plugin that can be used to filter a list of entries.
- * It extends the Plugin interface.
+ * Removes entries from the playlist. The enabled filters are applied one after another, see {@link #order()}.
  */
 public interface Filter extends Plugin {
 
@@ -42,13 +37,12 @@ public interface Filter extends Plugin {
     }
 
     /**
-     * Filters a list of entries based on certain criteria.
-     * Returns a new list containing only the filtered entries.
+     * Filters the entries. Runs in the background, so it may block (e.g. request streams).
      *
-     * @param list The list of entries to filter
-     * @return The filtered list of entries
+     * @param entries the entries, not to be modified
+     * @return the entries kept, in their order (the same objects)
      */
-    List<Entry> filter(List<Entry> list);
+    List<Entry> filter(List<Entry> entries);
 
     /**
      * Describes why an entry has been removed by this filter, shown to the user in the diff of the playlist.

@@ -3,11 +3,15 @@ package org.bitpunk.m3uedit.plugins.sftp;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SftpClientTest {
+    private static final PluginContext CONTEXT = new DefaultPluginContext(SftpInput.class);
 
     @Test
     void testChild() {
@@ -34,13 +38,13 @@ class SftpClientTest {
 
     @Test
     void testDescribeError() {
-        assertThat(SftpClient.describeError(new JSchException("Auth fail for methods 'password'")))
+        assertThat(SftpClient.describeError(CONTEXT, new JSchException("Auth fail for methods 'password'")))
                 .startsWith("Authentication failed");
-        assertThat(SftpClient.describeError(new SftpException(ChannelSftp.SSH_FX_PERMISSION_DENIED, "denied")))
+        assertThat(SftpClient.describeError(CONTEXT, new SftpException(ChannelSftp.SSH_FX_PERMISSION_DENIED, "denied")))
                 .isEqualTo("Permission denied.");
-        assertThat(SftpClient.describeError(new SftpException(ChannelSftp.SSH_FX_NO_SUCH_FILE, "no such file")))
+        assertThat(SftpClient.describeError(CONTEXT, new SftpException(ChannelSftp.SSH_FX_NO_SUCH_FILE, "no such file")))
                 .isEqualTo("Directory not found.");
-        assertThat(SftpClient.describeError(new JSchException("timeout: socket is not established")))
+        assertThat(SftpClient.describeError(CONTEXT, new JSchException("timeout: socket is not established")))
                 .isEqualTo("Error: timeout: socket is not established");
     }
 }

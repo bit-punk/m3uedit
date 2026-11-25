@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import javafx.application.Platform;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,7 @@ class EpgEnricherConfigDialogTest {
         CompletableFuture<T> result = new CompletableFuture<>();
         Platform.runLater(() -> {
             try {
-                result.complete(action.apply(new EpgEnricherConfigDialog(enricher)));
+                result.complete(action.apply(new EpgEnricherConfigDialog(enricher, XmltvTestFiles.CONTEXT)));
             } catch (RuntimeException e) {
                 result.completeExceptionally(e);
             }
@@ -36,7 +37,7 @@ class EpgEnricherConfigDialogTest {
 
     @Test
     void testConfigurationIsShownAndReturned() throws Exception {
-        EpgEnricher enricher = new EpgEnricher();
+        EpgEnricher enricher = TestPluginSupport.create(EpgEnricher::new);
         enricher.setSources(List.of("https://epg.example.org/de.xml.gz"));
         enricher.setStrategies(List.of(MatchStrategy.TVG_ID, MatchStrategy.NAME));
         enricher.setUrlRules(List.of(new UrlRule("service=514", "ZDF.de")));
@@ -63,7 +64,7 @@ class EpgEnricherConfigDialogTest {
             dialog.getStrategyCheckBoxes().values().forEach(checkBox -> checkBox.setSelected(false));
             boolean disabled = dialog.getDialogPane().lookupButton(dialog.getOkButtonType()).isDisabled();
             return List.of(disabled, dialog.errors());
-        }, new EpgEnricher());
+        }, TestPluginSupport.create(EpgEnricher::new));
 
         assertThat(result.get(0)).isEqualTo(true);
         // the url rules are not checked while matching by url rule is switched off
@@ -73,7 +74,7 @@ class EpgEnricherConfigDialogTest {
 
     @Test
     void testDefaultSourcesCanBeRestored() throws Exception {
-        EpgEnricher enricher = new EpgEnricher();
+        EpgEnricher enricher = TestPluginSupport.create(EpgEnricher::new);
         enricher.setSources(List.of("https://epg.example.org/de.xml.gz"));
 
         EpgEnricherConfigDialog.Config config = onFxThread(dialog -> {
@@ -81,6 +82,6 @@ class EpgEnricherConfigDialogTest {
             return dialog.toConfig();
         }, enricher);
 
-        assertThat(config.sources()).hasSize(3).containsExactlyElementsOf(EpgEnricher.defaultSources());
+        assertThat(config.sources()).hasSize(3).containsExactlyElementsOf(EpgEnricher.defaultSources(XmltvTestFiles.CONTEXT));
     }
 }

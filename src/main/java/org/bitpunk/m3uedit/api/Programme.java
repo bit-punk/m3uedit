@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins.enricher;
+package org.bitpunk.m3uedit.api;
 
 import java.time.Instant;
 

@@ -1,12 +1,9 @@
 package org.bitpunk.m3uedit.cli;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.stage.Window;
+import org.bitpunk.m3uedit.api.*;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.input.InputReadException;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.util.HeadlessMode;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -219,10 +216,12 @@ class CommandLineRunnerTest {
      * Reads one entry, but reports that another part could not be read.
      */
     private static class PartlyReadInput implements Input {
-        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        {
+            PluginStates.enabled(this).set(true);
+        }
 
         @Override
-        public List<Entry> read() {
+        public Playlist read() {
             Entry entry = new Entry();
             entry.setName("SD Channel");
             entry.setChannelUri("http://example.com/sd");
@@ -235,8 +234,9 @@ class CommandLineRunnerTest {
         }
 
         @Override
-        public void configure() {
+        public boolean configure(Window owner) {
             // nothing to configure
+            return true;
         }
 
         @Override
@@ -247,11 +247,6 @@ class CommandLineRunnerTest {
         @Override
         public String getDescription() {
             return "reads a part only";
-        }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
         }
     }
 
@@ -287,7 +282,9 @@ class CommandLineRunnerTest {
      * Removes all entries.
      */
     private static class RemoveAllFilter implements Filter {
-        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        {
+            PluginStates.enabled(this).set(true);
+        }
 
         @Override
         public List<Entry> filter(List<Entry> list) {
@@ -305,8 +302,9 @@ class CommandLineRunnerTest {
         }
 
         @Override
-        public void configure() {
+        public boolean configure(Window owner) {
             // nothing to configure
+            return true;
         }
 
         @Override
@@ -317,11 +315,6 @@ class CommandLineRunnerTest {
         @Override
         public String getDescription() {
             return "removes all entries";
-        }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
         }
     }
 }

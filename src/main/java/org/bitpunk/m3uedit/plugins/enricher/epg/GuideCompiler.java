@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -50,16 +50,19 @@ final class GuideCompiler {
     record Statistics(int channelCount, int programmeCount) {
     }
 
+    private final PluginContext context;
     private final Instant notBefore;
     private final Instant notAfter;
     private final ZoneId defaultZone;
 
     /**
+     * @param context    the context of the enricher, providing the texts of the errors
      * @param now        the current time
      * @param past       programmes that ended earlier than this before now are left out, null to keep all
      * @param ahead      programmes that start later than this after now are left out, null to keep all
      */
-    GuideCompiler(Instant now, Duration past, Duration ahead, ZoneId defaultZone) {
+    GuideCompiler(PluginContext context, Instant now, Duration past, Duration ahead, ZoneId defaultZone) {
+        this.context = context;
         this.notBefore = past == null ? null : now.minus(past);
         this.notAfter = ahead == null ? null : now.plus(ahead);
         this.defaultZone = defaultZone;
@@ -101,7 +104,7 @@ final class GuideCompiler {
             log.info("compiled guide with {} channels and {} programmes", channelCount, programmeCount);
             return new Statistics(channelCount, programmeCount);
         } catch (XMLStreamException e) {
-            throw new IOException(Messages.get("epgEnricher.guide.writeFailed", e.getMessage()), e);
+            throw new IOException(context.text("epgEnricher.guide.writeFailed", e.getMessage()), e);
         } finally {
             Files.deleteIfExists(programmes);
         }
@@ -149,7 +152,7 @@ final class GuideCompiler {
                 reader.close();
             }
         } catch (XMLStreamException e) {
-            throw new IOException(Messages.get("epgEnricher.guide.invalidSource", selection.file(), e.getMessage()), e);
+            throw new IOException(context.text("epgEnricher.guide.invalidSource", selection.file(), e.getMessage()), e);
         }
         return new int[]{channels, programmeCount};
     }

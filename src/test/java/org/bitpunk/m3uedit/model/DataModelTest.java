@@ -1,23 +1,15 @@
 package org.bitpunk.m3uedit.model;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import org.bitpunk.m3uedit.plugins.enricher.Attachment;
-import org.bitpunk.m3uedit.plugins.enricher.Enricher;
-import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
+import org.bitpunk.m3uedit.api.*;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
-import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.input.InputReadException;
-import org.bitpunk.m3uedit.plugins.output.Export;
-import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
+import org.bitpunk.m3uedit.util.EntryMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.bitpunk.m3uedit.util.EntryMapper;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -63,7 +55,9 @@ class DataModelTest {
         private final String name;
         private final List<Entry> entries;
         private RuntimeException failure;
-        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        {
+            PluginStates.enabled(this).set(true);
+        }
         final AtomicInteger readCount = new AtomicInteger();
 
         TestInput(String name, List<Entry> entries) {
@@ -77,12 +71,12 @@ class DataModelTest {
         }
 
         @Override
-        public List<Entry> read() throws FileNotFoundException {
+        public Playlist read() {
             readCount.incrementAndGet();
             if (failure != null) {
                 throw failure;
             }
-            return entries;
+            return EntryList.toPlaylist(entries);
         }
 
         @Override
@@ -98,11 +92,6 @@ class DataModelTest {
         @Override
         public String getDescription() {
             return name;
-        }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
         }
     }
 
@@ -133,8 +122,8 @@ class DataModelTest {
         dataModel.setBackgroundExecutor(background);
         dataModel.setFxExecutor(fx);
         dataModel.setErrorHandler(errors::add);
-        uniqueNameFilter = new UniqueNameFilter();
-        channelNameSorter = new ChannelNameSorter();
+        uniqueNameFilter = TestPluginSupport.create(UniqueNameFilter::new);
+        channelNameSorter = TestPluginSupport.create(ChannelNameSorter::new);
         dataModel.getFilters().add(uniqueNameFilter);
         dataModel.getSorters().add(channelNameSorter);
     }
@@ -190,8 +179,8 @@ class DataModelTest {
 
     @Test
     void testAddingInputLoadsFiltersAndSortsInBackground() {
-        uniqueNameFilter.getEnabled().set(true);
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         TestInput input = new TestInput("in", List.of(entry("b"), entry("a"), entry("b")));
 
         dataModel.getInputs().add(input);
@@ -229,12 +218,12 @@ class DataModelTest {
         dataModel.getInputs().add(input);
         runAll();
 
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         dataModel.filterRawEntries();
         runAll();
         assertThat(names(dataModel.getSortedEntryList())).containsExactly("b", "a");
 
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         dataModel.sortFilteredEntries();
         runAll();
         assertThat(names(dataModel.getSortedEntryList())).containsExactly("a", "b");
@@ -244,7 +233,7 @@ class DataModelTest {
 
     @Test
     void testEachListIsUpdatedWithASingleChange() {
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         AtomicInteger rawChanges = new AtomicInteger();
         AtomicInteger filteredChanges = new AtomicInteger();
         AtomicInteger sortedChanges = new AtomicInteger();
@@ -309,18 +298,15 @@ class DataModelTest {
         runAll();
         // a channel without a name lets the UniqueNameFilter fail
         dataModel.getRawEntryList().add(entry(null));
-        uniqueNameFilter.getEnabled().set(true);
-        dataModel.getFilters().set(0, new UniqueNameFilter() {
+        PluginStates.enabled(uniqueNameFilter).set(true);
+        UniqueNameFilter failing = TestPluginSupport.init(new UniqueNameFilter() {
             @Override
             public List<Entry> filter(List<Entry> list) {
                 throw new IllegalStateException("filter failed");
             }
-
-            @Override
-            public BooleanProperty getEnabled() {
-                return new SimpleBooleanProperty(true);
-            }
         });
+        PluginStates.enabled(failing).set(true);
+        dataModel.getFilters().set(0, failing);
         dataModel.filterRawEntries();
         runAll();
 
@@ -378,7 +364,7 @@ class DataModelTest {
 
         dataModel.setName("renamed");
         dataModel.getInputs().add(new TestInput("in", List.of()));
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
 
         assertThat(dataModel.hashCode()).isEqualTo(hashCode);
         assertThat(uniqueNameFilter.hashCode()).isEqualTo(filterHashCode);
@@ -402,7 +388,7 @@ class DataModelTest {
 
         for (var plugin : List.of(uniqueNameFilter, channelNameSorter, input)) {
             dataModel.setChanged(false);
-            plugin.getEnabled().set(!plugin.getEnabled().get());
+            PluginStates.enabled(plugin).set(!PluginStates.enabled(plugin).get());
             assertThat(dataModel.isChanged()).as(plugin.getName()).isTrue();
         }
     }
@@ -412,26 +398,26 @@ class DataModelTest {
         dataModel.getFilters().remove(uniqueNameFilter);
         dataModel.setChanged(false);
 
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
 
         assertThat(dataModel.isChanged()).isFalse();
     }
 
     @Test
     void testReplacedListsKeepTheirListeners() {
-        UniqueNameFilter newFilter = new UniqueNameFilter();
+        UniqueNameFilter newFilter = TestPluginSupport.create(UniqueNameFilter::new);
         dataModel.setFilters(javafx.collections.FXCollections.observableArrayList(newFilter));
         dataModel.setChanged(false);
 
         // plugins of the old list are no longer observed
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         assertThat(dataModel.isChanged()).isFalse();
 
-        newFilter.getEnabled().set(true);
+        PluginStates.enabled(newFilter).set(true);
         assertThat(dataModel.isChanged()).isTrue();
 
         dataModel.setChanged(false);
-        dataModel.getFilters().add(new UniqueNameFilter());
+        dataModel.getFilters().add(TestPluginSupport.create(UniqueNameFilter::new));
         assertThat(dataModel.isChanged()).isTrue();
     }
 
@@ -451,13 +437,13 @@ class DataModelTest {
         DataModel created = DataModelFactory.createDataModel("factory");
         created.setChanged(false);
 
-        created.getFilters().getFirst().getEnabled().set(true);
+        PluginStates.enabled(created.getFilters().getFirst()).set(true);
 
         assertThat(created.isChanged()).isTrue();
     }
 
     private Output output(String name, List<List<Entry>> written, RuntimeException failure) {
-        return new FileOutput() {
+        return TestPluginSupport.init(new FileOutput() {
             @Override
             public String getName() {
                 return name;
@@ -480,7 +466,7 @@ class DataModelTest {
                     }
                 });
             }
-        };
+        });
     }
 
     private final List<List<String>> writtenEpgUrls = new ArrayList<>();
@@ -492,7 +478,9 @@ class DataModelTest {
      */
     private static class TestEnricher implements Enricher {
         private final String prefix;
-        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        {
+            PluginStates.enabled(this).set(true);
+        }
         final AtomicInteger enrichCount = new AtomicInteger();
         boolean renameEntries;
         boolean failingAttachment;
@@ -534,11 +522,6 @@ class DataModelTest {
         @Override
         public String getDescription() {
             return getName();
-        }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
         }
     }
 
@@ -611,7 +594,7 @@ class DataModelTest {
     @Test
     void testDisabledEnrichersAreNotApplied() {
         TestEnricher enricher = new TestEnricher("a");
-        enricher.getEnabled().set(false);
+        PluginStates.enabled(enricher).set(false);
         dataModel.getEnrichers().add(enricher);
         Entry a = entry("a");
         dataModel.getInputs().add(new TestInput("in", List.of(a)));
@@ -627,7 +610,7 @@ class DataModelTest {
         dataModel.getEnrichers().add(enricher);
         TestInput input = new TestInput("in", List.of(entry("b"), entry("a")));
         dataModel.getInputs().add(input);
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         dataModel.sortFilteredEntries();
         runAll();
         int reads = input.readCount.get();
@@ -751,7 +734,7 @@ class DataModelTest {
         dataModel.getInputs().add(new TestInput("in", entryList(List.of("http://epg/input.xml"), entry("a"))));
         runAll();
 
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         dataModel.filterRawEntries();
         runAll();
 
@@ -848,8 +831,8 @@ class DataModelTest {
 
     @Test
     void testPipelineResultContainsTheResultOfEachEnabledStep() {
-        uniqueNameFilter.getEnabled().set(true);
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         Entry b = entry("b");
         Entry a = entry("a");
         Entry duplicate = entry("b");
@@ -886,13 +869,13 @@ class DataModelTest {
 
     @Test
     void testSortingKeepsTheFilterResults() {
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         Entry duplicate = entry("b");
         TestInput input = new TestInput("in", List.of(entry("b"), entry("a"), duplicate));
         dataModel.getInputs().add(input);
         runAll();
 
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         dataModel.sortFilteredEntries();
         runAll();
 
@@ -918,11 +901,11 @@ class DataModelTest {
         assertThat(names(playlist)).containsExactly("c", "b", "x");
 
         // filtering, sorting and reloading re-compute the playlist
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         dataModel.filterRawEntries();
         runAll();
         assertThat(names(playlist)).containsExactly("c", "b", "x");
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         dataModel.sortFilteredEntries();
         runAll();
         assertThat(names(playlist)).containsExactly("c", "b", "x");
@@ -991,7 +974,7 @@ class DataModelTest {
 
     @Test
     void testManualChangesApplyToThePlaylistButNotToThePipelineResult() {
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
         dataModel.getInputs().add(new TestInput("in", List.of(entry("b"), entry("a"), entry("c"))));
         runAll();
 
@@ -1012,7 +995,7 @@ class DataModelTest {
 
         ProbingFilter(List<Entry> dead) {
             this.dead = dead;
-            getEnabled().set(true);
+            PluginStates.enabled(this).set(true);
         }
 
         @Override
@@ -1038,7 +1021,7 @@ class DataModelTest {
         Entry alive = entry("ZDF");
         alive.setChannelUri("http://example.com/ZDF-backup");
         ProbingFilter probing = new ProbingFilter(List.of(dead));
-        uniqueNameFilter.getEnabled().set(true);
+        PluginStates.enabled(uniqueNameFilter).set(true);
         // removing the duplicates first would keep the dead entry, which is removed afterwards: the channel is lost
         dataModel.getFilters().add(probing);
         dataModel.getInputs().add(new TestInput("in", List.of(dead, alive)));
@@ -1049,7 +1032,7 @@ class DataModelTest {
 
     @Test
     void testFiltersAreShownInTheOrderTheyAreApplied() {
-        List<org.bitpunk.m3uedit.plugins.filter.Filter> filters = new ArrayList<>(List.of(
+        List<org.bitpunk.m3uedit.api.Filter> filters = new ArrayList<>(List.of(
                 new org.bitpunk.m3uedit.plugins.filter.sdchannel.SdChannelFilter(),
                 new org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter(),
                 new org.bitpunk.m3uedit.plugins.filter.reachableurl.ReachableUrlFilter(),
@@ -1064,29 +1047,29 @@ class DataModelTest {
 
     @Test
     void testOnlyOneSorterIsEnabled() {
-        ChannelNameSorter second = new ChannelNameSorter();
+        ChannelNameSorter second = TestPluginSupport.create(ChannelNameSorter::new);
         dataModel.getSorters().add(second);
-        channelNameSorter.getEnabled().set(true);
+        PluginStates.enabled(channelNameSorter).set(true);
 
-        second.getEnabled().set(true);
+        PluginStates.enabled(second).set(true);
 
-        assertThat(channelNameSorter.getEnabled().get()).isFalse();
-        assertThat(second.getEnabled().get()).isTrue();
-        second.getEnabled().set(false);
-        assertThat(dataModel.getSorters()).noneMatch(sorter -> sorter.getEnabled().get());
+        assertThat(PluginStates.enabled(channelNameSorter).get()).isFalse();
+        assertThat(PluginStates.enabled(second).get()).isTrue();
+        PluginStates.enabled(second).set(false);
+        assertThat(dataModel.getSorters()).noneMatch(sorter -> PluginStates.enabled(sorter).get());
     }
 
     @Test
     void testOfSeveralEnabledSortersInAProjectTheLastOneIsKept() {
-        ChannelNameSorter first = new ChannelNameSorter();
-        ChannelNameSorter last = new ChannelNameSorter();
-        first.getEnabled().set(true);
-        last.getEnabled().set(true);
+        ChannelNameSorter first = TestPluginSupport.create(ChannelNameSorter::new);
+        ChannelNameSorter last = TestPluginSupport.create(ChannelNameSorter::new);
+        PluginStates.enabled(first).set(true);
+        PluginStates.enabled(last).set(true);
 
         DataModel model = new DataModel("sorters", null, null, List.of(first, last), null, null, null, null);
 
-        assertThat(first.getEnabled().get()).isFalse();
-        assertThat(last.getEnabled().get()).isTrue();
+        assertThat(PluginStates.enabled(first).get()).isFalse();
+        assertThat(PluginStates.enabled(last).get()).isTrue();
         assertThat(model.getSorters()).containsExactly(first, last);
     }
 }

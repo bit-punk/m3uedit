@@ -2,7 +2,7 @@ package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
 import javafx.application.Platform;
 import javafx.scene.Node;
-import org.bitpunk.m3uedit.config.YamlConfigManager;
+import org.bitpunk.m3uedit.testsupport.ConfigDirectoryContext;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +39,7 @@ class ReachableUrlFilterConfigDialogControllerTest {
     @BeforeEach
     void setUp() {
         configFile = tempDir.resolve(ReachableUrlFilter.CONFIG_FILE_NAME);
-        filter = new ReachableUrlFilter(new YamlConfigManager<>(configFile, ReachableUrlFilter.RESOURCE_PATH,
-                ReachableUrlFilterConfig.class, ReachableUrlFilterConfig::new));
+        filter = ConfigDirectoryContext.create(ReachableUrlFilter::new, tempDir);
     }
 
     private interface FxAction {

@@ -1,76 +1,78 @@
 package org.bitpunk.m3uedit.plugins.filter.channelname;
 
+import javafx.stage.Window;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.config.AppConfigPaths;
-import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.PluginType;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.PluginType;
 import org.bitpunk.m3uedit.plugins.filter.channelname.model.ChannelNameFilterConfig;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 
-@Getter
-@Setter
+/**
+ * Removes channels whose name matches one of the regular expressions of its configuration-file
+ * ({@value #CONFIG_FILE_NAME}); nothing of it is stored in the project-file.
+ */
 @Slf4j
-@PluginType(id = "ChannelNameFilter", nameKey = "filter.channelName.name")
-public class ChannelNameFilter extends AbstractPlugin implements Filter {
+@PluginType(id = "ChannelNameFilter", nameKey = "filter.channelName.name", texts = "i18n.messages")
+public class ChannelNameFilter implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/channelname/channel_name_filter.yaml";
     public static final String CONFIG_FILE_NAME = "channel_name_filter.yaml";
+
+    /**
+     * -- GETTER --
+     *
+     * @return the context passed to {@link #init(PluginContext)}
+     */
+    @Getter
+    private PluginContext context;
+
+    /**
+     * -- SETTER --
+     *  Sets the configuration used by this filter, without writing it to the configuration-file.
+     */
+    @Setter
+    private ChannelNameFilterConfig config;
+
+    @Override
+    public void init(PluginContext context) {
+        this.context = context;
+    }
 
     /**
      * @return the name shown to the user, not part of a project-file
      */
     @Override
     public String getName() {
-        return Messages.get("filter.channelName.name");
+        return context.text("filter.channelName.name");
     }
 
     @Override
     public String getDescription() {
-        return Messages.get("filter.channelName.description");
+        return context.text("filter.channelName.description");
     }
 
-    private transient YamlConfigManager<ChannelNameFilterConfig> configManager;
-
-    private transient ChannelNameFilterConfig config;
-
-    public ChannelNameFilter() {
-        this(createDefaultConfigManager(null));
-    }
-
-    public ChannelNameFilter(Path userConfigPath) {
-        this(createDefaultConfigManager(userConfigPath));
-    }
-
-    public ChannelNameFilter(YamlConfigManager<ChannelNameFilterConfig> configManager) {
-        this.configManager = configManager != null ? configManager : createDefaultConfigManager(null);
-        this.config = this.configManager.loadConfig();
-    }
-
-    private static YamlConfigManager<ChannelNameFilterConfig> createDefaultConfigManager(Path userConfigPath) {
-        Path path = userConfigPath != null ? userConfigPath : AppConfigPaths.getPluginConfigPath(CONFIG_FILE_NAME);
-        return new YamlConfigManager<>(path, RESOURCE_PATH, ChannelNameFilterConfig.class, ChannelNameFilterConfig::new);
-    }
-
-    public YamlConfigManager<ChannelNameFilterConfig> getConfigManager() {
-        if (configManager == null) {
-            configManager = createDefaultConfigManager(null);
-        }
-        return configManager;
-    }
-
+    /**
+     * @return the configuration, read from the configuration-file on first use
+     */
     public ChannelNameFilterConfig getConfig() {
         if (config == null) {
-            config = getConfigManager().loadConfig();
+            config = context.loadConfig(CONFIG_FILE_NAME, ChannelNameFilterConfig.class, RESOURCE_PATH,
+                    ChannelNameFilterConfig::new);
         }
         return config;
+    }
+
+    /**
+     * Sets the configuration used by this filter and writes it to the configuration-file.
+     */
+    public void saveConfig(ChannelNameFilterConfig config) {
+        setConfig(config);
+        context.saveConfig(CONFIG_FILE_NAME, config);
     }
 
     public List<String> getExcludeRegexes() {
@@ -97,19 +99,30 @@ public class ChannelNameFilter extends AbstractPlugin implements Filter {
         return getExcludeRegexes().stream()
                 .filter(regex -> Pattern.matches(regex, removed.getName()))
                 .findFirst()
-                .map(regex -> Messages.get("filter.channelName.reason", regex))
+                .map(regex -> context.text("filter.channelName.reason", regex))
                 .orElse(null);
     }
 
     @Override
-    public void configure() {
+    public boolean configure(Window owner) {
         log.debug("Opening configuration dialog for ChannelNameFilter");
         ChannelNameFilterConfigDialogController dialog = new ChannelNameFilterConfigDialogController(this);
-        dialog.showAndWait();
+        if (owner != null) {
+            dialog.initOwner(owner);
+        }
+        return dialog.showAndWait().isPresent();
     }
 
     @Override
     public boolean isConfigurable() {
         return true;
+    }
+
+    /**
+     * Plugins are compared by identity, only a short description is returned.
+     */
+    @Override
+    public String toString() {
+        return "%s[%s]".formatted(getClass().getSimpleName(), getName());
     }
 }

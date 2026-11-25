@@ -1,5 +1,8 @@
 package org.bitpunk.m3uedit.plugins.sftp;
 
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction.OverwriteDecision;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.HeadlessMode;
@@ -89,10 +92,11 @@ class HeadlessSftpUserInteractionTest {
 
     @Test
     void testTheHeadlessInteractionIsUsedInHeadlessMode() {
-        assertThat(SftpUserInteraction.create()).isNotInstanceOf(HeadlessSftpUserInteraction.class);
+        PluginContext context = new DefaultPluginContext(SftpInput.class);
+        assertThat(SftpUserInteraction.create(context)).isNotInstanceOf(HeadlessSftpUserInteraction.class);
 
         HeadlessMode.setActive(true);
 
-        assertThat(SftpUserInteraction.create()).isInstanceOf(HeadlessSftpUserInteraction.class);
+        assertThat(SftpUserInteraction.create(context)).isInstanceOf(HeadlessSftpUserInteraction.class);
     }
 }

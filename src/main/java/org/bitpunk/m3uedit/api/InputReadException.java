@@ -1,6 +1,4 @@
-package org.bitpunk.m3uedit.plugins.input;
-
-import org.bitpunk.m3uedit.model.Entry;
+package org.bitpunk.m3uedit.api;
 
 import java.util.List;
 

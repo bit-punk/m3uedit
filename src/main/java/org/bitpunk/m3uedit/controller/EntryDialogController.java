@@ -5,7 +5,6 @@ import javafx.util.Duration;
 import javafx.scene.image.ImageView;
 import javafx.animation.PauseTransition;
 import lombok.extern.slf4j.Slf4j;
-import jakarta.validation.ConstraintViolation;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -17,14 +16,13 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.util.converter.IntegerStringConverter;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.util.PojoValidator;
+import org.bitpunk.m3uedit.api.Entry;
 
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class EntryDialogController<T> extends AbstractDialogController<T> {
@@ -212,51 +210,47 @@ public class EntryDialogController<T> extends AbstractDialogController<T> {
     }
 
     private boolean isValidBean(Entry entry) {
-        PojoValidator<Entry> validator = new PojoValidator<>();
-        Set<ConstraintViolation<Entry>> errors = validator.validate(entry);
-        if (!indexHBox.isVisible()) {
-            // a new entry is added at the end of the playlist, it has no position yet
-            errors = errors.stream().filter(error -> !"index".equals(error.getPropertyPath().toString()))
-                    .collect(Collectors.toSet());
-        }
+        Map<String, String> errors = validate(entry, indexHBox.isVisible());
         displayValidationErrors(errors);
         log.trace("Validation-errors found: {}", errors);
         return errors.isEmpty();
     }
 
     /**
-     * @return the message of the validation in the language of the user interface
+     * Checks the values of an entry edited by the user.
+     *
+     * @param withPosition false for a new entry, which is added at the end of the playlist and has no position yet
+     * @return the message of each invalid field (in the language of the user interface) by the name of the field;
+     * empty if all values are valid
      */
-    static String translate(String message) {
-        return switch (message) {
-            case Entry.INDEX_NOT_POSITIVE -> Messages.get("entryDialog.invalid.index");
-            case Entry.DURATION_NOT_NUMERIC -> Messages.get("entryDialog.invalid.duration");
-            case Entry.URL_INVALID -> Messages.get("entryDialog.invalid.url");
-            case Entry.NAME_EMPTY -> Messages.get("entryDialog.invalid.name");
-            default -> message;
-        };
+    static Map<String, String> validate(Entry entry, boolean withPosition) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        if (entry.getName() == null || entry.getName().isEmpty()) {
+            errors.put("name", Messages.get("entryDialog.invalid.name"));
+        }
+        if (entry.getChannelUri() != null && !entry.getChannelUri().matches(Entry.REGEX_URL)) {
+            errors.put("channelUri", Messages.get("entryDialog.invalid.url"));
+        }
+        if (entry.getDuration() != null && !entry.getDuration().matches(Entry.REGEX_NUMERIC)) {
+            errors.put("duration", Messages.get("entryDialog.invalid.duration"));
+        }
+        if (withPosition && entry.getIndex() < 1) {
+            errors.put("index", Messages.get("entryDialog.invalid.index"));
+        }
+        return errors;
     }
 
-    private void displayValidationErrors(Set<ConstraintViolation<Entry>> errors) {
+    private void displayValidationErrors(Map<String, String> errors) {
         resetTextFields();
-        for (ConstraintViolation<Entry> error : errors) {
-            String fieldName = error.getPropertyPath().toString();
-            String errorMessage = translate(error.getMessage());
-            log.trace("Field: {} Message: {}", fieldName, error.getMessage());
+        errors.forEach((fieldName, errorMessage) -> {
             switch (fieldName) {
                 case "index" -> markFieldInvalid(indexTextField, errorMessage);
                 case "duration" -> markFieldInvalid(durationTextField, errorMessage);
-                case "groupTitle" -> markFieldInvalid(groupTitleTextField, errorMessage);
-                case "tvgId" -> markFieldInvalid(tvgIdTextField, errorMessage);
-                case "tvgName" -> markFieldInvalid(tvgNameTextField, errorMessage);
-                case "tvgLogo" -> markFieldInvalid(tvgLogoTextField, errorMessage);
-                case "tvgShift" -> markFieldInvalid(tvgShiftTextField, errorMessage);
-                case "radio" -> markFieldInvalid(radioTextField, errorMessage);
                 case "channelUri" -> markFieldInvalid(channelUriTextField, errorMessage);
                 case "name" -> markFieldInvalid(nameTextField, errorMessage);
                 default -> throw new IllegalStateException("Unexpected value: " + fieldName);
             }
-        }
+        });
     }
 
     protected int getIntegerFieldValue(TextField textField) {

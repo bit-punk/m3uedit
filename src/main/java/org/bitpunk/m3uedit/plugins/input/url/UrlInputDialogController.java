@@ -11,7 +11,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 
 import java.io.BufferedReader;
@@ -25,6 +25,7 @@ import java.util.*;
 @Slf4j
 public class UrlInputDialogController extends AbstractDialogController<List<URL>> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_URL = "plugin/input/url/UrlInputDialog.fxml";
+    private final PluginContext context;
     @Getter
     private final List<URL> urlList = new ArrayList<>();
     @FXML
@@ -38,30 +39,35 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
     @FXML
     private Button addUrlButton;
 
-    public UrlInputDialogController() {
-        super(FXML_PLUGIN_INPUT_URL, Messages.get("url.dialog.title"));
+    /**
+     * @param context the context of the input, e.g. for its texts
+     */
+    public UrlInputDialogController(PluginContext context) {
+        // set before the FXML is loaded, which calls initialize()
+        this.context = context;
+        super(FXML_PLUGIN_INPUT_URL, context.text("url.dialog.title"));
         setResultConverter(getURIResultConverter());
         addUrlButton.setOnAction(actionEvent -> addNewUrl());
         urlTextField.setOnAction(actionEvent -> addNewUrl());
     }
 
-    private static void deleteNamedItemsFromTableView(ObservableList<URL> deletePlugins, ListView<URL> urlListView) {
+    private void deleteNamedItemsFromTableView(ObservableList<URL> deletePlugins, ListView<URL> urlListView) {
         if (deleteNamedItemsDialog(deletePlugins)) {
             urlListView.getItems().removeAll(deletePlugins);
         }
     }
 
-    private static boolean deleteNamedItemsDialog(ObservableList<URL> deleteItems) {
+    private boolean deleteNamedItemsDialog(ObservableList<URL> deleteItems) {
         Alert dialog = new Alert(Alert.AlertType.WARNING);
-        dialog.setTitle(Messages.get("url.delete.title"));
+        dialog.setTitle(context.text("url.delete.title"));
         dialog.setResizable(true);
         dialog.getDialogPane().setPrefSize(377, 270);
-        dialog.setHeaderText(Messages.get("url.delete.title"));
-        String deleteConfirmMessage = Messages.get("url.delete.confirm", deleteItems.size(), formatDeleteUrls(deleteItems));
+        dialog.setHeaderText(context.text("url.delete.title"));
+        String deleteConfirmMessage = context.text("url.delete.confirm", deleteItems.size(), formatDeleteUrls(deleteItems));
         dialog.setContentText(deleteConfirmMessage);
 
-        ButtonType buttonYes = new ButtonType(Messages.get("common.yes"));
-        ButtonType buttonNo = new ButtonType(Messages.get("common.no"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType buttonYes = new ButtonType(context.text("common.yes"));
+        ButtonType buttonNo = new ButtonType(context.text("common.no"), ButtonBar.ButtonData.CANCEL_CLOSE);
 
         dialog.getButtonTypes().setAll(buttonYes, buttonNo);
         Optional<ButtonType> selectedOption = dialog.showAndWait();
@@ -104,7 +110,7 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
                 urlTextField.clear();
             } catch (MalformedURLException e) {
                 log.error("Unable to create an URL from the input-string '{}': {}", newUrlText, e.getMessage());
-                markTextFieldInvalid(urlTextField, Messages.get("url.invalid"));
+                markTextFieldInvalid(urlTextField, context.text("url.invalid"));
             }
         } else markTextFieldInvalid(urlTextField, validationMessage);
     }
@@ -113,10 +119,10 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
         String message = "";
 
         if (url == null || url.isEmpty()) {
-            return Messages.get("url.empty");
+            return context.text("url.empty");
         }
         if (selectedUrlListView.getItems().stream().anyMatch(urlItem -> urlItem.toString().equals(url))) {
-            return Messages.get("url.duplicate");
+            return context.text("url.duplicate");
         }
         URL playListUrl;
         try {
@@ -125,7 +131,7 @@ public class UrlInputDialogController extends AbstractDialogController<List<URL>
            return e.getMessage();
         }
         if (!isUrlPlayList(playListUrl)) {
-            return Messages.get("url.noPlaylist");
+            return context.text("url.noPlaylist");
         }
         return message;
     }

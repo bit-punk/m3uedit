@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.util;
 
 import javafx.collections.ObservableList;
-import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.api.NamedItem;
 
 import java.util.ArrayList;
 import java.util.List;

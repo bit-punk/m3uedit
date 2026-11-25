@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 
 import java.util.List;
 

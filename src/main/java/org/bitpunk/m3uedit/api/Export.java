@@ -1,15 +1,9 @@
-package org.bitpunk.m3uedit.plugins.output;
-
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.parser.Writer;
+package org.bitpunk.m3uedit.api;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Everything an {@link Output} writes: the playlist and the additional files provided by the enrichers.
@@ -71,8 +65,28 @@ public record Export(List<Entry> playlist, List<String> epgUrls, List<ExportFile
                         fileUrls.computeIfAbsent(attribute, key -> new LinkedHashSet<>()).add(url.strip()));
             }
         }
-        Map<String, String> attributes = new LinkedHashMap<>(Writer.epgAttributes(epgUrls));
+        Map<String, String> attributes = new LinkedHashMap<>(epgAttributes(epgUrls));
         fileUrls.forEach((attribute, urls) -> attributes.put(attribute, String.join(",", urls)));
+        return attributes;
+    }
+
+    /**
+     * The EPG urls are referenced by {@code x-tvg-url} and {@code url-tvg}, as players support either of them.
+     *
+     * @return the header attributes referencing the given EPG urls (comma-separated), none if there are no urls
+     */
+    public static Map<String, String> epgAttributes(List<String> epgUrls) {
+        String urls = epgUrls == null ? "" : epgUrls.stream()
+                .filter(Objects::nonNull)
+                .map(String::strip)
+                .filter(url -> !url.isEmpty())
+                .distinct()
+                .collect(Collectors.joining(","));
+        Map<String, String> attributes = new LinkedHashMap<>();
+        if (!urls.isEmpty()) {
+            attributes.put("x-tvg-url", urls);
+            attributes.put("url-tvg", urls);
+        }
         return attributes;
     }
 }

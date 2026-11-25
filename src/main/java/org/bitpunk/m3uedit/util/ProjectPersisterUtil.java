@@ -1,18 +1,20 @@
 package org.bitpunk.m3uedit.util;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.jackson.JavaFxModule;
+import org.bitpunk.m3uedit.jackson.PluginModule;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.plugins.*;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.cfg.EnumFeature;
-import tools.jackson.databind.jsontype.NamedType;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
@@ -25,8 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
@@ -82,8 +82,8 @@ public class ProjectPersisterUtil {
      * {@code transient} fields and fields annotated with {@link com.fasterxml.jackson.annotation.JsonIgnore} are
      * not persisted.
      * <p>
-     * Plugins are stored with their simple class-name as type. Only the plugins provided by the plugin-services are
-     * known as types, so a crafted project-file cannot instantiate arbitrary classes.
+     * Plugins are stored with their type id, see {@link PluginModule}. Only the plugins provided by the plugin-services
+     * are known as types, so a crafted project-file cannot instantiate arbitrary classes.
      */
     // package-private for tests
     static ObjectMapper getMapper() {
@@ -91,12 +91,21 @@ public class ProjectPersisterUtil {
     }
 
     /**
+     * @return the mapper of the settings of the plugins
+     */
+    // package-private for tests
+    static ObjectMapper getSettingsMapper() {
+        return MapperHolder.SETTINGS_MAPPER;
+    }
+
+    /**
      * @return the state of the plugin as it is stored in the project-file, e.g. to find out whether it has been
      * changed; null if it cannot be written
      */
-    public static String persistedState(Object plugin) {
+    public static String persistedState(Plugin plugin) {
         try {
-            return getMapper().writeValueAsString(plugin);
+            // the settings, not whether it is enabled
+            return MapperHolder.SETTINGS_MAPPER.writeValueAsString(plugin.getSettings());
         } catch (JacksonException e) {
             log.warn("The state of {} cannot be written", plugin, e);
             return null;
@@ -104,10 +113,16 @@ public class ProjectPersisterUtil {
     }
 
     private static final class MapperHolder {
-        private static final ObjectMapper MAPPER = createMapper();
+        /**
+         * Maps the settings of the plugins, without the {@link PluginModule}.
+         */
+        private static final ObjectMapper SETTINGS_MAPPER = builder().build();
+        private static final ObjectMapper MAPPER = builder()
+                .addModule(new PluginModule(() -> SETTINGS_MAPPER))
+                .build();
     }
 
-    private static ObjectMapper createMapper() {
+    private static YAMLMapper.Builder builder() {
         return YAMLMapper.builder()
                 .changeDefaultVisibility(visibility -> visibility
                         .withFieldVisibility(Visibility.ANY)
@@ -122,29 +137,21 @@ public class ProjectPersisterUtil {
                 .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
                 .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                // store plugin-types as regular property ("type: FileInput") instead of a YAML-tag ("!<FileInput>")
+                // no YAML-tags ("!<FileInput>"), the plugins are stored with their type as regular property
                 .disable(YAMLWriteFeature.USE_NATIVE_TYPE_ID)
                 .enable(YAMLWriteFeature.MINIMIZE_QUOTES)
                 .enable(YAMLWriteFeature.INDENT_ARRAYS_WITH_INDICATOR)
                 .addModule(new JavaFxModule())
-                .registerSubtypes(getPluginTypes())
-                .build();
+                // the entries of the API carry no annotations: their position is set when shown, it is not stored
+                .addMixIn(Entry.class, EntryMixIn.class);
     }
 
-    private static NamedType[] getPluginTypes() {
-        return Stream.of(
-                        InputPluginService.getInstance(),
-                        OutputPluginService.getInstance(),
-                        FilterPluginService.getInstance(),
-                        SorterPluginService.getInstance(),
-                        EnricherPluginService.getInstance())
-                .<PluginDescriptor<?>>flatMap(pluginService -> pluginService.getDescriptors().stream())
-                // an id used by plugins of different kinds could not be told apart either
-                .collect(Collectors.collectingAndThen(Collectors.toList(),
-                        descriptors -> PluginDescriptor.withUniqueIds(descriptors, log::error)))
-                .stream()
-                .map(descriptor -> new NamedType(descriptor.type(), descriptor.id()))
-                .toArray(NamedType[]::new);
+    /**
+     * The storage of the entries of manual changes.
+     */
+    private abstract static class EntryMixIn {
+        @JsonIgnore
+        private int index;
     }
 
     /**

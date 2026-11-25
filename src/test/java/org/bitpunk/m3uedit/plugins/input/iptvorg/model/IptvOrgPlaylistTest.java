@@ -1,5 +1,8 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg.model;
 
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.input.iptvorg.IptvOrgInput;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +30,14 @@ class IptvOrgPlaylistTest {
     }
 
     @Test
+    void testDescribeShowsTheLabelOfTheGrouping() {
+        PluginContext context = new DefaultPluginContext(IptvOrgInput.class);
+        assertThat(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany").describe(context))
+                .isEqualTo("Country: Germany (DE)");
+    }
+
+    @Test
     void testToString() {
-        assertThat(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany")).hasToString("Country: Germany (DE)");
+        assertThat(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany")).hasToString("COUNTRY: Germany (DE)");
     }
 }

@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.parser;
 
 import org.bitpunk.m3uedit.builder.Builder;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

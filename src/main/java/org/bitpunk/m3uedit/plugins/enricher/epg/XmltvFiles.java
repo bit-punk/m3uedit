@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.Programme;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -63,9 +63,10 @@ final class XmltvFiles {
     /**
      * Reads the channels of an XMLTV file; the programmes are skipped.
      *
+     * @param context the context of the enricher, providing the texts of the errors
      * @throws IOException if the file cannot be read or is no valid XML
      */
-    static List<XmltvChannel> readChannels(Path file) throws IOException {
+    static List<XmltvChannel> readChannels(PluginContext context, Path file) throws IOException {
         List<XmltvChannel> channels = new ArrayList<>();
         try (InputStream inputStream = open(file)) {
             XMLStreamReader reader = createReader(inputStream);
@@ -98,7 +99,7 @@ final class XmltvFiles {
                 reader.close();
             }
         } catch (XMLStreamException e) {
-            throw new IOException(Messages.get("epgEnricher.xmltv.invalid", e.getMessage()), e);
+            throw new IOException(context.text("epgEnricher.xmltv.invalid", e.getMessage()), e);
         }
         return channels;
     }
@@ -106,10 +107,11 @@ final class XmltvFiles {
     /**
      * Reads the programmes of the given channels of an XMLTV file.
      *
+     * @param context  the context of the enricher, providing the texts of the errors
      * @param channels the ids of the channels in the file, mapped to the channel id of the programmes read
      * @param names    the name of each channel, by the channel id of the programmes read
      */
-    static List<Programme> readProgrammes(Path file, Map<String, String> channels, Map<String, String> names,
+    static List<Programme> readProgrammes(PluginContext context, Path file, Map<String, String> channels, Map<String, String> names,
                                           ZoneId defaultZone) throws IOException {
         List<Programme> programmes = new ArrayList<>();
         try (InputStream inputStream = open(file)) {
@@ -130,7 +132,7 @@ final class XmltvFiles {
                 reader.close();
             }
         } catch (XMLStreamException e) {
-            throw new IOException(Messages.get("epgEnricher.xmltv.invalid", e.getMessage()), e);
+            throw new IOException(context.text("epgEnricher.xmltv.invalid", e.getMessage()), e);
         }
         return programmes;
     }

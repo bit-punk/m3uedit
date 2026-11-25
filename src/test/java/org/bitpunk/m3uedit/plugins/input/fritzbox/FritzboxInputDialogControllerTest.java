@@ -5,6 +5,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,7 +51,7 @@ class FritzboxInputDialogControllerTest {
     @Test
     void testDialogInitialization() throws Exception {
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
 
             assertThat(controller.getTitle()).isEqualTo("Enter FritzBox-Inputs data");
             assertThat(controller.getDialogPane()).isNotNull();
@@ -70,7 +71,7 @@ class FritzboxInputDialogControllerTest {
     @Test
     void testValidationBinding() throws Exception {
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
             TextField baseUrlTextField = getField(controller, "baseUrlTextField");
 
             baseUrlTextField.setText("");
@@ -87,7 +88,7 @@ class FritzboxInputDialogControllerTest {
     @Test
     void testResultConverter() throws Exception {
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
             TextField baseUrlTextField = getField(controller, "baseUrlTextField");
             baseUrlTextField.setText("http://192.168.1.1/dvb/m3u/");
 
@@ -106,7 +107,7 @@ class FritzboxInputDialogControllerTest {
     @Test
     void testTheSelectedStreamsAreNotDuplicatedByRefreshingTheList() throws Exception {
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
             ListView<StreamSource> list = getField(controller, "availableStreamSources");
             new javafx.scene.Scene(new javafx.scene.layout.StackPane(list), 300, 200).getRoot().applyCss();
             // the cells are updated several times, e.g. while scrolling
@@ -129,7 +130,7 @@ class FritzboxInputDialogControllerTest {
         recent.recordSuccess(RecentFritzBoxConnectionsTest.connection("http://192.168.178.1/dvb/m3u/",
                 RecentFritzBoxConnectionsTest.HD));
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
             controller.initializeRecentConnections(recent);
             javafx.scene.control.ComboBox<FritzBoxConnection> combo = getField(controller, "recentConnectionsComboBox");
             assertThat(combo.isDisabled()).isFalse();
@@ -152,7 +153,7 @@ class FritzboxInputDialogControllerTest {
         RecentFritzBoxConnections recent = new RecentFritzBoxConnections(dir.resolve("recent.yaml"));
         recent.recordSuccess(RecentFritzBoxConnectionsTest.connection("http://fritz.box/dvb/m3u/"));
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
             controller.initializeRecentConnections(recent);
             javafx.scene.control.ComboBox<FritzBoxConnection> combo = getField(controller, "recentConnectionsComboBox");
             javafx.scene.control.Button remove = getField(controller, "removeRecentConnectionButton");
@@ -170,7 +171,7 @@ class FritzboxInputDialogControllerTest {
     @Test
     void testTheDialogShowsTheCurrentConnection() throws Exception {
         runOnFxThread(() -> {
-            FritzboxInputDialogController controller = new FritzboxInputDialogController();
+            FritzboxInputDialogController controller = new FritzboxInputDialogController(new DefaultPluginContext(FritzBoxInput.class));
 
             controller.setFritzBoxConnection(RecentFritzBoxConnectionsTest.connection("http://192.168.178.1/dvb/m3u/",
                     RecentFritzBoxConnectionsTest.HD));

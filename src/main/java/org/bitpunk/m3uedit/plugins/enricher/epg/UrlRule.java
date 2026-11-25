@@ -1,8 +1,6 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -16,7 +14,7 @@ import java.util.regex.PatternSyntaxException;
  * @param regex     a regular expression found somewhere in the stream url
  * @param channelId the id of the channel in the programme guide
  */
-public record UrlRule(@JsonProperty("regex") String regex, @JsonProperty("channelId") String channelId) {
+public record UrlRule(String regex, String channelId) {
     static final String SEPARATOR = "=>";
 
     public UrlRule {
@@ -46,7 +44,6 @@ public record UrlRule(@JsonProperty("regex") String regex, @JsonProperty("channe
         }
     }
 
-    @JsonIgnore
     Pattern pattern() {
         return Pattern.compile(regex);
     }
@@ -54,22 +51,23 @@ public record UrlRule(@JsonProperty("regex") String regex, @JsonProperty("channe
     /**
      * Parses a rule written as {@code regex => channel-id}.
      *
+     * @param context the context of the enricher, providing the texts of the errors
      * @throws IllegalArgumentException if the line is no valid rule
      */
-    static UrlRule parse(String line) {
+    static UrlRule parse(String line, PluginContext context) {
         int separator = line.lastIndexOf(SEPARATOR);
         if (separator < 0) {
-            throw new IllegalArgumentException(Messages.get("epgEnricher.urlRule.separatorMissing", SEPARATOR, line));
+            throw new IllegalArgumentException(context.text("epgEnricher.urlRule.separatorMissing", SEPARATOR, line));
         }
         String regex = line.substring(0, separator).strip();
         String channelId = line.substring(separator + SEPARATOR.length()).strip();
         if (regex.isEmpty() || channelId.isEmpty()) {
-            throw new IllegalArgumentException(Messages.get("epgEnricher.urlRule.incomplete", line));
+            throw new IllegalArgumentException(context.text("epgEnricher.urlRule.incomplete", line));
         }
         try {
             Pattern.compile(regex);
         } catch (PatternSyntaxException e) {
-            throw new IllegalArgumentException(Messages.get("epgEnricher.urlRule.invalidExpression", regex,
+            throw new IllegalArgumentException(context.text("epgEnricher.urlRule.invalidExpression", regex,
                     e.getDescription()));
         }
         return new UrlRule(regex, channelId);

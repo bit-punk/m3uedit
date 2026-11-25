@@ -1,6 +1,4 @@
-package org.bitpunk.m3uedit.plugins.enricher;
-
-import org.bitpunk.m3uedit.model.Entry;
+package org.bitpunk.m3uedit.api;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;

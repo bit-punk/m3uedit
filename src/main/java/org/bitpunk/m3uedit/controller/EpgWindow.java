@@ -24,9 +24,9 @@ import javafx.util.Duration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
-import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Programme;
+import org.bitpunk.m3uedit.api.ProgrammeGuideProvider;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
 
 import java.time.Clock;

@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins;
 
-import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.api.Output;
+import org.bitpunk.m3uedit.api.Plugin;
 
 import java.util.ServiceLoader;
 

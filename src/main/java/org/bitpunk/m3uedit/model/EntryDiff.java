@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.model;
 
+import org.bitpunk.m3uedit.api.Entry;
 import lombok.Getter;
 
 import java.util.ArrayList;

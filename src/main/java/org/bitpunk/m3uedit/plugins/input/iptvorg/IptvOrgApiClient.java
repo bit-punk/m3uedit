@@ -1,9 +1,8 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.parser.Parser;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import tools.jackson.databind.JsonNode;
@@ -34,17 +33,22 @@ public class IptvOrgApiClient {
     public static final String IPTV_ORG_API_BASE_URL = "https://iptv-org.github.io/api/";
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
+    private final PluginContext context;
     private final String apiBaseUrl;
     private final String playlistBaseUrl;
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper = new JsonMapper();
     private final Map<PlaylistGrouping, List<IptvOrgPlaylist>> cache = new EnumMap<>(PlaylistGrouping.class);
 
-    public IptvOrgApiClient() {
-        this(IPTV_ORG_API_BASE_URL, IPTV_ORG_PLAYLIST_BASE_URL);
+    /**
+     * @param context the context of the input, e.g. for its texts
+     */
+    public IptvOrgApiClient(PluginContext context) {
+        this(context, IPTV_ORG_API_BASE_URL, IPTV_ORG_PLAYLIST_BASE_URL);
     }
 
-    public IptvOrgApiClient(String apiBaseUrl, String playlistBaseUrl) {
+    public IptvOrgApiClient(PluginContext context, String apiBaseUrl, String playlistBaseUrl) {
+        this.context = context;
         this.apiBaseUrl = apiBaseUrl;
         this.playlistBaseUrl = playlistBaseUrl;
         this.httpClient = HttpClient.newBuilder()
@@ -81,12 +85,12 @@ public class IptvOrgApiClient {
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() != 200) {
                 response.body().close();
-                throw new IOException(Messages.get("input.statusCode", response.statusCode(), uri));
+                throw new IOException(context.text("input.statusCode", response.statusCode(), uri));
             }
             return response.body();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException(Messages.get("input.interrupted", uri), e);
+            throw new IOException(context.text("input.interrupted", uri), e);
         }
     }
 
@@ -105,9 +109,9 @@ public class IptvOrgApiClient {
     /**
      * Parses the given playlist and returns one entry per channel, using the name of its first stream.
      */
-    List<IptvOrgPlaylist> parseChannels(InputStream playlist) {
+    List<IptvOrgPlaylist> parseChannels(InputStream playlist) throws IOException {
         Map<String, IptvOrgPlaylist> channels = new LinkedHashMap<>();
-        for (Entry entry : new Parser().parse(playlist)) {
+        for (Entry entry : context.readPlaylist(playlist).entries()) {
             channels.computeIfAbsent(IptvOrgChannels.channelIdOf(entry),
                     id -> new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, id, IptvOrgChannels.channelNameOf(entry)));
         }

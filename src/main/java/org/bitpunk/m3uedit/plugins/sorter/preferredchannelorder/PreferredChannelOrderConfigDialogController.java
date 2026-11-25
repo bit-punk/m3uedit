@@ -11,10 +11,8 @@ import javafx.util.StringConverter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.parser.Parser;
-import org.bitpunk.m3uedit.parser.ParsingException;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 import org.bitpunk.m3uedit.util.DialogUtil;
@@ -90,13 +88,17 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
 
     private ChannelProfile currentlySelectedProfile;
 
-    public PreferredChannelOrderConfigDialogController() {
-        this(new PreferredChannelOrderSorter());
-    }
+    private final PluginContext context;
 
+    /**
+     * @param sorter the sorter to configure, initialised with its context
+     */
     public PreferredChannelOrderConfigDialogController(PreferredChannelOrderSorter sorter) {
-        super(FXML_PLUGIN_SORTER_CONFIG, Messages.get("sorter.preferredChannelOrder.config.title"));
+        super(FXML_PLUGIN_SORTER_CONFIG, sorter.getContext().text("sorter.preferredChannelOrder.config.title"));
+        this.context = sorter.getContext();
         this.sorter = sorter;
+        // the texts need the context, which is not yet known while the FXML is loaded (initialize)
+        setupTooltips();
         setResultConverter(createResultConverter());
         initData(sorter);
     }
@@ -295,10 +297,6 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
     }
 
     private void setupChannelOrderButtons() {
-        moveUpButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.moveUp.tooltip")));
-        moveDownButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.moveDown.tooltip")));
-        removeChannelButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.removeChannel.tooltip")));
-
         moveUpButton.setOnAction(e -> moveUp());
         moveDownButton.setOnAction(e -> moveDown());
         removeChannelButton.setOnAction(e -> removeSelectedChannel());
@@ -323,11 +321,17 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
         );
     }
 
+    private void setupTooltips() {
+        moveUpButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.moveUp.tooltip")));
+        moveDownButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.moveDown.tooltip")));
+        removeChannelButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.removeChannel.tooltip")));
+        addProfileButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.newProfile.tooltip")));
+        createFromPlaylistButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.fromPlaylist.tooltip")));
+        renameProfileButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.renameProfile.tooltip")));
+        deleteProfileButton.setTooltip(new Tooltip(context.text("sorter.preferredChannelOrder.config.deleteProfile.tooltip")));
+    }
+
     private void setupProfileCrudButtons() {
-        addProfileButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.newProfile.tooltip")));
-        createFromPlaylistButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.fromPlaylist.tooltip")));
-        renameProfileButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.renameProfile.tooltip")));
-        deleteProfileButton.setTooltip(new Tooltip(Messages.get("sorter.preferredChannelOrder.config.deleteProfile.tooltip")));
 
         addProfileButton.setOnAction(e -> handleAddProfile());
         createFromPlaylistButton.setOnAction(e -> handleCreateProfileFromPlaylist());
@@ -440,9 +444,9 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
 
     public void handleAddProfile() {
         TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle(Messages.get("sorter.preferredChannelOrder.newProfile.title"));
-        dialog.setHeaderText(Messages.get("sorter.preferredChannelOrder.newProfile.header"));
-        dialog.setContentText(Messages.get("sorter.preferredChannelOrder.profileName"));
+        dialog.setTitle(context.text("sorter.preferredChannelOrder.newProfile.title"));
+        dialog.setHeaderText(context.text("sorter.preferredChannelOrder.newProfile.header"));
+        dialog.setContentText(context.text("sorter.preferredChannelOrder.profileName"));
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(name -> {
             String trimmed = name.trim();
@@ -470,14 +474,14 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
     }
 
     public void handleCreateProfileFromPlaylist() {
-        Path playlist = DialogUtil.getOpenFilePath(Messages.get("sorter.preferredChannelOrder.fromPlaylist.fileType"), "*.m3u", "*.m3u8");
+        Path playlist = DialogUtil.getOpenFilePath(context.text("sorter.preferredChannelOrder.fromPlaylist.fileType"), "*.m3u", "*.m3u8");
         if (playlist == null) {
             return;
         }
         TextInputDialog dialog = new TextInputDialog(getPlaylistBaseName(playlist));
-        dialog.setTitle(Messages.get("sorter.preferredChannelOrder.fromPlaylist.title"));
-        dialog.setHeaderText(Messages.get("sorter.preferredChannelOrder.fromPlaylist.header", playlist.getFileName()));
-        dialog.setContentText(Messages.get("sorter.preferredChannelOrder.profileName"));
+        dialog.setTitle(context.text("sorter.preferredChannelOrder.fromPlaylist.title"));
+        dialog.setHeaderText(context.text("sorter.preferredChannelOrder.fromPlaylist.header", playlist.getFileName()));
+        dialog.setContentText(context.text("sorter.preferredChannelOrder.profileName"));
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(name -> {
             String trimmed = name.trim();
@@ -486,11 +490,11 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
             }
             try {
                 addNewProfileFromPlaylist(trimmed, playlist);
-            } catch (IOException | ParsingException e) {
+            } catch (IOException e) {
                 log.warn("Cannot create profile from playlist {}", playlist, e);
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle(Messages.get("sorter.preferredChannelOrder.fromPlaylist.title"));
-                alert.setHeaderText(Messages.get("sorter.preferredChannelOrder.fromPlaylist.error.header"));
+                alert.setTitle(context.text("sorter.preferredChannelOrder.fromPlaylist.title"));
+                alert.setHeaderText(context.text("sorter.preferredChannelOrder.fromPlaylist.error.header"));
                 alert.setContentText(e.getMessage());
                 alert.showAndWait();
             }
@@ -499,7 +503,7 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
 
     public ChannelProfile addNewProfileFromPlaylist(String profileName, Path playlist) throws IOException {
         try (InputStream stream = Files.newInputStream(playlist)) {
-            List<String> channels = extractChannelNames(new Parser().parse(stream));
+            List<String> channels = extractChannelNames(context.readPlaylist(stream).entries());
             log.debug("Creating profile '{}' with {} channels from playlist {}", profileName, channels.size(), playlist);
             return addNewProfile(profileName, channels);
         }
@@ -532,9 +536,9 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
             return;
         }
         TextInputDialog dialog = new TextInputDialog(selected.getName());
-        dialog.setTitle(Messages.get("sorter.preferredChannelOrder.renameProfile.title"));
-        dialog.setHeaderText(Messages.get("sorter.preferredChannelOrder.renameProfile.header"));
-        dialog.setContentText(Messages.get("sorter.preferredChannelOrder.profileName"));
+        dialog.setTitle(context.text("sorter.preferredChannelOrder.renameProfile.title"));
+        dialog.setHeaderText(context.text("sorter.preferredChannelOrder.renameProfile.header"));
+        dialog.setContentText(context.text("sorter.preferredChannelOrder.profileName"));
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(name -> {
             String trimmed = name.trim();
@@ -562,17 +566,17 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
 
         if (profileComboBox.getItems().size() <= 1) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle(Messages.get("sorter.preferredChannelOrder.deleteProfile.title"));
-            alert.setHeaderText(Messages.get("sorter.preferredChannelOrder.deleteProfile.lastProfile.header"));
-            alert.setContentText(Messages.get("sorter.preferredChannelOrder.deleteProfile.lastProfile.content"));
+            alert.setTitle(context.text("sorter.preferredChannelOrder.deleteProfile.title"));
+            alert.setHeaderText(context.text("sorter.preferredChannelOrder.deleteProfile.lastProfile.header"));
+            alert.setContentText(context.text("sorter.preferredChannelOrder.deleteProfile.lastProfile.content"));
             alert.showAndWait();
             return;
         }
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle(Messages.get("sorter.preferredChannelOrder.deleteProfile.title"));
-        alert.setHeaderText(Messages.get("sorter.preferredChannelOrder.deleteProfile.title"));
-        alert.setContentText(Messages.get("sorter.preferredChannelOrder.deleteProfile.confirmation", selected.getName()));
+        alert.setTitle(context.text("sorter.preferredChannelOrder.deleteProfile.title"));
+        alert.setHeaderText(context.text("sorter.preferredChannelOrder.deleteProfile.title"));
+        alert.setContentText(context.text("sorter.preferredChannelOrder.deleteProfile.confirmation", selected.getName()));
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             deleteSelectedProfile();
@@ -605,10 +609,7 @@ public class PreferredChannelOrderConfigDialogController extends AbstractDialogC
             if (selectedProfile != null) {
                 sorter.setSelectedProfileId(selectedProfile.getId());
             }
-            sorter.setConfig(workingConfig);
-            if (sorter.getConfigManager() != null) {
-                sorter.getConfigManager().saveConfig(workingConfig);
-            }
+            sorter.saveConfig(workingConfig);
         }
     }
 

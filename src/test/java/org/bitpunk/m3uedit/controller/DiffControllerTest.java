@@ -3,6 +3,9 @@ package org.bitpunk.m3uedit.controller;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.control.TextField;
+import org.bitpunk.m3uedit.api.Enricher;
+import org.bitpunk.m3uedit.api.Enrichment;
 import org.bitpunk.m3uedit.controller.DiffController.FoldItem;
 import org.bitpunk.m3uedit.controller.DiffController.Item;
 import org.bitpunk.m3uedit.controller.DiffController.RowItem;
@@ -10,14 +13,17 @@ import org.bitpunk.m3uedit.controller.TestPlugins.NameSorter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestFilter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestInput;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.model.EntryDiff.Kind;
-import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,7 +64,7 @@ class DiffControllerTest {
                 .mapToObj(i -> entry((i % 5 == 4 ? "shop " : "channel ") + (char) ('a' + i)))
                 .toList();
         input = new TestInput("in", entries);
-        filter.getEnabled().set(true);
+        PluginStates.enabled(filter).set(true);
         dataModel.getInputs().add(input);
     }
 
@@ -110,8 +116,8 @@ class DiffControllerTest {
     @Test
     void selectingASorterShowsMovedEntries() {
         // the input is not ordered by name: 'channel' and 'shop' entries are mixed
-        filter.getEnabled().set(false);
-        sorter.getEnabled().set(true);
+        PluginStates.enabled(filter).set(false);
+        PluginStates.enabled(sorter).set(true);
         dataModel.filterRawEntries();   // re-computed by the pipeline in the application
         selection.set(sorter);
 
@@ -133,7 +139,7 @@ class DiffControllerTest {
 
     @Test
     void searchShowsMatchingRowsOnly() {
-        diffController.lookupAll(".text-field").forEach(node -> ((javafx.scene.control.TextField) node).setText("shop"));
+        diffController.lookupAll(".text-field").forEach(node -> ((TextField) node).setText("shop"));
 
         assertThat(rows()).hasSize(4).allMatch(row -> row.row().left().getName().startsWith("shop"));
         assertThat(items()).noneMatch(FoldItem.class::isInstance);
@@ -150,7 +156,7 @@ class DiffControllerTest {
     void anEnricherShowsTheChangedEntriesWithTheirChanges() {
         TestPlugins.TestEnricher enricher = new TestPlugins.TestEnricher();
         dataModel.getEnrichers().add(enricher);
-        enricher.getEnabled().set(true);
+        PluginStates.enabled(enricher).set(true);
         dataModel.enrichSortedEntries();
 
         selection.set(enricher);
@@ -167,7 +173,7 @@ class DiffControllerTest {
     void enrichedEntriesAreModifiedInTheWholePipeline() {
         TestPlugins.TestEnricher enricher = new TestPlugins.TestEnricher();
         dataModel.getEnrichers().add(enricher);
-        enricher.getEnabled().set(true);
+        PluginStates.enabled(enricher).set(true);
         dataModel.enrichSortedEntries();
 
         assertThat(diffController.getDiff().getRemovedCount()).isEqualTo(4);
@@ -180,17 +186,17 @@ class DiffControllerTest {
 
     @Test
     void entriesWithANoteOfTheEnricherAreNotFolded() {
-        org.bitpunk.m3uedit.plugins.enricher.Enricher enricher = new TestPlugins.TestEnricher() {
+        Enricher enricher = new TestPlugins.TestEnricher() {
             @Override
-            public org.bitpunk.m3uedit.plugins.enricher.Enrichment enrich(List<Entry> entries) {
-                java.util.Map<Entry, String> notes = new java.util.IdentityHashMap<>();
+            public Enrichment enrich(List<Entry> entries) {
+                Map<Entry, String> notes = new IdentityHashMap<>();
                 notes.put(entries.get(7), "no EPG data");
-                return new org.bitpunk.m3uedit.plugins.enricher.Enrichment(entries, List.of(), notes,
+                return new Enrichment(entries, List.of(), notes,
                         "15 of 16 entries have EPG data.", null, null);
             }
         };
         dataModel.getEnrichers().add(enricher);
-        enricher.getEnabled().set(true);
+        PluginStates.enabled(enricher).set(true);
         dataModel.enrichSortedEntries();
 
         selection.set(enricher);

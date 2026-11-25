@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.plugins.sftp;
 
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.junit.jupiter.api.Test;
 
@@ -54,6 +56,7 @@ class SftpUserInteractionTest {
         private final AtomicInteger calls = new AtomicInteger();
 
         CountingInteraction(Optional<String> answer) {
+            super(new DefaultPluginContext(SftpInput.class));
             this.answer = answer;
         }
 

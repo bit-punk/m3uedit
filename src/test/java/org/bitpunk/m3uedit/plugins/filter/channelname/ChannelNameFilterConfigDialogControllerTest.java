@@ -2,8 +2,10 @@ package org.bitpunk.m3uedit.plugins.filter.channelname;
 
 import javafx.application.Platform;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.testsupport.ConfigDirectoryContext;
 import org.bitpunk.m3uedit.plugins.filter.channelname.model.ChannelNameFilterConfig;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,19 +50,19 @@ class ChannelNameFilterConfigDialogControllerTest {
     }
 
     private ChannelNameFilter createSampleFilter(Path tempDir) {
-        Path configPath = tempDir.resolve("config.yaml");
+        Path configPath = tempDir.resolve(ChannelNameFilter.CONFIG_FILE_NAME);
         ChannelNameFilterConfig config = ChannelNameFilterConfig.builder()
                 .excludeRegexes(new ArrayList<>(List.of(".*QVC.*", ".*HSE.*", ".*1-2-3.*")))
                 .build();
         YamlConfigManager<ChannelNameFilterConfig> manager = new YamlConfigManager<>(configPath, ChannelNameFilterConfig.class);
         manager.saveConfig(config);
-        return new ChannelNameFilter(manager);
+        return ConfigDirectoryContext.create(ChannelNameFilter::new, tempDir);
     }
 
     @Test
     void testDialogInitialization() throws Exception {
         runOnFxThread(() -> {
-            ChannelNameFilter filter = new ChannelNameFilter();
+            ChannelNameFilter filter = TestPluginSupport.create(ChannelNameFilter::new);
             ChannelNameFilterConfigDialogController controller = new ChannelNameFilterConfigDialogController(filter);
 
             assertThat(controller.getPatternsListView()).isNotNull();
@@ -137,7 +139,8 @@ class ChannelNameFilterConfigDialogControllerTest {
             assertThat(filtered).extracting(Entry::getName).containsExactly("ARD");
 
             // Verify persisted to file
-            ChannelNameFilterConfig loaded = filter.getConfigManager().loadConfig();
+            ChannelNameFilterConfig loaded = new YamlConfigManager<>(tempDir.resolve(ChannelNameFilter.CONFIG_FILE_NAME),
+                    ChannelNameFilterConfig.class).loadConfig();
             assertThat(loaded.getExcludeRegexes()).containsExactly(".*QVC.*", ".*HSE.*", ".*1-2-3.*", ".*Test.*");
         });
     }

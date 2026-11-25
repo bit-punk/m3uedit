@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins.output;
 
-import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
+import org.bitpunk.m3uedit.api.Export.ExportFile;
+import org.bitpunk.m3uedit.api.Export;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

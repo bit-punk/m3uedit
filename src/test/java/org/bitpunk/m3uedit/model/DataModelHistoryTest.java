@@ -1,8 +1,10 @@
 package org.bitpunk.m3uedit.model;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import org.bitpunk.m3uedit.plugins.input.Input;
+import javafx.stage.Window;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Input;
+import org.bitpunk.m3uedit.api.Playlist;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,11 +26,13 @@ class DataModelHistoryTest {
     }
 
     private static class FixedInput implements Input {
-        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        {
+            PluginStates.enabled(this).set(true);
+        }
 
         @Override
-        public List<Entry> read() {
-            return List.of(entry("A"), entry("B"), entry("C"));
+        public Playlist read() {
+            return EntryList.toPlaylist(List.of(entry("A"), entry("B"), entry("C")));
         }
 
         @Override
@@ -37,8 +41,9 @@ class DataModelHistoryTest {
         }
 
         @Override
-        public void configure() {
+        public boolean configure(Window owner) {
             // nothing to configure
+            return true;
         }
 
         @Override
@@ -49,11 +54,6 @@ class DataModelHistoryTest {
         @Override
         public String getDescription() {
             return "A, B, C";
-        }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
         }
     }
 

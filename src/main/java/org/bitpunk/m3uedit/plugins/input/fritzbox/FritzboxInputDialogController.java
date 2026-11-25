@@ -12,7 +12,7 @@ import javafx.util.Callback;
 import javafx.util.StringConverter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
@@ -30,6 +30,7 @@ import java.util.Set;
 @Slf4j
 public class FritzboxInputDialogController extends AbstractDialogController<FritzBoxConnection> implements Initializable {
     public static final String FXML_PLUGIN_INPUT_FRITZBOX = "plugin/input/fritzbox/FritzboxInputDialog.fxml";
+    private final PluginContext context;
     @Getter
     private final FritzBoxConnection fritzBoxConnection = new FritzBoxConnection();
     @FXML
@@ -53,8 +54,13 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     private Map<StreamSource, BooleanProperty> streamSelected;
     private RecentFritzBoxConnections recentConnections;
 
-    public FritzboxInputDialogController() {
-        super(FXML_PLUGIN_INPUT_FRITZBOX, Messages.get("fritzbox.dialog.title"));
+    /**
+     * @param context the context of the input, e.g. for its texts and its recently used connections
+     */
+    public FritzboxInputDialogController(PluginContext context) {
+        // set before the FXML is loaded, which calls initialize()
+        this.context = context;
+        super(FXML_PLUGIN_INPUT_FRITZBOX, context.text("fritzbox.dialog.title"));
         setResultConverter(getURIResultConverter());
     }
 
@@ -74,7 +80,7 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     public void initialize(URL location, ResourceBundle resources) {
         initializeStreamSourceView();
         initializeBinding();
-        initializeRecentConnections(new RecentFritzBoxConnections());
+        initializeRecentConnections(new RecentFritzBoxConnections(context));
     }
 
     private void initializeStreamSourceView() {
@@ -204,10 +210,10 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
     /**
      * @return the message of a validation error in the language of the user interface
      */
-    private static String describe(ConstraintViolation<FritzBoxConnection> error) {
+    private String describe(ConstraintViolation<FritzBoxConnection> error) {
         return switch (error.getMessage()) {
-            case FritzBoxConnection.BASE_URL_EMPTY -> Messages.get("fritzbox.invalid.baseUrlEmpty");
-            case FritzBoxConnection.BASE_URL_INVALID -> Messages.get("fritzbox.invalid.baseUrl");
+            case FritzBoxConnection.BASE_URL_EMPTY -> context.text("fritzbox.invalid.baseUrlEmpty");
+            case FritzBoxConnection.BASE_URL_INVALID -> context.text("fritzbox.invalid.baseUrl");
             default -> error.getMessage();
         };
     }
@@ -216,10 +222,10 @@ public class FritzboxInputDialogController extends AbstractDialogController<Frit
      * @return the description of a stream shown to the user, e.g. "SD streams" (the description stored with the
      * stream is not translated, it is part of the project-file)
      */
-    static String describe(StreamSource streamSource) {
+    String describe(StreamSource streamSource) {
         return switch (streamSource.getName()) {
-            case "tvsd.m3u" -> Messages.get("fritzbox.stream.sd");
-            case "tvhd.m3u" -> Messages.get("fritzbox.stream.hd");
+            case "tvsd.m3u" -> context.text("fritzbox.stream.sd");
+            case "tvhd.m3u" -> context.text("fritzbox.stream.hd");
             default -> streamSource.getDescription();
         };
     }

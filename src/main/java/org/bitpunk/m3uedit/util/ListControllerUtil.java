@@ -8,9 +8,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.shape.SVGPath;
-import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.api.NamedItem;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.player.ExternalPlayer;
 
 import java.io.IOException;

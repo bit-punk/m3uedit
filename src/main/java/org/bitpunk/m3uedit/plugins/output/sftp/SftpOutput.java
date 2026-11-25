@@ -2,23 +2,23 @@ package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import com.jcraft.jsch.*;
 import javafx.scene.control.DialogPane;
+import javafx.stage.Window;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.parser.Writer;
-import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.PluginType;
-import org.bitpunk.m3uedit.plugins.output.Export;
-import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
-import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Export;
+import org.bitpunk.m3uedit.api.Export.ExportFile;
+import org.bitpunk.m3uedit.api.Output;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.PluginType;
 import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.bitpunk.m3uedit.plugins.sftp.RecentSftpServers;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
 import org.bitpunk.m3uedit.plugins.sftp.SftpConnectionDialogController;
 import org.bitpunk.m3uedit.plugins.sftp.SftpUserInteraction;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
+import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnectionSettings;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,26 +34,58 @@ import java.time.format.DateTimeFormatter;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-@Getter
-@Setter
+/**
+ * Writes the playlist to an SFTP server.
+ * <p>
+ * The password of the connection is kept in memory only, it is not part of the settings stored in project-files.
+ */
 @Slf4j
-@PluginType(id = "SftpOutput", nameKey = "output.sftp.name")
-public class SftpOutput extends AbstractPlugin implements Output {
+@PluginType(id = "SftpOutput", nameKey = "output.sftp.name", texts = "i18n.messages")
+public class SftpOutput implements Output {
     public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
+    private PluginContext context;
+    @Getter
+    @Setter
     private SftpConnection sftpConnection = null;
+
+    @Override
+    public void init(PluginContext context) {
+        this.context = context;
+    }
 
     /**
      * @return the name shown to the user; a constant, not part of a project-file
      */
     @Override
     public String getName() {
-        return Messages.get("output.sftp.name");
+        return context.text("output.sftp.name");
     }
 
     @Override
     public String getDescription() {
-        return Messages.get("output.sftp.description");
+        return context.text("output.sftp.description");
+    }
+
+    @Override
+    public Class<? extends Record> getSettingsType() {
+        return SftpOutputSettings.class;
+    }
+
+    @Override
+    public Record getSettings() {
+        return new SftpOutputSettings(SftpConnectionSettings.of(sftpConnection));
+    }
+
+    /**
+     * Sets the connection; the password known so far is kept if the server and the user stay the same.
+     */
+    @Override
+    public void setSettings(Record settings) {
+        SftpConnectionSettings connection = settings instanceof SftpOutputSettings outputSettings
+                ? outputSettings.sftpConnection() : null;
+        sftpConnection = connection == null ? null : connection.toConnection(sftpConnection);
     }
 
     static {
@@ -119,9 +151,9 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 // the additional files are written first, so the playlist never references a file not written
                 Map<ExportFile, String> fileNames = putFiles(channelSftp, targetPath, export.files());
 
-                Writer writer = new Writer();
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                writer.write(playlist, export.headerAttributes(file -> playerUrlOf(fileNames.get(file))), outputStream);
+                context.writePlaylist(playlist, export.headerAttributes(file -> playerUrlOf(fileNames.get(file))),
+                        outputStream);
                 byte[] bytes = outputStream.toByteArray();
                 payloadBytes = bytes.length;
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
@@ -145,6 +177,10 @@ public class SftpOutput extends AbstractPlugin implements Output {
                 log.error("SSH/JSch session error during SFTP output: {} | Context: {}",
                         e.getMessage(), contextDetails, e);
                 throw new OutputException(describeFailure(e), e);
+            } catch (IOException e) {
+                // writing to memory does not fail, but the API allows it
+                log.error("Creating the playlist failed: {}", e.getMessage(), e);
+                throw new OutputException(describeFailure(e), e);
             }
         }
     }
@@ -166,7 +202,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
             try (InputStream inputStream = Files.newInputStream(file.content())) {
                 channelSftp.put(inputStream, directory + fileName);
             } catch (IOException e) {
-                throw new OutputException(Messages.get("output.sftp.fileReadError", file.name(), e.getMessage()), e);
+                throw new OutputException(context.text("output.sftp.fileReadError", file.name(), e.getMessage()), e);
             }
             fileNames.put(file, fileName);
         }
@@ -193,7 +229,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
      */
     protected void recordRecentServer() {
         try {
-            new RecentSftpServers().recordSuccess(sftpConnection);
+            new RecentSftpServers(context).recordSuccess(sftpConnection);
         } catch (RuntimeException e) {
             log.warn("Could not update list of recently used SFTP servers: {}", e.getMessage(), e);
         }
@@ -202,7 +238,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     /**
      * @return size and modification date of an existing file, or null if there is no file at the path
      */
-    static String describeExistingFile(ChannelSftp channelSftp, String path) {
+    String describeExistingFile(ChannelSftp channelSftp, String path) {
         try {
             SftpATTRS attrs = channelSftp.stat(path);
             if (attrs.isDir()) {
@@ -210,7 +246,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
             }
             String modified = LocalDateTime.ofInstant(Instant.ofEpochSecond(attrs.getMTime()), ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            return Messages.get("output.sftp.existingFile", attrs.getSize(), modified);
+            return context.text("output.sftp.existingFile", attrs.getSize(), modified);
         } catch (SftpException e) {
             return null; // does not exist (or cannot be read; then the upload reports the error)
         }
@@ -240,7 +276,7 @@ public class SftpOutput extends AbstractPlugin implements Output {
     }
 
     protected SftpUserInteraction createUserInteraction() {
-        return SftpUserInteraction.create();
+        return SftpUserInteraction.create(context);
     }
 
     protected String buildSftpContextDetails(ChannelSftp channelSftp, String targetPath, int playlistSize, int payloadBytes) {
@@ -405,20 +441,26 @@ public class SftpOutput extends AbstractPlugin implements Output {
     }
 
     @Override
-    public void configure() {
+    public boolean configure(Window owner) {
         log.debug("configure()");
-        SftpConnectionDialogController sftpTargetDialogController = new SftpConnectionDialogController(SftpConnectionDialogController.Mode.OUTPUT);
+        SftpConnectionDialogController sftpTargetDialogController = new SftpConnectionDialogController(context,
+                SftpConnectionDialogController.Mode.OUTPUT);
+        if (owner != null) {
+            sftpTargetDialogController.initOwner(owner);
+        }
         sftpTargetDialogController.setSftpConnection(sftpConnection);
         DialogPane dialogPane = sftpTargetDialogController.getDialogPane();
         dialogPane.lookupButton(sftpTargetDialogController.okButtonType)
                 .disableProperty()
                 .bind(sftpTargetDialogController.getInputsFull().not());
-        sftpTargetDialogController.showAndWait().ifPresent(uri -> sftpConnection = uri);
+        Optional<SftpConnection> connection = sftpTargetDialogController.showAndWait();
+        connection.ifPresent(selected -> sftpConnection = selected);
+        return connection.isPresent();
     }
 
     private String describeFailure(Exception e) {
-        return Messages.get("output.sftp.uploadFailed", sftpConnection.getUserName(), sftpConnection.getHostName(),
-                sftpConnection.getPort(), SftpClient.describeError(e));
+        return context.text("output.sftp.uploadFailed", sftpConnection.getUserName(), sftpConnection.getHostName(),
+                sftpConnection.getPort(), SftpClient.describeError(context, e));
     }
 
     @Override
@@ -430,5 +472,13 @@ public class SftpOutput extends AbstractPlugin implements Output {
             log.warn("Invalid SFTP connection data: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Only a short description, never the connection: it may contain the password.
+     */
+    @Override
+    public String toString() {
+        return "%s[%s]".formatted(getClass().getSimpleName(), getName());
     }
 }

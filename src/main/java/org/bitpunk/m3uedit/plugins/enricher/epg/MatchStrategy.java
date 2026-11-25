@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 
 /**
  * The ways an entry of the playlist is assigned to a channel of the programme guide, tried in this order.
@@ -31,9 +31,10 @@ public enum MatchStrategy {
     }
 
     /**
+     * @param context the context of the enricher, providing its texts
      * @return the name shown to the user, e.g. in the diff ("by name")
      */
-    public String getLabel() {
-        return Messages.get(labelKey);
+    public String getLabel(PluginContext context) {
+        return context.text(labelKey);
     }
 }

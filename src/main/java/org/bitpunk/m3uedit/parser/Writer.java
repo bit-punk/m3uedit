@@ -1,16 +1,14 @@
 package org.bitpunk.m3uedit.parser;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Export;
 
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Writes entries as extended m3u playlist (UTF-8 encoded).
@@ -59,18 +57,7 @@ public class Writer {
      * @return the header attributes referencing the given EPG urls (comma-separated), none if there are no urls
      */
     public static Map<String, String> epgAttributes(List<String> epgUrls) {
-        String urls = epgUrls == null ? "" : epgUrls.stream()
-                .filter(Objects::nonNull)
-                .map(String::strip)
-                .filter(url -> !url.isEmpty())
-                .distinct()
-                .collect(Collectors.joining(","));
-        Map<String, String> attributes = new LinkedHashMap<>();
-        if (!urls.isEmpty()) {
-            attributes.put("x-tvg-url", urls);
-            attributes.put("url-tvg", urls);
-        }
-        return attributes;
+        return Export.epgAttributes(epgUrls);
     }
 
     static String header(Map<String, String> headerAttributes) {

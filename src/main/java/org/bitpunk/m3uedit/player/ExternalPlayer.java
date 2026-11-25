@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 
 import java.io.IOException;
 import java.nio.file.Path;

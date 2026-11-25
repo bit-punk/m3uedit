@@ -6,6 +6,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import org.junit.jupiter.api.BeforeAll;
@@ -21,11 +23,12 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class IptvOrgInputDialogControllerTest {
+    private static final PluginContext CONTEXT = new DefaultPluginContext(IptvOrgInput.class);
     private static final IptvOrgPlaylist GERMANY = new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany");
     private static final IptvOrgPlaylist AUSTRIA = new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "AT", "Austria");
     private static final IptvOrgPlaylist NEWS = new IptvOrgPlaylist(PlaylistGrouping.CATEGORY, "news", "News");
 
-    private static final IptvOrgApiClient STUB_CLIENT = new IptvOrgApiClient("http://localhost/", "http://localhost/") {
+    private static final IptvOrgApiClient STUB_CLIENT = new IptvOrgApiClient(CONTEXT, "http://localhost/", "http://localhost/") {
         @Override
         public synchronized List<IptvOrgPlaylist> getPlaylists(PlaylistGrouping grouping) {
             return switch (grouping) {
@@ -47,7 +50,7 @@ class IptvOrgInputDialogControllerTest {
 
     @Test
     void testDialogInitializationLoadsCountries() throws Exception {
-        IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(STUB_CLIENT, null));
+        IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(CONTEXT, STUB_CLIENT, null));
 
         assertThat(controller.getTitle()).isEqualTo("Select iptv-org playlist(s) or channel(s) to read entries from");
         ComboBox<PlaylistGrouping> groupingComboBox = getField(controller, "groupingComboBox");
@@ -60,7 +63,7 @@ class IptvOrgInputDialogControllerTest {
 
     @Test
     void testPreselectedPlaylistsAreShownAndReturnedOnOk() throws Exception {
-        IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(STUB_CLIENT, List.of(NEWS)));
+        IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(CONTEXT, STUB_CLIENT, List.of(NEWS)));
 
         assertThat(controller.getNothingSelected().get()).isFalse();
         List<IptvOrgPlaylist> result = callOnFxThread(() -> controller.getResultConverter().call(new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE)));
@@ -71,7 +74,7 @@ class IptvOrgInputDialogControllerTest {
 
     @Test
     void testFilterAndAddSelectedPlaylists() throws Exception {
-        IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(STUB_CLIENT, null));
+        IptvOrgInputDialogController controller = callOnFxThread(() -> new IptvOrgInputDialogController(CONTEXT, STUB_CLIENT, null));
         ListView<IptvOrgPlaylist> available = getField(controller, "availablePlaylistListView");
         ListView<IptvOrgPlaylist> selected = getField(controller, "selectedPlaylistListView");
         TextField filterTextField = getField(controller, "filterTextField");

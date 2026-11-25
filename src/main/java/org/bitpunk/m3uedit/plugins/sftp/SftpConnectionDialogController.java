@@ -20,7 +20,7 @@ import javafx.util.StringConverter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 import org.bitpunk.m3uedit.util.PojoValidator;
@@ -47,9 +47,9 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         /**
          * @return the title of the dialog, e.g. "SFTP Input: Playlist Source"
          */
-        String title() {
-            return this == INPUT ? Messages.get("sftp.connection.title.input")
-                    : Messages.get("sftp.connection.title.output");
+        String title(PluginContext context) {
+            return this == INPUT ? context.text("sftp.connection.title.input")
+                    : context.text("sftp.connection.title.output");
         }
     }
 
@@ -93,16 +93,22 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
     private TextField playerBaseUrlTextField;
     @Getter
     private BooleanBinding inputsFull;
-    // no field initializer: assigned in initialize(), which runs during the super constructor
-    private RecentSftpServers recentServers;
+    private final PluginContext context;
+    private final RecentSftpServers recentServers;
     private final Mode mode;
 
-    public SftpConnectionDialogController(Mode mode) {
-        super(FXML_PLUGIN_SFTP, mode.title());
-        // initialize() already ran inside super(), so mode specific settings are applied here
+    /**
+     * @param context the context of the plugin, providing the texts and the list of recently used servers
+     */
+    public SftpConnectionDialogController(PluginContext context, Mode mode) {
+        super(FXML_PLUGIN_SFTP, mode.title(context));
+        // initialize() already ran inside super(), so the settings needing the context and the mode are applied here
+        this.context = context;
         this.mode = mode;
+        this.recentServers = new RecentSftpServers(context);
         setResizable(true);
         setResultConverter(getURIResultConverter());
+        initializeRecentServers();
         applyMode();
     }
 
@@ -115,7 +121,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
             node.setManaged(output);
         }
         fileNameTextField.setPromptText(output ? SftpConnection.DEFAULT_FILE_NAME
-                : Messages.get("sftp.connection.fileName.prompt"));
+                : context.text("sftp.connection.fileName.prompt"));
         inputsFull.invalidate();
     }
 
@@ -213,11 +219,9 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         log.debug("initialize()");
         initializeBinding();
         initializeBrowseButton();
-        initializeRecentServers();
     }
 
     private void initializeRecentServers() {
-        recentServers = new RecentSftpServers();
         recentServersComboBox.getItems().setAll(recentServers.getServers());
         recentServersComboBox.setConverter(new StringConverter<>() {
             @Override
@@ -288,7 +292,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
     @SuppressWarnings({"UnusedDeclaration"})
     private void handleBrowse() {
         SftpConnection connection = createSftpConnectionFromInput();
-        SftpUserInteraction userInteraction = new SftpUserInteraction();
+        SftpUserInteraction userInteraction = new SftpUserInteraction(context);
         if (isBlank(connection.getPassword())) {
             Optional<String> password = userInteraction.requestPassword(
                     connection.getUserName(), connection.getHostName(), connection.getPort());
@@ -300,7 +304,8 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         String path = hostPathTextField.getText();
         String startDirectory = path != null && path.startsWith("/") ? path : ".";
 
-        SftpBrowserDialog browserDialog = new SftpBrowserDialog(connection, startDirectory, userInteraction, isFileNameRequired());
+        SftpBrowserDialog browserDialog = new SftpBrowserDialog(context, connection, startDirectory,
+                userInteraction, isFileNameRequired());
         browserDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<SftpBrowserDialog.Selection> selection = browserDialog.showAndWait();
         if (browserDialog.isConnected() && isBlank(passwordField.getText())) {
@@ -346,7 +351,7 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
         log.trace("Validation-errors found: {}", errors);
         boolean fileNameMissing = isFileNameRequired() && isBlank(sftpConnectionFromInput.getFileName());
         if (fileNameMissing) {
-            markFieldInvalid(fileNameTextField, Messages.get("sftp.connection.invalid.fileNameEmpty"));
+            markFieldInvalid(fileNameTextField, context.text("sftp.connection.invalid.fileNameEmpty"));
         }
         return errors.isEmpty() && !fileNameMissing && sftpConnectionFromInput.isValidUri();
     }
@@ -372,13 +377,13 @@ public class SftpConnectionDialogController extends AbstractDialogController<Sft
     /**
      * @return the message of a validation error in the language of the user interface
      */
-    private static String describe(ConstraintViolation<SftpConnection> error) {
+    private String describe(ConstraintViolation<SftpConnection> error) {
         return switch (error.getMessage()) {
-            case SftpConnection.HOST_NAME_EMPTY -> Messages.get("sftp.connection.invalid.hostNameEmpty");
-            case SftpConnection.PORT_NOT_POSITIVE -> Messages.get("sftp.connection.invalid.port");
-            case SftpConnection.PATH_NOT_ABSOLUTE -> Messages.get("sftp.connection.invalid.path");
-            case SftpConnection.FILE_NAME_WITH_SLASH -> Messages.get("sftp.connection.invalid.fileName");
-            case SftpConnection.USER_NAME_EMPTY -> Messages.get("sftp.connection.invalid.userNameEmpty");
+            case SftpConnection.HOST_NAME_EMPTY -> context.text("sftp.connection.invalid.hostNameEmpty");
+            case SftpConnection.PORT_NOT_POSITIVE -> context.text("sftp.connection.invalid.port");
+            case SftpConnection.PATH_NOT_ABSOLUTE -> context.text("sftp.connection.invalid.path");
+            case SftpConnection.FILE_NAME_WITH_SLASH -> context.text("sftp.connection.invalid.fileName");
+            case SftpConnection.USER_NAME_EMPTY -> context.text("sftp.connection.invalid.userNameEmpty");
             default -> error.getMessage();
         };
     }

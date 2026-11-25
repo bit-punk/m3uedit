@@ -1,11 +1,15 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
+import org.bitpunk.m3uedit.api.Programme;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIOException;
@@ -17,8 +21,8 @@ class XmltvFilesTest {
 
     @Test
     void testChannelsAreRead() throws IOException {
-        List<XmltvChannel> channels = XmltvFiles.readChannels(XmltvTestFiles.write(tempDir.resolve("guide.xml"),
-                XmltvTestFiles.GUIDE));
+        List<XmltvChannel> channels = XmltvFiles.readChannels(XmltvTestFiles.CONTEXT,
+                XmltvTestFiles.write(tempDir.resolve("guide.xml"), XmltvTestFiles.GUIDE));
 
         assertThat(channels).containsExactly(
                 new XmltvChannel("ZDF.de", List.of("ZDF", "ZDF HD")),
@@ -31,14 +35,15 @@ class XmltvFilesTest {
     void testGzipCompressedFilesAreRead() throws IOException {
         Path file = XmltvTestFiles.writeGzip(tempDir.resolve("guide.xml.gz"), XmltvTestFiles.GUIDE);
 
-        assertThat(XmltvFiles.readChannels(file)).hasSize(4);
+        assertThat(XmltvFiles.readChannels(XmltvTestFiles.CONTEXT, file)).hasSize(4);
     }
 
     @Test
     void testInvalidFilesAreReported() throws IOException {
         Path file = XmltvTestFiles.write(tempDir.resolve("page.html"), "<html><body>Not found</body>");
 
-        assertThatIOException().isThrownBy(() -> XmltvFiles.readChannels(file)).withMessageContaining("No valid XMLTV file");
+        assertThatIOException().isThrownBy(() -> XmltvFiles.readChannels(XmltvTestFiles.CONTEXT, file))
+                .withMessageContaining("No valid XMLTV file");
     }
 
     @Test
@@ -51,7 +56,7 @@ class XmltvFilesTest {
                 """.formatted(secret.toUri()));
 
         try {
-            assertThat(XmltvFiles.readChannels(file)).allSatisfy(channel ->
+            assertThat(XmltvFiles.readChannels(XmltvTestFiles.CONTEXT, file)).allSatisfy(channel ->
                     assertThat(channel.displayNames()).doesNotContain("secret"));
         } catch (IOException e) {
             // rejecting the file is fine as well
@@ -77,14 +82,14 @@ class XmltvFilesTest {
                 </tv>
                 """);
 
-        List<org.bitpunk.m3uedit.plugins.enricher.Programme> programmes = XmltvFiles.readProgrammes(file,
-                java.util.Map.of("A", "a.de"), java.util.Map.of("a.de", "Channel A"), java.time.ZoneOffset.UTC);
+        List<Programme> programmes = XmltvFiles.readProgrammes(XmltvTestFiles.CONTEXT, file,
+                Map.of("A", "a.de"), Map.of("a.de", "Channel A"), ZoneOffset.UTC);
 
         assertThat(programmes).containsExactly(
-                new org.bitpunk.m3uedit.plugins.enricher.Programme("a.de", "Channel A",
-                        java.time.Instant.parse("2026-11-13T19:00:00Z"), java.time.Instant.parse("2026-11-13T19:15:00Z"),
+                new Programme("a.de", "Channel A",
+                        Instant.parse("2026-11-13T19:00:00Z"), Instant.parse("2026-11-13T19:15:00Z"),
                         "Tagesschau", "20 Uhr", "Nachrichten & Wetter", "News", "http://example.com/tagesschau.jpg"),
-                new org.bitpunk.m3uedit.plugins.enricher.Programme("a.de", "Channel A",
-                        java.time.Instant.parse("2026-11-13T19:15:00Z"), null, "Tatort", null, "Teil 1.\n\nTeil 2.", null));
+                new Programme("a.de", "Channel A",
+                        Instant.parse("2026-11-13T19:15:00Z"), null, "Tatort", null, "Teil 1.\n\nTeil 2.", null));
     }
 }

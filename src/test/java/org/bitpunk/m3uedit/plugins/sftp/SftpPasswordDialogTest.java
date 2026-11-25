@@ -3,6 +3,9 @@ package org.bitpunk.m3uedit.plugins.sftp;
 import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SftpPasswordDialogTest {
+    private static final PluginContext CONTEXT = new DefaultPluginContext(SftpInput.class);
 
     @BeforeAll
     static void initToolkit() {
@@ -39,7 +43,7 @@ class SftpPasswordDialogTest {
     @Test
     void testTheServerIsNamedAndTheButtonsAreInEnglish() throws Exception {
         List<String> texts = onFxThread(() -> {
-            SftpPasswordDialog dialog = new SftpPasswordDialog("root", "192.168.178.22", 22);
+            SftpPasswordDialog dialog = new SftpPasswordDialog(CONTEXT, "root", "192.168.178.22", 22);
             return List.of(((Label) dialog.getDialogPane().lookup(".sftp-password-server")).getText(),
                     ((Button) dialog.getDialogPane().lookupButton(dialog.getConnectButtonType())).getText(),
                     ((Button) dialog.getDialogPane().lookupButton(dialog.getCancelButtonType())).getText());
@@ -51,7 +55,7 @@ class SftpPasswordDialogTest {
     @Test
     void testConnectNeedsAPassword() throws Exception {
         List<Boolean> disabled = onFxThread(() -> {
-            SftpPasswordDialog dialog = new SftpPasswordDialog("root", "nas", 22);
+            SftpPasswordDialog dialog = new SftpPasswordDialog(CONTEXT, "root", "nas", 22);
             boolean empty = dialog.getDialogPane().lookupButton(dialog.getConnectButtonType()).isDisabled();
             dialog.getPasswordField().setText("secret");
             return List.of(empty, dialog.getDialogPane().lookupButton(dialog.getConnectButtonType()).isDisabled());
@@ -63,7 +67,7 @@ class SftpPasswordDialogTest {
     @Test
     void testThePasswordIsTheResultOfConnectOnly() throws Exception {
         List<String> results = onFxThread(() -> {
-            SftpPasswordDialog dialog = new SftpPasswordDialog("root", "nas", 22);
+            SftpPasswordDialog dialog = new SftpPasswordDialog(CONTEXT, "root", "nas", 22);
             dialog.getPasswordField().setText("secret");
             return java.util.Arrays.asList(dialog.getResultConverter().call(dialog.getConnectButtonType()),
                     dialog.getResultConverter().call(dialog.getCancelButtonType()));

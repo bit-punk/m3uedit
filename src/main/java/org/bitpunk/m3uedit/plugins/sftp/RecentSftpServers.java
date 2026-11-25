@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.sftp;
 
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.plugins.sftp.model.RecentSftpServer;
@@ -19,8 +20,18 @@ public class RecentSftpServers {
     public static final int MAX_ENTRIES = 10;
     private final YamlConfigManager<RecentSftpServersConfig> configManager;
 
+    /**
+     * The list of the application (e.g. its configuration dialog), which has no plugin context.
+     */
     public RecentSftpServers() {
         this(AppConfigPaths.getPluginConfigPath(CONFIG_FILE_NAME));
+    }
+
+    /**
+     * The list of the SFTP plugins, in the configuration directory of their context.
+     */
+    public RecentSftpServers(PluginContext context) {
+        this(context.configDirectory().resolve(CONFIG_FILE_NAME));
     }
 
     public RecentSftpServers(Path configPath) {

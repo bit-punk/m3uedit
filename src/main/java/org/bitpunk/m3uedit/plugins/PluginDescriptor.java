@@ -1,6 +1,8 @@
 package org.bitpunk.m3uedit.plugins;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.api.PluginType;
 import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.util.*;
@@ -13,7 +15,7 @@ import java.util.function.Consumer;
  * @param id       the type id, stored in project-files, see {@link PluginType}
  * @param type     the class of the plugin
  * @param provider creates new instances
- * @param <T>      the kind of plugin, e.g. {@link org.bitpunk.m3uedit.plugins.input.Input}
+ * @param <T>      the kind of plugin, e.g. {@link org.bitpunk.m3uedit.api.Input}
  */
 @Slf4j
 public record PluginDescriptor<T extends Plugin>(String id, Class<? extends T> type,
@@ -40,10 +42,12 @@ public record PluginDescriptor<T extends Plugin>(String id, Class<? extends T> t
     }
 
     /**
-     * @return a new instance of the plugin
+     * @return a new instance of the plugin, initialised with its context
      */
     public T create() {
-        return provider.get();
+        T plugin = provider.get();
+        plugin.init(new DefaultPluginContext(type));
+        return plugin;
     }
 
     /**

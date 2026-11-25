@@ -7,7 +7,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.UserInfo;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
 import java.nio.charset.StandardCharsets;
@@ -17,7 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * A connected SFTP session (SSH session plus SFTP channel), shared by {@link SftpOutput} and the
+ * A connected SFTP session (SSH session plus SFTP channel), shared by the SFTP input and output and the
  * {@link SftpBrowserDialog}.
  * <p>
  * Host keys are verified against {@code ~/.ssh/known_hosts}: unknown hosts must be confirmed via
@@ -129,20 +129,21 @@ public final class SftpClient implements AutoCloseable {
     }
 
     /**
+     * @param context the context of the plugin, providing the texts
      * @return a short, user readable description of a connection or transfer error
      */
-    public static String describeError(Throwable error) {
+    public static String describeError(PluginContext context, Throwable error) {
         if (error instanceof JSchException jschException && isAuthenticationFailure(jschException)) {
-            return Messages.get("sftp.error.authentication");
+            return context.text("sftp.error.authentication");
         }
         if (error instanceof SftpException sftpException) {
             return switch (sftpException.id) {
-                case ChannelSftp.SSH_FX_PERMISSION_DENIED -> Messages.get("sftp.error.permissionDenied");
-                case ChannelSftp.SSH_FX_NO_SUCH_FILE -> Messages.get("sftp.error.directoryNotFound");
-                default -> Messages.get("sftp.error.sftp", sftpException.getMessage());
+                case ChannelSftp.SSH_FX_PERMISSION_DENIED -> context.text("sftp.error.permissionDenied");
+                case ChannelSftp.SSH_FX_NO_SUCH_FILE -> context.text("sftp.error.directoryNotFound");
+                default -> context.text("sftp.error.sftp", sftpException.getMessage());
             };
         }
-        return Messages.get("sftp.error.other", error.getMessage());
+        return context.text("sftp.error.other", error.getMessage());
     }
 
     static String getKnownHostsPath() {
