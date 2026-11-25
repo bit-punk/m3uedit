@@ -2,9 +2,13 @@ package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Sorter;
+import org.bitpunk.m3uedit.plugins.PluginStates;
+import org.bitpunk.m3uedit.testsupport.ConfigDirectoryContext;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -25,8 +29,7 @@ class PreferredChannelOrderSorterTest {
 
     @Test
     void testSortWithDefaultProfile(@TempDir Path tempDir) {
-        Path configFile = tempDir.resolve("preferred_channel_order.yaml");
-        PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter(configFile);
+        PreferredChannelOrderSorter sorter = ConfigDirectoryContext.create(PreferredChannelOrderSorter::new, tempDir);
 
         Entry e1 = createEntry("RTL");
         Entry e2 = createEntry("Das Erste HD");
@@ -49,7 +52,7 @@ class PreferredChannelOrderSorterTest {
 
     @Test
     void testSortWithCustomProfile(@TempDir Path tempDir) {
-        Path configFile = tempDir.resolve("config.yaml");
+        Path configFile = tempDir.resolve(PreferredChannelOrderSorter.CONFIG_FILE_NAME);
         YamlConfigManager<PreferredChannelOrderConfig> manager = new YamlConfigManager<>(configFile, PreferredChannelOrderConfig.class);
 
         ChannelProfile sportProfile = ChannelProfile.builder()
@@ -64,7 +67,7 @@ class PreferredChannelOrderSorterTest {
                 .build();
         manager.saveConfig(config);
 
-        PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter(manager);
+        PreferredChannelOrderSorter sorter = ConfigDirectoryContext.create(PreferredChannelOrderSorter::new, tempDir);
         sorter.setSelectedProfileId("sport_favoriten");
 
         Entry e1 = createEntry("WELT");
@@ -84,7 +87,7 @@ class PreferredChannelOrderSorterTest {
 
     @Test
     void testSaveAndLoadInProjectFile(@TempDir Path tempDir) throws Exception {
-        PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter();
+        PreferredChannelOrderSorter sorter = TestPluginSupport.create(PreferredChannelOrderSorter::new);
         sorter.setSelectedProfileId("sport_favoriten");
         DataModel dataModel = new DataModel("sorter");
         dataModel.getSorters().add(sorter);
@@ -104,5 +107,72 @@ class PreferredChannelOrderSorterTest {
         assertThat(loaded.getConfig()).isNotNull();
         assertThat(loaded.getSelectedProfile()).isPresent();
         assertThat(loaded.getSelectedProfile().get().getId()).isEqualTo("sport_favoriten");
+    }
+
+    @Test
+    void testSettingsRoundTrip() {
+        PreferredChannelOrderSorter sorter = TestPluginSupport.create(PreferredChannelOrderSorter::new);
+        sorter.setSelectedProfileId("sport_favoriten");
+
+        assertThat(sorter.getSettingsType()).isEqualTo(PreferredChannelOrderSorterSettings.class);
+        PreferredChannelOrderSorterSettings settings = sorter.getSettings();
+        assertThat(settings).isEqualTo(new PreferredChannelOrderSorterSettings("sport_favoriten"));
+
+        PreferredChannelOrderSorter other = TestPluginSupport.create(PreferredChannelOrderSorter::new);
+        other.setSettings(settings);
+        assertThat(other.getSelectedProfileId()).isEqualTo("sport_favoriten");
+        assertThat(other.getSelectedProfile()).map(ChannelProfile::getId).contains("sport_favoriten");
+    }
+
+    @Test
+    void testMissingSettingsUseTheDefaultProfileOfTheConfiguration(@TempDir Path tempDir) {
+        PreferredChannelOrderConfig config = PreferredChannelOrderConfig.builder()
+                .defaultProfile("sport_favoriten")
+                .profiles(List.of(ChannelProfile.builder().id("sport_favoriten").channels(List.of("SPORT1")).build()))
+                .build();
+        new YamlConfigManager<>(tempDir.resolve(PreferredChannelOrderSorter.CONFIG_FILE_NAME),
+                PreferredChannelOrderConfig.class).saveConfig(config);
+        PreferredChannelOrderSorter sorter = ConfigDirectoryContext.create(PreferredChannelOrderSorter::new, tempDir);
+
+        sorter.setSettings(new PreferredChannelOrderSorterSettings(null));
+
+        assertThat(sorter.getSelectedProfileId()).isEqualTo("sport_favoriten");
+        assertThat(sorter.getSettings().selectedProfileId()).isEqualTo("sport_favoriten");
+    }
+
+    @Test
+    void testMissingSettingsWithoutDefaultProfileUseTheStandardProfile(@TempDir Path tempDir) {
+        new YamlConfigManager<>(tempDir.resolve(PreferredChannelOrderSorter.CONFIG_FILE_NAME),
+                PreferredChannelOrderConfig.class).saveConfig(new PreferredChannelOrderConfig(null, List.of()));
+        PreferredChannelOrderSorter sorter = ConfigDirectoryContext.create(PreferredChannelOrderSorter::new, tempDir);
+
+        sorter.setSettings(new PreferredChannelOrderSorterSettings(null));
+
+        assertThat(sorter.getSelectedProfileId()).isEqualTo("deutschland_standard");
+    }
+
+    @Test
+    void testLoadProjectFileOfPreviousVersion(@TempDir Path tempDir) throws Exception {
+        Path projectFile = tempDir.resolve("sorter.m3uproj");
+        Files.writeString(projectFile, """
+                ---
+                name: sorter
+                sorters:
+                  - type: PreferredChannelOrderSorter
+                    enabled: true
+                    selectedProfileId: sport_favoriten
+                  - type: PreferredChannelOrderSorter
+                    enabled: false
+                """);
+
+        List<Sorter> sorters = ProjectPersisterUtil.loadProject(projectFile).getSorters();
+
+        assertThat(sorters).hasSize(2).allMatch(PreferredChannelOrderSorter.class::isInstance);
+        assertThat(((PreferredChannelOrderSorter) sorters.get(0)).getSelectedProfileId()).isEqualTo("sport_favoriten");
+        assertThat(PluginStates.enabled(sorters.get(0)).get()).isTrue();
+        // a project-file without selected profile uses the default profile of the configuration
+        assertThat(((PreferredChannelOrderSorter) sorters.get(1)).getSelectedProfileId())
+                .isEqualTo("deutschland_standard");
+        assertThat(PluginStates.enabled(sorters.get(1)).get()).isFalse();
     }
 }

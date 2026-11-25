@@ -18,9 +18,10 @@ import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.enricher.Enricher;
-import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Enricher;
+import org.bitpunk.m3uedit.api.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.util.ChannelLogos;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.ListControllerUtil;
@@ -545,7 +546,7 @@ public class EntryListController extends AbstractController  implements Initiali
      */
     List<ProgrammeGuideProvider> programmeGuideProviders() {
         return dataModel.getEnrichers().stream()
-                .filter(enricher -> enricher.getEnabled().get())
+                .filter(enricher -> PluginStates.enabled(enricher).get())
                 .filter(ProgrammeGuideProvider.class::isInstance)
                 .map(ProgrammeGuideProvider.class::cast)
                 .toList();

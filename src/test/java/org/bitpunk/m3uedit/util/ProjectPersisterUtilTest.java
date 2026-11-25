@@ -5,14 +5,15 @@ import javafx.beans.value.WritableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.model.ManualChange;
 import org.bitpunk.m3uedit.parser.Parser;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.plugins.filter.channelname.ChannelNameFilter;
 import org.bitpunk.m3uedit.plugins.filter.sdchannel.SdChannelFilter;
 import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
-import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.api.Input;
 import org.bitpunk.m3uedit.plugins.input.file.FileInput;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.FritzBoxInput;
@@ -21,18 +22,20 @@ import org.bitpunk.m3uedit.plugins.input.fritzbox.model.StreamSource;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.IptvOrgInput;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
-import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.api.Output;
 import org.bitpunk.m3uedit.plugins.input.url.UrlInput;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
 import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.bitpunk.m3uedit.plugins.output.sftp.SftpOutput;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
-import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.api.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.channelname.ChannelNameSorter;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.PreferredChannelOrderSorter;
 import org.bitpunk.m3uedit.plugins.enricher.epg.EpgEnricher;
 import org.bitpunk.m3uedit.plugins.enricher.epg.MatchStrategy;
 import org.bitpunk.m3uedit.plugins.enricher.epg.UrlRule;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -71,14 +74,14 @@ class ProjectPersisterUtilTest {
         assertThat(dataModel).isNotNull();
         assertThat(dataModel.getName()).isEqualTo("Kurt");
         assertThat(dataModel.getInputs()).hasExactlyElementsOfTypes(FileInput.class, FritzBoxInput.class);
-        assertThat(dataModel.getInputs()).extracting(input -> input.getEnabled().get()).containsExactly(true, false);
+        assertThat(dataModel.getInputs()).extracting(input -> PluginStates.enabled(input).get()).containsExactly(true, false);
         FritzBoxInput fritzBoxInput = (FritzBoxInput) dataModel.getInputs().get(1);
         assertThat(fritzBoxInput.getSelectedStreamSources()).containsExactly(
                 new StreamSource("tvsd.m3u", "SD streams"), new StreamSource("tvhd.m3u", "HD streams"));
         assertThat(fritzBoxInput.getFritzBoxConnection().getBaseUrl()).isEqualTo("http://fritz.box/dvb/m3u/");
         assertThat(dataModel.getFilters())
                 .hasExactlyElementsOfTypes(ChannelNameFilter.class, UniqueNameFilter.class, SdChannelFilter.class);
-        assertThat(dataModel.getFilters()).extracting(filter -> filter.getEnabled().get())
+        assertThat(dataModel.getFilters()).extracting(filter -> PluginStates.enabled(filter).get())
                 .containsExactly(false, true, false);
         assertThat(dataModel.getSorters()).hasExactlyElementsOfTypes(ChannelNameSorter.class);
         assertThat(dataModel.getOutputs().getFirst().getOutput())
@@ -203,7 +206,7 @@ class ProjectPersisterUtilTest {
         SftpConnection connection = createSftpConnection("topSecret42");
         connection.setPath("/playlists");
         connection.setFileName("tv.m3u");
-        SftpInput sftpInput = new SftpInput();
+        SftpInput sftpInput = TestPluginSupport.create(SftpInput::new);
         sftpInput.setSftpConnection(connection);
         dataModel.getInputs().add(sftpInput);
 
@@ -239,30 +242,30 @@ class ProjectPersisterUtilTest {
 
     private static ObservableList<Sorter> getSorters() {
         List<Sorter> filterList = new ArrayList<>();
-        filterList.add(new ChannelNameSorter());
+        filterList.add(TestPluginSupport.create(ChannelNameSorter::new));
         return FXCollections.observableArrayList(filterList);
     }
     private static ObservableList<Filter> getFilters() {
         List<Filter> filterList = new ArrayList<>();
-        filterList.add(new ChannelNameFilter());
-        filterList.add(new UniqueNameFilter());
-        filterList.add(new SdChannelFilter());
+        filterList.add(TestPluginSupport.create(ChannelNameFilter::new));
+        filterList.add(TestPluginSupport.create(UniqueNameFilter::new));
+        filterList.add(TestPluginSupport.create(SdChannelFilter::new));
         return FXCollections.observableArrayList(filterList);
     }
 
     private static ObservableList<Input> getInputs() {
         List<Input> inputList = new ArrayList<>();
-        inputList.add(new FileInput());
-        inputList.add(new FritzBoxInput());
-        IptvOrgInput iptvOrgInput = new IptvOrgInput();
+        inputList.add(TestPluginSupport.create(FileInput::new));
+        inputList.add(TestPluginSupport.create(FritzBoxInput::new));
+        IptvOrgInput iptvOrgInput = TestPluginSupport.create(IptvOrgInput::new);
         iptvOrgInput.setSelectedPlaylists(new ArrayList<>(List.of(new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany"))));
         inputList.add(iptvOrgInput);
         return FXCollections.observableArrayList(inputList);
     }
     private static ObservableList<Output> getOutputs() {
         List<Output> outputList = new ArrayList<>();
-        outputList.add(new FileOutput());
-        outputList.add(new SftpOutput());
+        outputList.add(TestPluginSupport.create(FileOutput::new));
+        outputList.add(TestPluginSupport.create(SftpOutput::new));
         return FXCollections.observableArrayList(outputList);
     }
 
@@ -277,14 +280,14 @@ class ProjectPersisterUtilTest {
         DataModel dataModel = getDataModel();
         Filter enabledFilter = dataModel.getFilters().get(1);
         Filter disabledFilter = dataModel.getFilters().get(2);
-        enabledFilter.getEnabled().set(true);
+        PluginStates.enabled(enabledFilter).set(true);
         // simulates the UI: checkbox-cells bind bidirectionally (using weak references) and add listeners
         for (Filter filter : dataModel.getFilters()) {
-            new SimpleBooleanProperty().bindBidirectional(filter.getEnabled());
-            filter.getEnabled().addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
+            new SimpleBooleanProperty().bindBidirectional(PluginStates.enabled(filter));
+            PluginStates.enabled(filter).addListener((observable, oldValue, newValue) -> dataModel.filterRawEntries());
         }
-        dataModel.getSorters().getFirst().getEnabled().set(true);
-        new SimpleBooleanProperty().bindBidirectional(dataModel.getSorters().getFirst().getEnabled());
+        PluginStates.enabled(dataModel.getSorters().getFirst()).set(true);
+        new SimpleBooleanProperty().bindBidirectional(PluginStates.enabled(dataModel.getSorters().getFirst()));
         Path projectFile = Path.of("target/testproject-bound-properties.m3uproj");
 
         ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel);
@@ -294,11 +297,11 @@ class ProjectPersisterUtilTest {
                 .doesNotContain("SimpleBooleanProperty").doesNotContain("WeakReference");
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
         assertThat(loaded).isNotNull();
-        assertThat(loaded.getFilters().get(1).getEnabled().get()).isTrue();
-        assertThat(loaded.getFilters().get(2).getEnabled().get()).isFalse();
-        assertThat(loaded.getSorters().getFirst().getEnabled().get()).isTrue();
+        assertThat(PluginStates.enabled(loaded.getFilters().get(1)).get()).isTrue();
+        assertThat(PluginStates.enabled(loaded.getFilters().get(2)).get()).isFalse();
+        assertThat(PluginStates.enabled(loaded.getSorters().getFirst()).get()).isTrue();
         assertThat(enabledFilter).isNotSameAs(loaded.getFilters().get(1));
-        assertThat(disabledFilter.getEnabled().get()).isFalse();
+        assertThat(PluginStates.enabled(disabledFilter).get()).isFalse();
     }
 
     @Test
@@ -313,7 +316,7 @@ class ProjectPersisterUtilTest {
         DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
 
         assertThat(loaded).isNotNull();
-        assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(filter.getEnabled()).isNotNull()
+        assertThat(loaded.getFilters()).allSatisfy(filter -> assertThat(PluginStates.enabled(filter)).isNotNull()
                 .extracting(WritableBooleanValue::get).isEqualTo(false));
     }
 
@@ -335,10 +338,10 @@ class ProjectPersisterUtilTest {
         Files.writeString(projectFile, "existing project");
         DataModel dataModel = getDataModel();
         // a cyclic reference cannot be serialized
-        dataModel.getFilters().add(new UniqueNameFilter() {
+        dataModel.getFilters().add(TestPluginSupport.init(new UniqueNameFilter() {
             @SuppressWarnings("unused")
             private final Object self = this;
-        });
+        }));
 
         assertThat(ProjectPersisterUtil.saveProjectFile(projectFile.toString(), dataModel)).isFalse();
 
@@ -357,35 +360,35 @@ class ProjectPersisterUtilTest {
     @Test
     void testProjectWithAllPluginsConfiguredCanBeSavedAndLoaded(@TempDir Path tempDir) throws Exception {
         DataModel dataModel = new DataModel("all plugins");
-        FileInput fileInput = new FileInput();
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
         fileInput.setSource("/tmp/playlist.m3u");
-        FritzBoxInput fritzBoxInput = new FritzBoxInput();
+        FritzBoxInput fritzBoxInput = TestPluginSupport.create(FritzBoxInput::new);
         FritzBoxConnection fritzBoxConnection = new FritzBoxConnection();
         fritzBoxConnection.setBaseUrl("http://192.168.178.1/dvb/m3u/");
         fritzBoxConnection.getSelectedStreamSources().add(new StreamSource("tvhd.m3u", "HD streams"));
         fritzBoxInput.setFritzBoxConnection(fritzBoxConnection);
         fritzBoxInput.setSelectedStreamSources(fritzBoxConnection.getSelectedStreamSources());
-        UrlInput urlInput = new UrlInput();
+        UrlInput urlInput = TestPluginSupport.create(UrlInput::new);
         List<URL> urls = new ArrayList<>(List.of(URI.create("http://example.com/a.m3u").toURL()));
         urlInput.setUrlList(urls);
         urlInput.setSelectedInputUrls(urls);
-        IptvOrgInput iptvOrgInput = new IptvOrgInput();
+        IptvOrgInput iptvOrgInput = TestPluginSupport.create(IptvOrgInput::new);
         iptvOrgInput.setSelectedPlaylists(new ArrayList<>(List.of(
                 new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "DE", "Germany"),
                 new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "ZDF.de", "ZDF"))));
-        SftpInput sftpInput = new SftpInput();
+        SftpInput sftpInput = TestPluginSupport.create(SftpInput::new);
         sftpInput.setSftpConnection(createSftpConnection("secret"));
-        SftpOutput sftpOutput = new SftpOutput();
+        SftpOutput sftpOutput = TestPluginSupport.create(SftpOutput::new);
         sftpOutput.setSftpConnection(createSftpConnection("secret"));
-        PreferredChannelOrderSorter preferredSorter = new PreferredChannelOrderSorter();
+        PreferredChannelOrderSorter preferredSorter = TestPluginSupport.create(PreferredChannelOrderSorter::new);
         preferredSorter.setSelectedProfileId("my_profile");
-        preferredSorter.getEnabled().set(true);
+        PluginStates.enabled(preferredSorter).set(true);
 
         dataModel.getInputs().addAll(fileInput, fritzBoxInput, urlInput, iptvOrgInput, sftpInput);
         dataModel.getFilters().addAll(FilterPluginService.getInstance().getAllPlugins());
-        dataModel.getSorters().addAll(new ChannelNameSorter(), preferredSorter);
-        dataModel.getOutputs().addAll(new FileOutput(), sftpOutput);
-        EpgEnricher epgEnricher = new EpgEnricher();
+        dataModel.getSorters().addAll(TestPluginSupport.create(ChannelNameSorter::new), preferredSorter);
+        dataModel.getOutputs().addAll(TestPluginSupport.create(FileOutput::new), sftpOutput);
+        EpgEnricher epgEnricher = TestPluginSupport.create(EpgEnricher::new);
         epgEnricher.setSources(List.of("https://epg.example.org/de.xml.gz"));
         epgEnricher.setStrategies(List.of(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE));
         epgEnricher.setUrlRules(List.of(new UrlRule("service=514", "ZDF.de")));
@@ -394,7 +397,7 @@ class ProjectPersisterUtilTest {
         epgEnricher.setGuideDaysAhead(3);
         epgEnricher.setGuideHoursPast(0);
         epgEnricher.setCompressGuide(false);
-        epgEnricher.getEnabled().set(true);
+        PluginStates.enabled(epgEnricher).set(true);
         dataModel.getEnrichers().add(epgEnricher);
         sftpOutput.getSftpConnection().setPlayerBaseUrl("http://nas.local/iptv/");
         Path projectFile = tempDir.resolve("all.m3uproj");
@@ -413,12 +416,12 @@ class ProjectPersisterUtilTest {
         assertThat(((SftpInput) loaded.getInputs().get(4)).getSftpConnection().getHostName()).isEqualTo("example.com");
         assertThat(loaded.getFilters()).hasSameSizeAs(dataModel.getFilters());
         assertThat(((PreferredChannelOrderSorter) loaded.getSorters().get(1)).getSelectedProfileId()).isEqualTo("my_profile");
-        assertThat(loaded.getSorters().get(1).getEnabled().get()).isTrue();
+        assertThat(PluginStates.enabled(loaded.getSorters().get(1)).get()).isTrue();
         assertThat(((SftpOutput) loaded.getOutputs().get(1)).getSftpConnection().getHostName()).isEqualTo("example.com");
         assertThat(((SftpOutput) loaded.getOutputs().get(1)).getSftpConnection().getPlayerBaseUrl())
                 .isEqualTo("http://nas.local/iptv/");
         assertThat(loaded.getEnrichers()).singleElement().isInstanceOfSatisfying(EpgEnricher.class, enricher -> {
-            assertThat(enricher.getEnabled().get()).isTrue();
+            assertThat(PluginStates.enabled(enricher).get()).isTrue();
             assertThat(enricher.getSources()).containsExactly("https://epg.example.org/de.xml.gz");
             assertThat(enricher.getStrategies()).containsExactly(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE);
             assertThat(enricher.getUrlRules()).containsExactly(new UrlRule("service=514", "ZDF.de"));
@@ -469,7 +472,7 @@ class ProjectPersisterUtilTest {
 
         assertThat(loaded).isNotNull();
         assertThat(loaded.getInputs().getFirst().getSource()).isEqualTo("/tmp/a.m3u");
-        assertThat(loaded.getInputs().getFirst().getEnabled().get()).isTrue();
+        assertThat(PluginStates.enabled(loaded.getInputs().getFirst()).get()).isTrue();
         assertThat(loaded.getFilters()).isEmpty();
         assertThat(loaded.getOutputs()).isEmpty();
     }
@@ -627,14 +630,14 @@ class ProjectPersisterUtilTest {
 
         assertThat(((EpgEnricher) ProjectPersisterUtil.loadProject(withoutSources)
                 .getEnrichers().getFirst()).getSources())
-                .containsExactlyElementsOf(EpgEnricher.defaultSources());
+                .containsExactlyElementsOf(EpgEnricher.defaultSources(new DefaultPluginContext(EpgEnricher.class)));
         assertThat(((EpgEnricher) ProjectPersisterUtil.loadProject(emptySources)
                 .getEnrichers().getFirst()).getSources()).as("cleared by the user").isEmpty();
     }
 
     @Test
     void testThePersistedStateOfAPluginShowsChangesOfItsConfiguration() {
-        FritzBoxInput input = new FritzBoxInput();
+        FritzBoxInput input = TestPluginSupport.create(FritzBoxInput::new);
         FritzBoxConnection connection = new FritzBoxConnection();
         connection.setBaseUrl("http://fritz.box/dvb/m3u/");
         input.setFritzBoxConnection(connection);

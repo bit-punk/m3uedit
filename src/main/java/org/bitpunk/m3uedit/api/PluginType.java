@@ -1,4 +1,4 @@
-package org.bitpunk.m3uedit.plugins;
+package org.bitpunk.m3uedit.api;
 
 import java.lang.annotation.*;
 
@@ -21,8 +21,16 @@ public @interface PluginType {
     String id();
 
     /**
-     * @return the key of the name shown to the user (see {@link org.bitpunk.m3uedit.i18n.Messages}); empty if the
-     * name is only known by the plugin itself ({@link Plugin#getName()})
+     * @return the key of the name shown to the user in the resource bundle of the plugin ({@link #texts()}), so the
+     * name is known without creating the plugin; empty if the name is only known by the plugin itself
+     * ({@link Plugin#getName()})
      */
     String nameKey() default "";
+
+    /**
+     * @return the base name of the resource bundle with the texts of the plugin, e.g. {@code de.example.messages} for
+     * {@code de/example/messages.properties} (English) and {@code de/example/messages_de.properties} (German), read
+     * with the class loader of the plugin; see {@link PluginContext#text(String, Object...)}
+     */
+    String texts() default "";
 }

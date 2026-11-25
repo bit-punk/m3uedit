@@ -1,12 +1,14 @@
 package org.bitpunk.m3uedit.plugins.filter;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.plugins.filter.channelname.ChannelNameFilter;
 import org.bitpunk.m3uedit.plugins.filter.channelname.model.ChannelNameFilterConfig;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.ReachableUrlFilter;
 import org.bitpunk.m3uedit.plugins.filter.sdchannel.SdChannelFilter;
 import org.bitpunk.m3uedit.plugins.filter.uniquename.UniqueNameFilter;
 import org.bitpunk.m3uedit.plugins.filter.uniqueuri.UniqueUriFilter;
+import org.bitpunk.m3uedit.testsupport.ConfigDirectoryContext;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,7 +31,7 @@ class FilterRemovalReasonTest {
         Entry sd = entry("ZDF", "http://a");
         Entry hd = entry("ZDF HD", "http://b");
         List<Entry> input = List.of(sd, hd);
-        SdChannelFilter filter = new SdChannelFilter();
+        SdChannelFilter filter = TestPluginSupport.create(SdChannelFilter::new);
 
         assertThat(filter.filter(input)).containsExactly(hd);
         assertThat(filter.describeRemoval(sd, input)).isEqualTo("\"ZDF HD\" exists");
@@ -40,7 +42,7 @@ class FilterRemovalReasonTest {
         Entry first = entry("WELT", "http://a");
         Entry duplicate = entry("WELT", "http://b");
         List<Entry> input = List.of(entry("n-tv", "http://c"), first, duplicate);
-        UniqueNameFilter filter = new UniqueNameFilter();
+        UniqueNameFilter filter = TestPluginSupport.create(UniqueNameFilter::new);
 
         assertThat(filter.filter(input)).doesNotContain(duplicate);
         assertThat(filter.describeRemoval(duplicate, input)).isEqualTo("same name as \"WELT\" (#2)");
@@ -51,7 +53,7 @@ class FilterRemovalReasonTest {
         Entry first = entry("Das Erste HD", "http://same");
         Entry duplicate = entry("ARD", "http://same");
         List<Entry> input = List.of(first, duplicate);
-        UniqueUriFilter filter = new UniqueUriFilter();
+        UniqueUriFilter filter = TestPluginSupport.create(UniqueUriFilter::new);
 
         assertThat(filter.filter(input)).containsExactly(first);
         assertThat(filter.describeRemoval(duplicate, input)).isEqualTo("same URL as \"Das Erste HD\" (#1)");
@@ -62,12 +64,12 @@ class FilterRemovalReasonTest {
         Entry first = entry("WELT", "http://a");
         List<Entry> input = List.of(first, entry("WELT", "http://b"));
 
-        assertThat(new UniqueNameFilter().describeRemoval(first, input)).isNull();
+        assertThat(TestPluginSupport.create(UniqueNameFilter::new).describeRemoval(first, input)).isNull();
     }
 
     @Test
     void channelNameFilterNamesTheMatchingExpression(@TempDir Path tempDir) {
-        ChannelNameFilter filter = new ChannelNameFilter(tempDir.resolve("channel_name_filter.yaml"));
+        ChannelNameFilter filter = ConfigDirectoryContext.create(ChannelNameFilter::new, tempDir);
         ChannelNameFilterConfig config = new ChannelNameFilterConfig();
         config.setExcludeRegexes(List.of("^Bibel.*$", "(?i).*QVC.*"));
         filter.setConfig(config);
@@ -81,7 +83,7 @@ class FilterRemovalReasonTest {
     void reachableUrlFilterNamesTheUrl() {
         Entry entry = entry("TV Berlin", "https://tvberlin.example/live.m3u8");
 
-        assertThat(new ReachableUrlFilter().describeRemoval(entry, List.of(entry)))
+        assertThat(TestPluginSupport.create(ReachableUrlFilter::new).describeRemoval(entry, List.of(entry)))
                 .isEqualTo("stream not playable: https://tvberlin.example/live.m3u8");
     }
 }

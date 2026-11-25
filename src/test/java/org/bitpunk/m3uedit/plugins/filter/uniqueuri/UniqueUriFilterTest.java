@@ -1,8 +1,9 @@
 package org.bitpunk.m3uedit.plugins.filter.uniqueuri;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.plugins.filter.AbstractFilterTest;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
@@ -14,7 +15,7 @@ class UniqueUriFilterTest extends AbstractFilterTest {
 
     @Test
     void testFilter() throws FileNotFoundException {
-        Filter filter = new UniqueUriFilter();
+        Filter filter = TestPluginSupport.create(UniqueUriFilter::new);
         List<Entry> entryList = readList("duplicate_entries.m3u");
         assertThat(entryList).hasSize(5);
         List<Entry> filteredList = filter.filter(entryList);

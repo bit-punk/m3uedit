@@ -22,7 +22,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient.RemoteEntry;
 import org.bitpunk.m3uedit.plugins.sftp.model.SftpConnection;
 
@@ -52,6 +52,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
     private record Listing(String directory, List<RemoteEntry> entries, String message) {
     }
 
+    private final PluginContext context;
     private final SftpConnection connection;
     private final SftpUserInteraction userInteraction;
     private final boolean fileRequired;
@@ -70,17 +71,19 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
     private String currentDirectory;
 
     /**
+     * @param context        the context of the plugin, providing the texts
      * @param connection     connection data including the password
      * @param startDirectory directory to show first; falls back to the home directory if it does not exist
      * @param fileRequired   true if an existing file has to be selected (input), false if a directory is enough (output)
      */
-    public SftpBrowserDialog(SftpConnection connection, String startDirectory, SftpUserInteraction userInteraction,
-                             boolean fileRequired) {
+    public SftpBrowserDialog(PluginContext context, SftpConnection connection, String startDirectory,
+                             SftpUserInteraction userInteraction, boolean fileRequired) {
+        this.context = context;
         this.connection = connection;
         this.userInteraction = userInteraction;
         this.fileRequired = fileRequired;
         initModality(Modality.APPLICATION_MODAL);
-        setTitle(Messages.get("sftp.browser.title"));
+        setTitle(context.text("sftp.browser.title"));
         setHeaderText(connection.getUserName() + "@" + connection.getHostName() + ":" + connection.getPort());
         setResizable(true);
         initContent();
@@ -93,9 +96,9 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
     }
 
     private void initContent() {
-        ButtonType selectButtonType = new ButtonType(Messages.get("sftp.browser.select"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType selectButtonType = new ButtonType(context.text("sftp.browser.select"), ButtonBar.ButtonData.OK_DONE);
         // not ButtonType.CANCEL: its text follows the language of the system, not the one of the user interface
-        ButtonType cancelButtonType = new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType cancelButtonType = new ButtonType(context.text("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
         getDialogPane().getButtonTypes().addAll(selectButtonType, cancelButtonType);
         Button selectButton = (Button) getDialogPane().lookupButton(selectButtonType);
         BooleanBinding noFileSelected = Bindings.createBooleanBinding(() -> {
@@ -118,7 +121,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
             @Override
             protected void updateItem(RemoteEntry entry, boolean empty) {
                 super.updateItem(entry, empty);
-                setText(empty || entry == null ? null : displayName(entry));
+                setText(empty || entry == null ? null : displayName(context, entry));
             }
         });
         listView.setOnMouseClicked(event -> {
@@ -134,8 +137,8 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         });
 
         Label hint = new Label(fileRequired
-                ? Messages.get("sftp.browser.hint.input")
-                : Messages.get("sftp.browser.hint.output"));
+                ? context.text("sftp.browser.hint.input")
+                : context.text("sftp.browser.hint.output"));
         hint.setStyle("-fx-opacity: 0.7;");
         HBox statusBox = new HBox(5, progressIndicator, statusLabel);
         VBox content = new VBox(8, pathLabel, listView, hint, statusBox);
@@ -153,9 +156,9 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         });
     }
 
-    static String displayName(RemoteEntry entry) {
+    static String displayName(PluginContext context, RemoteEntry entry) {
         if (entry == PARENT_ENTRY) {
-            return Messages.get("sftp.browser.parent");
+            return context.text("sftp.browser.parent");
         }
         return entry.directory() ? entry.name() + "/" : entry.name();
     }
@@ -185,17 +188,17 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         String target = selected == PARENT_ENTRY
                 ? SftpClient.parent(currentDirectory)
                 : SftpClient.child(currentDirectory, selected.name());
-        runInBackground(Messages.get("sftp.browser.loading", target), () -> loadDirectory(target, null));
+        runInBackground(context.text("sftp.browser.loading", target), () -> loadDirectory(target, null));
     }
 
     private void connectAndLoad(String startDirectory) {
-        runInBackground(Messages.get("sftp.browser.connecting"), () -> {
+        runInBackground(context.text("sftp.browser.connecting"), () -> {
             client = SftpClient.connect(connection, userInteraction);
             try {
                 return loadDirectory(startDirectory, null);
             } catch (SftpException e) {
                 log.debug("Start directory '{}' not available ({}), showing home directory", startDirectory, e.getMessage());
-                return loadDirectory(".", Messages.get("sftp.browser.startDirectoryNotFound", startDirectory));
+                return loadDirectory(".", context.text("sftp.browser.startDirectoryNotFound", startDirectory));
             }
         });
     }
@@ -225,7 +228,7 @@ public class SftpBrowserDialog extends Dialog<SftpBrowserDialog.Selection> {
         task.setOnFailed(event -> {
             Throwable error = task.getException();
             log.warn("SFTP browser: {}", error.getMessage(), error);
-            statusLabel.setText(SftpClient.describeError(error));
+            statusLabel.setText(SftpClient.describeError(context, error));
             connected.set(client != null);
             loading.set(false);
         });

@@ -1,9 +1,7 @@
 package org.bitpunk.m3uedit.control;
 
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -18,8 +16,10 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import org.bitpunk.m3uedit.plugins.Plugin;
+import javafx.stage.Window;
+import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.PluginDescriptor;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class PluginStageViewTest {
 
     private static class TestPlugin implements Plugin {
         private final String name;
-        private final BooleanProperty enabled = new SimpleBooleanProperty(false);
+
         int configured;
 
         TestPlugin(String name) {
@@ -72,18 +72,14 @@ class PluginStageViewTest {
         }
 
         @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
-        }
-
-        @Override
         public boolean isConfigurable() {
             return true;
         }
 
         @Override
-        public void configure() {
+        public boolean configure(Window owner) {
             configured++;
+            return true;
         }
     }
 
@@ -196,9 +192,9 @@ class PluginStageViewTest {
         CheckBox checkBox = find(row(stage, third), CheckBox.class).getFirst();
 
         checkBox.fire();
-        assertThat(third.getEnabled().get()).isTrue();
+        assertThat(PluginStates.enabled(third).get()).isTrue();
 
-        third.getEnabled().set(false);
+        PluginStates.enabled(third).set(false);
         assertThat(checkBox.isSelected()).isFalse();
     }
 
@@ -328,11 +324,11 @@ class PluginStageViewTest {
         ObservableList<TestPlugin> plugins = FXCollections.observableArrayList();
         PluginStageView<TestPlugin> stage = new PluginStageView<>("Filters", "hint", plugins,
                 new SimpleObjectProperty<>(), true, Plugin::getDescription);
-        stage.setEnableAllAction(enabled -> plugins.forEach(plugin -> plugin.getEnabled().set(enabled)));
+        stage.setEnableAllAction(enabled -> plugins.forEach(plugin -> PluginStates.enabled(plugin).set(enabled)));
         assertThat(stage.getEnableAllCheckBox().isDisabled()).as("nothing to enable").isTrue();
 
         TestPlugin plugin = new TestPlugin("a");
-        plugin.getEnabled().set(true);
+        PluginStates.enabled(plugin).set(true);
         plugins.add(plugin);
         assertThat(stage.getEnableAllCheckBox().isDisabled()).isFalse();
         assertThat(stage.getEnableAllCheckBox().isSelected()).isTrue();

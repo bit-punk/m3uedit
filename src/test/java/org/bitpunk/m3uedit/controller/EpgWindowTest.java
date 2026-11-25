@@ -5,9 +5,9 @@ import javafx.event.Event;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.bitpunk.m3uedit.controller.EpgWindow.PartOfDay;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
-import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Programme;
+import org.bitpunk.m3uedit.api.ProgrammeGuideProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

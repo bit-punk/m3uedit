@@ -1,14 +1,9 @@
 package org.bitpunk.m3uedit.controller;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.enricher.Enricher;
-import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.input.InputReadException;
-import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import javafx.stage.Window;
+import org.bitpunk.m3uedit.api.*;
+import org.bitpunk.m3uedit.model.EntryList;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.util.EntryMapper;
 
 import java.util.Comparator;
@@ -34,7 +29,9 @@ final class TestPlugins {
     static class TestInput implements Input {
         private final String name;
         private final List<Entry> entries;
-        private final BooleanProperty enabled = new SimpleBooleanProperty(true);
+        {
+            PluginStates.enabled(this).set(true);
+        }
         final AtomicInteger configured = new AtomicInteger();
         /**
          * The error reported when reading, the entries are read nevertheless (a part of the input); null if none.
@@ -47,11 +44,11 @@ final class TestPlugins {
         }
 
         @Override
-        public List<Entry> read() {
+        public Playlist read() {
             if (error != null) {
                 throw new InputReadException(error, entries);
             }
-            return entries;
+            return EntryList.toPlaylist(entries);
         }
 
         @Override
@@ -60,8 +57,9 @@ final class TestPlugins {
         }
 
         @Override
-        public void configure() {
+        public boolean configure(Window owner) {
             configured.incrementAndGet();
+            return true;
         }
 
         @Override
@@ -73,11 +71,6 @@ final class TestPlugins {
         public String getDescription() {
             return name;
         }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
-        }
     }
 
     /**
@@ -86,7 +79,7 @@ final class TestPlugins {
     static class TestFilter implements Filter {
         private final String name;
         private final Predicate<Entry> removed;
-        private final BooleanProperty enabled = new SimpleBooleanProperty(false);
+
         final AtomicInteger configured = new AtomicInteger();
 
         TestFilter(String name, Predicate<Entry> removed) {
@@ -110,8 +103,9 @@ final class TestPlugins {
         }
 
         @Override
-        public void configure() {
+        public boolean configure(Window owner) {
             configured.incrementAndGet();
+            return true;
         }
 
         @Override
@@ -123,18 +117,12 @@ final class TestPlugins {
         public String getDescription() {
             return name + " description";
         }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
-        }
     }
 
     /**
      * Sets the tvg-id of each entry to its name in upper case.
      */
     static class TestEnricher implements Enricher {
-        private final BooleanProperty enabled = new SimpleBooleanProperty(false);
 
         @Override
         public Enrichment enrich(List<Entry> entries) {
@@ -159,15 +147,9 @@ final class TestPlugins {
         public String getDescription() {
             return "sets the tvg-id";
         }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
-        }
     }
 
     static class NameSorter implements Sorter {
-        private final BooleanProperty enabled = new SimpleBooleanProperty(false);
 
         @Override
         public List<Entry> sort(List<Entry> entries) {
@@ -182,11 +164,6 @@ final class TestPlugins {
         @Override
         public String getDescription() {
             return "sorts by name";
-        }
-
-        @Override
-        public BooleanProperty getEnabled() {
-            return enabled;
         }
     }
 }

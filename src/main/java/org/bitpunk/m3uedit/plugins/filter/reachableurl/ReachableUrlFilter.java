@@ -1,15 +1,11 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
-import lombok.Getter;
-import lombok.Setter;
+import javafx.stage.Window;
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.config.AppConfigPaths;
-import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.PluginType;
-import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.PluginType;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
 
 import java.util.ArrayList;
@@ -17,11 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-@Getter
-@Setter
+/**
+ * Removes entries whose stream cannot be played, see {@link StreamProbe}. Its timeout is read from its
+ * configuration-file ({@value #CONFIG_FILE_NAME}); nothing of it is stored in the project-file.
+ */
 @Slf4j
-@PluginType(id = "ReachableUrlFilter", nameKey = "filter.reachableUrl.name")
-public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
+@PluginType(id = "ReachableUrlFilter", nameKey = "filter.reachableUrl.name", texts = "i18n.messages")
+public class ReachableUrlFilter implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/reachableurl/reachable_url_filter.yaml";
     public static final String CONFIG_FILE_NAME = "reachable_url_filter.yaml";
     /**
@@ -29,39 +27,31 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
      */
     private static final int MAX_CONCURRENT_CHECKS = 64;
 
+    private PluginContext context;
+
+    @Override
+    public void init(PluginContext context) {
+        this.context = context;
+    }
+
+    /**
+     * @return the context passed to {@link #init(PluginContext)}
+     */
+    public PluginContext getContext() {
+        return context;
+    }
+
     /**
      * @return the name shown to the user, not part of a project-file
      */
     @Override
     public String getName() {
-        return Messages.get("filter.reachableUrl.name");
+        return context.text("filter.reachableUrl.name");
     }
 
     @Override
     public String getDescription() {
-        return Messages.get("filter.reachableUrl.description");
-    }
-
-    private transient YamlConfigManager<ReachableUrlFilterConfig> configManager;
-
-    public ReachableUrlFilter() {
-        this(null);
-    }
-
-    /**
-     * @param configManager provides the configuration, the default configuration-file is used if null
-     */
-    public ReachableUrlFilter(YamlConfigManager<ReachableUrlFilterConfig> configManager) {
-        this.configManager = configManager;
-    }
-
-    public YamlConfigManager<ReachableUrlFilterConfig> getConfigManager() {
-        // lazily created, if none has been passed to the constructor
-        if (configManager == null) {
-            configManager = new YamlConfigManager<>(AppConfigPaths.getPluginConfigPath(CONFIG_FILE_NAME), RESOURCE_PATH,
-                    ReachableUrlFilterConfig.class, ReachableUrlFilterConfig::new);
-        }
-        return configManager;
+        return context.text("filter.reachableUrl.description");
     }
 
     /**
@@ -71,14 +61,16 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
      * @return the configured timeout in milliseconds, or the default if the configured value is not positive
      */
     int getTimeoutMillis() {
-        ReachableUrlFilterConfig config = getConfigManager().loadConfig();
+        ReachableUrlFilterConfig config = context.loadConfig(CONFIG_FILE_NAME, ReachableUrlFilterConfig.class,
+                RESOURCE_PATH, ReachableUrlFilterConfig::new);
         if (config == null) {
             return ReachableUrlFilterConfig.DEFAULT_TIMEOUT_MILLIS;
         }
         if (config.getTimeoutMillis() <= 0) {
             // a timeout of 0 would mean "wait forever"
             log.warn("Invalid timeoutMillis {} in {}, using default of {} ms", config.getTimeoutMillis(),
-                    getConfigManager().getUserConfigPath(), ReachableUrlFilterConfig.DEFAULT_TIMEOUT_MILLIS);
+                    context.configDirectory().resolve(CONFIG_FILE_NAME),
+                    ReachableUrlFilterConfig.DEFAULT_TIMEOUT_MILLIS);
             return ReachableUrlFilterConfig.DEFAULT_TIMEOUT_MILLIS;
         }
         return config.getTimeoutMillis();
@@ -87,7 +79,7 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     @Override
     public String describeRemoval(Entry removed, List<Entry> input) {
         // the check is not repeated here, it would block the user interface
-        return Messages.get("filter.reachableUrl.reason", removed.getChannelUri());
+        return context.text("filter.reachableUrl.reason", removed.getChannelUri());
     }
 
     @Override
@@ -153,14 +145,33 @@ public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
         return new StreamProbe(timeoutMillis, vlcOpts).isPlayable(urlString);
     }
 
+    /**
+     * Writes the configuration to the configuration-file, used by the next filtering.
+     */
+    void saveConfig(ReachableUrlFilterConfig config) {
+        context.saveConfig(CONFIG_FILE_NAME, config);
+    }
+
     @Override
-    public void configure() {
+    public boolean configure(Window owner) {
         log.debug("Opening configuration dialog for ReachableUrlFilter");
-        new ReachableUrlFilterConfigDialogController(this).showAndWait();
+        ReachableUrlFilterConfigDialogController dialog = new ReachableUrlFilterConfigDialogController(this);
+        if (owner != null) {
+            dialog.initOwner(owner);
+        }
+        return dialog.showAndWait().isPresent();
     }
 
     @Override
     public boolean isConfigurable() {
         return true;
+    }
+
+    /**
+     * Plugins are compared by identity, only a short description is returned.
+     */
+    @Override
+    public String toString() {
+        return "%s[%s]".formatted(getClass().getSimpleName(), getName());
     }
 }

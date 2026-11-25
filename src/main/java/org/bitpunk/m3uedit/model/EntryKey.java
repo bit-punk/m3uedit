@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.model;
 
+import org.bitpunk.m3uedit.api.Entry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;

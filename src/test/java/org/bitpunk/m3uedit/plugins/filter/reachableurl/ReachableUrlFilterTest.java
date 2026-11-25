@@ -1,8 +1,9 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
 import com.sun.net.httpserver.HttpServer;
-import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.NoSettings;
+import org.bitpunk.m3uedit.testsupport.ConfigDirectoryContext;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,8 +48,7 @@ class ReachableUrlFilterTest {
     @BeforeEach
     void setUp() throws IOException {
         configFile = configDir.resolve(ReachableUrlFilter.CONFIG_FILE_NAME);
-        filter = new ReachableUrlFilter(new YamlConfigManager<>(configFile, ReachableUrlFilter.RESOURCE_PATH,
-                ReachableUrlFilterConfig.class, ReachableUrlFilterConfig::new));
+        filter = ConfigDirectoryContext.create(ReachableUrlFilter::new, configDir);
         silentServer = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
         try (ServerSocket closed = new ServerSocket(0, 50, InetAddress.getLoopbackAddress())) {
             closedPort = closed.getLocalPort();
@@ -260,7 +260,14 @@ class ReachableUrlFilterTest {
 
     @Test
     void testFiltersAreComparedByIdentity() {
-        assertThat(filter).isEqualTo(filter).isNotEqualTo(new ReachableUrlFilter(null));
+        assertThat(filter).isEqualTo(filter).isNotEqualTo(ConfigDirectoryContext.create(ReachableUrlFilter::new, configDir));
         assertThat(filter).hasToString("ReachableUrlFilter[Reachable URL Filter]");
+    }
+
+    @Test
+    void testNoSettingsInProjectFile() {
+        // the timeout is part of the configuration-file, not of the project-file
+        assertThat(filter.getSettingsType()).isEqualTo(NoSettings.class);
+        assertThat(filter.getSettings()).isEqualTo(NoSettings.INSTANCE);
     }
 }

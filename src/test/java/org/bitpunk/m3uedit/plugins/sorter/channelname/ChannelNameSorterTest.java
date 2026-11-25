@@ -1,7 +1,8 @@
 package org.bitpunk.m3uedit.plugins.sorter.channelname;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.parser.Parser;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,7 +16,7 @@ class ChannelNameSorterTest {
     void testSort() {
         List<Entry> entries = getUnsortedList("/test.m3u");
         assertThat(entries).hasSize(3);
-        ChannelNameSorter channelNameSorter = new ChannelNameSorter();
+        ChannelNameSorter channelNameSorter = TestPluginSupport.create(ChannelNameSorter::new);
         List<Entry> sortedEntries = channelNameSorter.sort(entries);
         assertThat(sortedEntries).hasSize(3);
         assertThat(sortedEntries.get(0).getName()).isEqualTo("La Deux HD");

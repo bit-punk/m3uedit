@@ -7,7 +7,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.ScrollEvent;
 import javafx.stage.Stage;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
+import org.bitpunk.m3uedit.api.Programme;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

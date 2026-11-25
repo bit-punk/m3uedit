@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
-import static org.bitpunk.m3uedit.model.Entry.REGEX_URL;
+import static org.bitpunk.m3uedit.api.Entry.REGEX_URL;
 
 
 /**

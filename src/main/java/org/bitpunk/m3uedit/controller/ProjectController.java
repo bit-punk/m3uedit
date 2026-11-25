@@ -14,9 +14,9 @@ import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.Plugin;
-import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.api.Output;
 
 import java.net.URL;
 import java.util.ResourceBundle;

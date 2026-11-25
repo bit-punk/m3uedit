@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.controller;
 
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
+import org.bitpunk.m3uedit.api.Programme;
 
 import java.time.Duration;
 import java.time.Instant;

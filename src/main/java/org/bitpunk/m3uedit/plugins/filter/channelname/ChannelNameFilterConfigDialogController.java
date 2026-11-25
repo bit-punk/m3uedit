@@ -12,7 +12,6 @@ import javafx.util.Callback;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
-import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.filter.channelname.model.ChannelNameFilterConfig;
 
 import java.net.URL;
@@ -58,12 +57,11 @@ public class ChannelNameFilterConfigDialogController extends AbstractDialogContr
     @Getter
     private ChannelNameFilterConfig workingConfig;
 
-    public ChannelNameFilterConfigDialogController() {
-        this(new ChannelNameFilter());
-    }
-
+    /**
+     * @param filter the filter to configure, initialised with its context
+     */
     public ChannelNameFilterConfigDialogController(ChannelNameFilter filter) {
-        super(FXML_PLUGIN_FILTER_CONFIG, Messages.get("filter.channelName.config.title"));
+        super(FXML_PLUGIN_FILTER_CONFIG, filter.getContext().text("filter.channelName.config.title"));
         this.filter = filter;
         setResultConverter(createResultConverter());
         initData(filter);
@@ -197,10 +195,7 @@ public class ChannelNameFilterConfigDialogController extends AbstractDialogContr
 
     public void applyAndPersistConfig() {
         if (filter != null) {
-            filter.setConfig(workingConfig);
-            if (filter.getConfigManager() != null) {
-                filter.getConfigManager().saveConfig(workingConfig);
-            }
+            filter.saveConfig(workingConfig);
         }
     }
 

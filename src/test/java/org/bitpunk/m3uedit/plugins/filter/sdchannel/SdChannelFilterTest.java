@@ -1,8 +1,9 @@
 package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.plugins.filter.AbstractFilterTest;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
@@ -14,7 +15,7 @@ class SdChannelFilterTest extends AbstractFilterTest {
 
     @Test
     void testFilter() throws FileNotFoundException {
-        Filter filter = new SdChannelFilter();
+        Filter filter = TestPluginSupport.create(SdChannelFilter::new);
         List<Entry> entryList = readList("sd_channels.m3u");
         List<Entry> filteredList = filter.filter(entryList);
         assertThat(filteredList)
@@ -31,7 +32,7 @@ class SdChannelFilterTest extends AbstractFilterTest {
 
     private static List<String> filteredNames(String... names) {
         List<Entry> entries = java.util.Arrays.stream(names).map(SdChannelFilterTest::entry).toList();
-        return new SdChannelFilter().filter(entries).stream().map(Entry::getName).toList();
+        return TestPluginSupport.create(SdChannelFilter::new).filter(entries).stream().map(Entry::getName).toList();
     }
 
     @Test
@@ -56,6 +57,7 @@ class SdChannelFilterTest extends AbstractFilterTest {
         Entry sd = entry("RTL");
         List<Entry> input = List.of(sd, entry("RTL ZWEI"), entry("RTL HD"));
 
-        assertThat(new SdChannelFilter().describeRemoval(sd, input)).isEqualTo("\"RTL HD\" exists");
+        assertThat(TestPluginSupport.create(SdChannelFilter::new).describeRemoval(sd, input))
+                .isEqualTo("\"RTL HD\" exists");
     }
 }

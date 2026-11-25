@@ -31,18 +31,21 @@ class UrlRuleTest {
 
     @Test
     void testRulesAreParsedAndFormatted() {
-        UrlRule rule = UrlRule.parse("  service=514  =>  ZDF.de ");
+        UrlRule rule = UrlRule.parse("  service=514  =>  ZDF.de ", XmltvTestFiles.CONTEXT);
 
         assertThat(rule).isEqualTo(new UrlRule("service=514", "ZDF.de"));
-        assertThat(UrlRule.parse(rule.format())).isEqualTo(rule);
+        assertThat(UrlRule.parse(rule.format(), XmltvTestFiles.CONTEXT)).isEqualTo(rule);
         // the last separator splits, so an expression may contain one
-        assertThat(UrlRule.parse("a=>b => C.de")).isEqualTo(new UrlRule("a=>b", "C.de"));
+        assertThat(UrlRule.parse("a=>b => C.de", XmltvTestFiles.CONTEXT)).isEqualTo(new UrlRule("a=>b", "C.de"));
     }
 
     @Test
     void testInvalidLinesAreRejected() {
-        assertThatIllegalArgumentException().isThrownBy(() -> UrlRule.parse("service=514 ZDF.de")).withMessageContaining("=>");
-        assertThatIllegalArgumentException().isThrownBy(() -> UrlRule.parse(" => ZDF.de")).withMessageContaining("required");
-        assertThatIllegalArgumentException().isThrownBy(() -> UrlRule.parse("(unclosed => ZDF.de")).withMessageContaining("Invalid expression");
+        assertThatIllegalArgumentException().isThrownBy(() -> UrlRule.parse("service=514 ZDF.de", XmltvTestFiles.CONTEXT))
+                .withMessageContaining("=>");
+        assertThatIllegalArgumentException().isThrownBy(() -> UrlRule.parse(" => ZDF.de", XmltvTestFiles.CONTEXT))
+                .withMessageContaining("required");
+        assertThatIllegalArgumentException().isThrownBy(() -> UrlRule.parse("(unclosed => ZDF.de", XmltvTestFiles.CONTEXT))
+                .withMessageContaining("Invalid expression");
     }
 }

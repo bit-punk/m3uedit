@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg.model;
 
 import lombok.Getter;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 
 /**
  * The groupings in which iptv-org publishes its playlists. Each grouping maps to a sub-path of the playlist base-url
@@ -33,16 +33,11 @@ public enum PlaylistGrouping {
     /**
      * @return the label shown to the user, e.g. "Country"
      */
-    public String getLabel() {
-        return Messages.get(labelKey);
+    public String getLabel(PluginContext context) {
+        return context.text(labelKey);
     }
 
     public boolean isChannel() {
         return this == CHANNEL;
-    }
-
-    @Override
-    public String toString() {
-        return getLabel();
     }
 }

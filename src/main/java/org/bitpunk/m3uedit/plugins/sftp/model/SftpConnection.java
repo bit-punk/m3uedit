@@ -1,6 +1,5 @@
 package org.bitpunk.m3uedit.plugins.sftp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -58,10 +57,9 @@ public class SftpConnection {
      */
     private String playerBaseUrl;
     /**
-     * Kept in memory only: never persisted to the project file and never logged.
-     * Optional: if empty (e.g. after loading a project) the user is asked for it on the first write.
+     * Kept in memory only: never persisted to the project file (it is not part of {@link SftpConnectionSettings}) and
+     * never logged. Optional: if empty (e.g. after loading a project) the user is asked for it on the first write.
      */
-    @JsonIgnore
     @ToString.Exclude
     private String password;
 

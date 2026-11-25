@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +50,7 @@ class EpgSourceCache {
     record CachedSource(Path file, String warning) {
     }
 
+    private final PluginContext context;
     private final Path directory;
     private final HttpClient httpClient;
     private final Clock clock;
@@ -58,8 +59,11 @@ class EpgSourceCache {
      */
     private final Map<String, Instant> failedAttempts = new ConcurrentHashMap<>();
 
-    EpgSourceCache() {
-        this(EpgCache.directory(),
+    /**
+     * @param context the context of the enricher: the sources are downloaded to {@code <cache directory>/epg}
+     */
+    EpgSourceCache(PluginContext context) {
+        this(context, context.cacheDirectory().resolve(EpgCache.DIRECTORY_NAME),
                 HttpClient.newBuilder()
                         .followRedirects(HttpClient.Redirect.NORMAL)
                         .connectTimeout(CONNECT_TIMEOUT)
@@ -67,7 +71,8 @@ class EpgSourceCache {
                 Clock.systemUTC());
     }
 
-    EpgSourceCache(Path directory, HttpClient httpClient, Clock clock) {
+    EpgSourceCache(PluginContext context, Path directory, HttpClient httpClient, Clock clock) {
+        this.context = context;
         this.directory = directory;
         this.httpClient = httpClient;
         this.clock = clock;
@@ -84,16 +89,16 @@ class EpgSourceCache {
         try {
             uri = URI.create(url.strip());
         } catch (IllegalArgumentException e) {
-            return new CachedSource(null, Messages.get("epgEnricher.source.invalidUrl", url));
+            return new CachedSource(null, context.text("epgEnricher.source.invalidUrl", url));
         }
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
         if ("file".equals(scheme)) {
             Path file = Path.of(uri);
             return Files.isReadable(file) ? new CachedSource(file, null)
-                    : new CachedSource(null, Messages.get("epgEnricher.source.unreadableFile", file));
+                    : new CachedSource(null, context.text("epgEnricher.source.unreadableFile", file));
         }
         if (!"http".equals(scheme) && !"https".equals(scheme)) {
-            return new CachedSource(null, Messages.get("epgEnricher.source.unsupportedUrl", url));
+            return new CachedSource(null, context.text("epgEnricher.source.unsupportedUrl", url));
         }
         Path file = cacheFileOf(url);
         boolean cached = Files.isRegularFile(file);
@@ -112,11 +117,11 @@ class EpgSourceCache {
             failedAttempts.put(url, clock.instant());
             log.warn("EPG source {} could not be downloaded: {}", url, e.getMessage());
             return cached
-                    ? new CachedSource(file, Messages.get("epgEnricher.source.updateFailed", url, e.getMessage()))
-                    : new CachedSource(null, Messages.get("epgEnricher.source.downloadFailed", url, e.getMessage()));
+                    ? new CachedSource(file, context.text("epgEnricher.source.updateFailed", url, e.getMessage()))
+                    : new CachedSource(null, context.text("epgEnricher.source.downloadFailed", url, e.getMessage()));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return new CachedSource(cached ? file : null, Messages.get("epgEnricher.source.interrupted", url));
+            return new CachedSource(cached ? file : null, context.text("epgEnricher.source.interrupted", url));
         }
     }
 
@@ -152,7 +157,7 @@ class EpgSourceCache {
                 return;
             }
             if (response.statusCode() / 100 != 2) {
-                throw new IOException(Messages.get("epgEnricher.source.httpStatus", response.statusCode()));
+                throw new IOException(context.text("epgEnricher.source.httpStatus", response.statusCode()));
             }
             Files.createDirectories(file.getParent());
             Path temporary = Files.createTempFile(file.getParent(), file.getFileName().toString(), ".part");

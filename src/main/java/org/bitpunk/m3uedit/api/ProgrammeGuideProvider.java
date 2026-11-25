@@ -1,6 +1,5 @@
-package org.bitpunk.m3uedit.plugins.enricher;
+package org.bitpunk.m3uedit.api;
 
-import org.bitpunk.m3uedit.model.Entry;
 
 import java.io.IOException;
 import java.util.List;

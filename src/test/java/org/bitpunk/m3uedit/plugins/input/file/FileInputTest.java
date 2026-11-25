@@ -1,6 +1,10 @@
 package org.bitpunk.m3uedit.plugins.input.file;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.plugins.PluginStates;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
+import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,14 +24,14 @@ class FileInputTest {
 
     @Test
     void testBasicProperties() {
-        FileInput fileInput = new FileInput();
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
         assertThat(fileInput.getName()).isEqualTo("File Input");
         assertThat(fileInput.getDescription()).isEqualTo("Reads a playlist from a local file.");
         assertThat(fileInput.getSource()).isNull();
-        assertThat(fileInput.getEnabled().get()).isFalse();
+        assertThat(PluginStates.enabled(fileInput).get()).isFalse();
 
-        fileInput.getEnabled().set(true);
-        assertThat(fileInput.getEnabled().get()).isTrue();
+        PluginStates.enabled(fileInput).set(true);
+        assertThat(PluginStates.enabled(fileInput).get()).isTrue();
     }
 
     @Test
@@ -42,10 +46,10 @@ class FileInputTest {
                 """;
         Files.writeString(m3uFile, m3uContent);
 
-        FileInput fileInput = new FileInput();
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
         fileInput.setSource(m3uFile.toAbsolutePath().toString());
 
-        List<Entry> entries = fileInput.read();
+        List<Entry> entries = fileInput.read().entries();
 
         assertThat(entries).isNotNull().hasSize(2);
 
@@ -68,7 +72,7 @@ class FileInputTest {
 
     @Test
     void testReadNonExistentFileThrowsFileNotFoundException(@TempDir Path tempDir) {
-        FileInput fileInput = new FileInput();
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
         fileInput.setSource(tempDir.resolve("does_not_exist.m3u").toAbsolutePath().toString());
 
         assertThatThrownBy(fileInput::read)
@@ -79,17 +83,17 @@ class FileInputTest {
     @NullAndEmptySource
     @ValueSource(strings = {"  "})
     void testReadWithoutSourceReturnsNoEntries(String source) throws IOException {
-        FileInput fileInput = new FileInput();
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
         fileInput.setSource(source);
 
-        assertThat(fileInput.read()).isEmpty();
+        assertThat(fileInput.read().entries()).isEmpty();
     }
 
     @Test
     void testInputsAreComparedByIdentity() {
-        FileInput input1 = new FileInput();
+        FileInput input1 = TestPluginSupport.create(FileInput::new);
         input1.setSource("/path/to/playlist.m3u");
-        FileInput input2 = new FileInput();
+        FileInput input2 = TestPluginSupport.create(FileInput::new);
         input2.setSource("/path/to/playlist.m3u");
         int hashCode = input1.hashCode();
 
@@ -97,5 +101,47 @@ class FileInputTest {
         input1.setSource("/other/playlist.m3u");
         assertThat(input1.hashCode()).isEqualTo(hashCode);
         assertThat(input1).hasToString("FileInput[File Input]");
+    }
+
+    @Test
+    void testTheSettingsAreRestored() {
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
+        fileInput.setSource("/path/to/playlist.m3u");
+
+        FileInput restored = TestPluginSupport.create(FileInput::new);
+        restored.setSettings(fileInput.getSettings());
+
+        assertThat(restored.getSettingsType()).isEqualTo(FileInputSettings.class);
+        assertThat(restored.getSettings()).isEqualTo(new FileInputSettings("/path/to/playlist.m3u"));
+        assertThat(restored.getSource()).isEqualTo("/path/to/playlist.m3u");
+    }
+
+    @Test
+    void testMissingSettingsAreNotConfigured() throws IOException {
+        FileInput fileInput = TestPluginSupport.create(FileInput::new);
+
+        fileInput.setSettings(new FileInputSettings(null));
+
+        assertThat(fileInput.getSource()).isNull();
+        assertThat(fileInput.read().entries()).isEmpty();
+    }
+
+    @Test
+    void testTheSettingsAreStoredInTheProjectFileAsBefore(@TempDir Path tempDir) throws IOException {
+        Path projectFile = Files.writeString(tempDir.resolve("file.m3uproj"), """
+                ---
+                name: file
+                inputs:
+                  - type: FileInput
+                    enabled: true
+                    source: /path/to/playlist.m3u
+                """);
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+
+        assertThat(loaded.getInputs()).singleElement().isInstanceOf(FileInput.class)
+                .extracting(input -> ((FileInput) input).getSource()).isEqualTo("/path/to/playlist.m3u");
+        assertThat(ProjectPersisterUtil.persistedState(loaded.getInputs().getFirst()))
+                .isEqualTo("---\nsource: /path/to/playlist.m3u\n");
     }
 }

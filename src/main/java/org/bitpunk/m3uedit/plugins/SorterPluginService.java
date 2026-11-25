@@ -1,6 +1,7 @@
 package org.bitpunk.m3uedit.plugins;
 
-import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.api.Sorter;
 
 import java.util.ServiceLoader;
 

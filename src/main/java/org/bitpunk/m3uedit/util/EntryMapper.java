@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.util;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.i18n.Messages;
 
 import java.util.HashMap;

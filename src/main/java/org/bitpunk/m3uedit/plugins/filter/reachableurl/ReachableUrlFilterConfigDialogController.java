@@ -11,7 +11,6 @@ import javafx.scene.control.SpinnerValueFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.controller.AbstractDialogController;
-import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
 
 import java.net.URL;
@@ -44,9 +43,13 @@ public class ReachableUrlFilterConfigDialogController extends AbstractDialogCont
     @Getter
     private final ReachableUrlFilter filter;
 
+    /**
+     * @param filter the filter to configure, initialised with its context
+     */
     public ReachableUrlFilterConfigDialogController(ReachableUrlFilter filter) {
-        super(FXML_PLUGIN_FILTER_CONFIG, Messages.get("filter.reachableUrl.config.title"));
-        this.filter = Objects.requireNonNull(filter, "filter must not be null");
+        super(FXML_PLUGIN_FILTER_CONFIG, Objects.requireNonNull(filter, "filter must not be null").getContext()
+                .text("filter.reachableUrl.config.title"));
+        this.filter = filter;
         timeoutSpinner.getValueFactory().setValue(filter.getTimeoutMillis());
         getDialogPane().lookupButton(okButtonType).disableProperty().bind(isEditorTextValid().not());
         setResultConverter(buttonType -> {
@@ -110,7 +113,7 @@ public class ReachableUrlFilterConfigDialogController extends AbstractDialogCont
                 .timeoutMillis(timeoutSpinner.getValue())
                 .build();
         log.debug("saving configuration of ReachableUrlFilter: {}", config);
-        filter.getConfigManager().saveConfig(config);
+        filter.saveConfig(config);
         return config;
     }
 }

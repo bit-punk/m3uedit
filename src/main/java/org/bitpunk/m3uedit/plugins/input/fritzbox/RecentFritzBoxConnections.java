@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
+import org.bitpunk.m3uedit.api.PluginContext;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.plugins.input.fritzbox.model.FritzBoxConnection;
@@ -10,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Persistent list of the FritzBox connections whose playlists have been read successfully (most recent first),
@@ -19,22 +22,42 @@ import java.util.Objects;
 public class RecentFritzBoxConnections {
     public static final String CONFIG_FILE_NAME = "fritzbox_recent_connections.yaml";
     public static final int MAX_ENTRIES = 10;
-    private final YamlConfigManager<RecentFritzBoxConnectionsConfig> configManager;
+    private final Supplier<RecentFritzBoxConnectionsConfig> loader;
+    private final Consumer<RecentFritzBoxConnectionsConfig> saver;
 
+    /**
+     * The connections of the user, used by the application (without the context of a plugin).
+     */
     public RecentFritzBoxConnections() {
         this(AppConfigPaths.getPluginConfigPath(CONFIG_FILE_NAME));
     }
 
+    /**
+     * The connections stored in the given file, e.g. in tests.
+     */
     public RecentFritzBoxConnections(Path configPath) {
-        this.configManager = new YamlConfigManager<>(configPath, RecentFritzBoxConnectionsConfig.class,
+        YamlConfigManager<RecentFritzBoxConnectionsConfig> configManager = new YamlConfigManager<>(configPath,
+                RecentFritzBoxConnectionsConfig.class, RecentFritzBoxConnectionsConfig::new);
+        this.loader = configManager::loadConfig;
+        this.saver = configManager::saveConfig;
+    }
+
+    /**
+     * The connections of the user, stored in the configuration directory of the plugins.
+     *
+     * @param context the context of the FritzBox input
+     */
+    public RecentFritzBoxConnections(PluginContext context) {
+        this.loader = () -> context.loadConfig(CONFIG_FILE_NAME, RecentFritzBoxConnectionsConfig.class,
                 RecentFritzBoxConnectionsConfig::new);
+        this.saver = config -> context.saveConfig(CONFIG_FILE_NAME, config);
     }
 
     /**
      * @return the stored connections, most recently used first
      */
     public List<FritzBoxConnection> getConnections() {
-        RecentFritzBoxConnectionsConfig config = configManager.loadConfig();
+        RecentFritzBoxConnectionsConfig config = loader.get();
         if (config == null || config.getConnections() == null) {
             return new ArrayList<>();
         }
@@ -58,14 +81,14 @@ public class RecentFritzBoxConnections {
         while (connections.size() > MAX_ENTRIES) {
             connections.removeLast();
         }
-        configManager.saveConfig(new RecentFritzBoxConnectionsConfig(connections));
+        saver.accept(new RecentFritzBoxConnectionsConfig(connections));
     }
 
     /**
      * Removes all connections from the list.
      */
     public void clear() {
-        configManager.saveConfig(new RecentFritzBoxConnectionsConfig(new ArrayList<>()));
+        saver.accept(new RecentFritzBoxConnectionsConfig(new ArrayList<>()));
     }
 
     /**
@@ -74,7 +97,7 @@ public class RecentFritzBoxConnections {
     public void remove(FritzBoxConnection connection) {
         List<FritzBoxConnection> connections = getConnections();
         if (connections.removeIf(stored -> isSameTarget(stored, connection))) {
-            configManager.saveConfig(new RecentFritzBoxConnectionsConfig(connections));
+            saver.accept(new RecentFritzBoxConnectionsConfig(connections));
         }
     }
 

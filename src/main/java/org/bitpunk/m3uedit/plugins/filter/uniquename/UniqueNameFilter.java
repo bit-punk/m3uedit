@@ -1,30 +1,24 @@
 package org.bitpunk.m3uedit.plugins.filter.uniquename;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.PluginType;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.PluginType;
 import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
 
 import java.util.List;
 
-@Getter
-@Setter
-@PluginType(id = "UniqueNameFilter", nameKey = "filter.uniqueName.name")
-public class UniqueNameFilter extends AbstractUniqueFilter implements Filter {
+@PluginType(id = "UniqueNameFilter", nameKey = "filter.uniqueName.name", texts = "i18n.messages")
+public class UniqueNameFilter extends AbstractUniqueFilter {
     /**
      * @return the name shown to the user, not part of a project-file
      */
     @Override
     public String getName() {
-        return Messages.get("filter.uniqueName.name");
+        return getContext().text("filter.uniqueName.name");
     }
 
     @Override
     public String getDescription() {
-        return Messages.get("filter.uniqueName.description");
+        return getContext().text("filter.uniqueName.description");
     }
 
     @Override

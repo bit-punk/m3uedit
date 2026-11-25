@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.player;
 
 import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

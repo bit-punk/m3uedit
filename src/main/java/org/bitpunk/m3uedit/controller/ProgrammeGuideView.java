@@ -25,9 +25,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.controller.GuideTimeline.Slot;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.util.ChannelLogos;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
+import org.bitpunk.m3uedit.api.Programme;
 
 import java.time.Instant;
 import java.time.ZoneId;

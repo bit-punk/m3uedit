@@ -15,8 +15,9 @@ import javafx.scene.shape.SVGPath;
 import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.PluginDescriptor;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -325,14 +326,14 @@ public class PluginStageView<T extends Plugin> extends VBox {
     }
 
     private boolean areAllEnabled() {
-        return !plugins.isEmpty() && plugins.stream().allMatch(plugin -> plugin.getEnabled().get());
+        return !plugins.isEmpty() && plugins.stream().allMatch(plugin -> PluginStates.enabled(plugin).get());
     }
 
     private void updateEnableAll() {
         if (enableAllCheckBox == null) {
             return;
         }
-        long enabled = plugins.stream().filter(plugin -> plugin.getEnabled().get()).count();
+        long enabled = plugins.stream().filter(plugin -> PluginStates.enabled(plugin).get()).count();
         enableAllCheckBox.setIndeterminate(enabled > 0 && enabled < plugins.size());
         enableAllCheckBox.setSelected(!plugins.isEmpty() && enabled == plugins.size());
         enableAllCheckBox.setDisable(plugins.isEmpty());
@@ -429,7 +430,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
             return;
         }
         String before = persistedState.apply(plugin);
-        plugin.configure();
+        plugin.configure(getScene() == null ? null : getScene().getWindow());
         PluginRow row = rows.get(plugin);
         if (row != null) {
             row.update();
@@ -520,10 +521,10 @@ public class PluginStageView<T extends Plugin> extends VBox {
                 // without reordering the space of the grip is kept, so the checkboxes stay aligned
                 grip.setVisible(reorderable);
                 enabledCheckBox = new CheckBox();
-                enabledCheckBox.selectedProperty().bindBidirectional(plugin.getEnabled());
+                enabledCheckBox.selectedProperty().bindBidirectional(PluginStates.enabled(plugin));
                 enabledCheckBox.setAccessibleText(Messages.get("stage.enable", plugin.getName()));
                 getChildren().addAll(grip, enabledCheckBox);
-                plugin.getEnabled().addListener((observable, oldValue, newValue) -> {
+                PluginStates.enabled(plugin).addListener((observable, oldValue, newValue) -> {
                     updateEnabled();
                     updateEnableAll();
                 });
@@ -616,12 +617,12 @@ public class PluginStageView<T extends Plugin> extends VBox {
         }
 
         void updateEnabled() {
-            pseudoClassStateChanged(DISABLED_PLUGIN, enableable && !plugin.getEnabled().get());
+            pseudoClassStateChanged(DISABLED_PLUGIN, enableable && !PluginStates.enabled(plugin).get());
         }
 
         void dispose() {
             if (enabledCheckBox != null) {
-                enabledCheckBox.selectedProperty().unbindBidirectional(plugin.getEnabled());
+                enabledCheckBox.selectedProperty().unbindBidirectional(PluginStates.enabled(plugin));
             }
         }
 

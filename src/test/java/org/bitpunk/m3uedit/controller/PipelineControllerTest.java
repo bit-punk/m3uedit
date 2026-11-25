@@ -17,8 +17,10 @@ import org.bitpunk.m3uedit.controller.TestPlugins.TestEnricher;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestFilter;
 import org.bitpunk.m3uedit.controller.TestPlugins.TestInput;
 import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.bitpunk.m3uedit.controller.TestPlugins.entry;
@@ -142,7 +143,7 @@ class PipelineControllerTest {
 
         // with an output it can be written
         assertThat(manualPipeline.getWriteButton().isDisabled()).as("no output").isTrue();
-        manual.getOutputs().add(new FileOutput());
+        manual.getOutputs().add(TestPluginSupport.create(FileOutput::new));
         assertThat(manualPipeline.getWriteButton().isDisabled()).isFalse();
 
         manual.removeEntries(List.copyOf(manual.getSortedEntryList()));
@@ -212,7 +213,7 @@ class PipelineControllerTest {
         PipelineController controller = new PipelineController();
         controller.initModel(dataModel);
 
-        enricher.getEnabled().set(true);
+        PluginStates.enabled(enricher).set(true);
 
         assertThat(texts(controller.getEnricherStage().rowOf(enricher).orElseThrow())).contains("✎ 4");
         assertThat(dataModel.getSortedEntryList()).extracting(Entry::getTvgId).contains("ZDF HD", "ARTE");
@@ -220,15 +221,15 @@ class PipelineControllerTest {
 
     @Test
     void connectorsShowTheNumberOfEntriesPassedOn() {
-        hdFilter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
 
         assertThat(texts(pipeline)).contains("4 entries loaded", "2 left after filtering", "2 entries in the playlist");
     }
 
     @Test
     void badgesShowTheEffectOfEachStep() {
-        hdFilter.getEnabled().set(true);
-        sorter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
+        PluginStates.enabled(sorter).set(true);
 
         assertThat(texts(pipeline.getInputStage().rowOf(dataModel.getInputs().getFirst()).orElseThrow())).contains("+4");
         assertThat(texts(pipeline.getFilterStage().rowOf(hdFilter).orElseThrow())).contains("−2");
@@ -239,8 +240,8 @@ class PipelineControllerTest {
 
     @Test
     void reorderingFiltersRecomputesTheEntries() {
-        hdFilter.getEnabled().set(true);
-        shopFilter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
+        PluginStates.enabled(shopFilter).set(true);
         assertThat(dataModel.getPipelineResult().step(hdFilter).orElseThrow().input()).hasSize(4);
 
         dataModel.getFilters().setAll(shopFilter, hdFilter);
@@ -251,7 +252,7 @@ class PipelineControllerTest {
 
     @Test
     void configuringAFilterRecomputesTheEntries() {
-        hdFilter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
         dataModel.getSortedEntryList().clear();
 
         Node row = pipeline.getFilterStage().rowOf(hdFilter).orElseThrow();
@@ -325,11 +326,11 @@ class PipelineControllerTest {
     void enablingASorterDisablesTheOtherOnes() {
         NameSorter other = new NameSorter();
         dataModel.getSorters().add(other);
-        sorter.getEnabled().set(true);
+        PluginStates.enabled(sorter).set(true);
 
-        other.getEnabled().set(true);
+        PluginStates.enabled(other).set(true);
 
-        assertThat(sorter.getEnabled().get()).isFalse();
+        assertThat(PluginStates.enabled(sorter).get()).isFalse();
         assertThat(pipeline.getSorterStage().getHeaderText()).isEqualTo("one at a time");
     }
 
@@ -340,10 +341,10 @@ class PipelineControllerTest {
         assertThat(all.isIndeterminate()).isFalse();
         assertThat(all.getTooltip().getText()).isEqualTo("Enable all filters");
 
-        hdFilter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
         assertThat(all.isIndeterminate()).isTrue();
 
-        shopFilter.getEnabled().set(true);
+        PluginStates.enabled(shopFilter).set(true);
         assertThat(all.isSelected()).isTrue();
         assertThat(all.isIndeterminate()).isFalse();
         assertThat(all.getTooltip().getText()).isEqualTo("Disable all filters");
@@ -352,15 +353,15 @@ class PipelineControllerTest {
     @Test
     void enableAllEnablesAllIfSomeAreDisabledAndDisablesAllOtherwise() {
         CheckBox all = pipeline.getFilterStage().getEnableAllCheckBox();
-        hdFilter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
 
         all.fire();
-        assertThat(dataModel.getFilters()).allMatch(filter -> filter.getEnabled().get());
+        assertThat(dataModel.getFilters()).allMatch(filter -> PluginStates.enabled(filter).get());
         assertThat(all.isSelected()).isTrue();
         assertThat(texts(pipeline)).contains("2 left after filtering");
 
         all.fire();
-        assertThat(dataModel.getFilters()).noneMatch(filter -> filter.getEnabled().get());
+        assertThat(dataModel.getFilters()).noneMatch(filter -> PluginStates.enabled(filter).get());
         assertThat(all.isSelected()).isFalse();
         assertThat(texts(pipeline)).contains("4 left after filtering");
     }
@@ -385,7 +386,7 @@ class PipelineControllerTest {
         assertThat(pipeline.getWriteHint().isVisible()).isTrue();
         assertThat(pipeline.getWriteHint().getText()).isEqualTo("Add an output to write the playlist");
 
-        dataModel.getOutputs().add(new FileOutput());
+        dataModel.getOutputs().add(TestPluginSupport.create(FileOutput::new));
         assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
         assertThat(pipeline.getWriteHint().isVisible()).isFalse();
 
@@ -402,7 +403,7 @@ class PipelineControllerTest {
     void writeButtonIsDisabledWhileSaving() {
         List<Runnable> background = new ArrayList<>();
         dataModel.setBackgroundExecutor(background::add);
-        dataModel.getOutputs().add(new FileOutput());
+        dataModel.getOutputs().add(TestPluginSupport.create(FileOutput::new));
         assertThat(pipeline.getWriteButton().isDisabled()).isFalse();
 
         pipeline.getWriteButton().fire();
@@ -414,8 +415,8 @@ class PipelineControllerTest {
 
     @Test
     void collapsedStagesShowTheirStatus() {
-        hdFilter.getEnabled().set(true);
-        sorter.getEnabled().set(true);
+        PluginStates.enabled(hdFilter).set(true);
+        PluginStates.enabled(sorter).set(true);
         List.of(pipeline.getInputStage(), pipeline.getFilterStage(), pipeline.getSorterStage(), pipeline.getOutputStage())
                 .forEach(stage -> stage.setCollapsed(true));
 
@@ -425,8 +426,8 @@ class PipelineControllerTest {
         assertThat(pipeline.getOutputStage().getHeaderText()).isEqualTo("no output");
 
         // the status follows the enabled filters
-        shopFilter.getEnabled().set(true);
-        hdFilter.getEnabled().set(false);
+        PluginStates.enabled(shopFilter).set(true);
+        PluginStates.enabled(hdFilter).set(false);
 
         assertThat(pipeline.getFilterStage().getHeaderText()).isEqualTo("1 of 2 enabled, −1 entry");
     }

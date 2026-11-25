@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.builder;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 
 import java.util.HashMap;
 import java.util.Map;

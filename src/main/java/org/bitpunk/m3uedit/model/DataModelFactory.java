@@ -5,7 +5,7 @@ import javafx.collections.ObservableList;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.plugins.EnricherPluginService;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
-import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
 
 import java.util.ArrayList;

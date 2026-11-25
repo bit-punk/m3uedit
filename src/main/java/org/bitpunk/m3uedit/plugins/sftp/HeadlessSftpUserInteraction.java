@@ -33,6 +33,8 @@ public class HeadlessSftpUserInteraction extends SftpUserInteraction {
      * @param environment returns the value of an environment variable, null if it is not set
      */
     HeadlessSftpUserInteraction(UnaryOperator<String> environment) {
+        // no dialogs, so no texts are needed
+        super(null);
         this.environment = environment;
     }
 

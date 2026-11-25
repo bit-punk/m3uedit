@@ -11,6 +11,7 @@ Building M3UEditor, running it from the IDE, how it is built inside, and how ver
   * [The pipeline](#the-pipeline)
   * [Manual changes and undo](#manual-changes-and-undo)
   * [Plugins](#plugins)
+  * [Writing a plugin](#writing-a-plugin)
   * [Project-files](#project-files)
   * [Texts and languages](#texts-and-languages)
   * [Theme](#theme)
@@ -77,10 +78,11 @@ All classes are in `org.bitpunk.m3uedit`:
 | Package | Content |
 |---|---|
 | (root) | `Main` (user interface or command-line mode), `M3UEditor` (the JavaFX application) |
-| `model` | `DataModel` (a project and its pipeline), `Entry`, `ManualChange`, the results of a computation |
+| `api` | the plugin API: the interfaces of the plugins, `Entry`, the context of a plugin, see [Writing a plugin](#writing-a-plugin) |
+| `model` | `DataModel` (a project and its pipeline), `ManualChange`, the results of a computation |
 | `controller` | the windows and dialogs: main window (`SceneController`), project, pipeline, playlist, diff, programme guide, configuration |
 | `control` | reusable controls, e.g. the stages of the pipeline (`PluginStageView`) |
-| `plugins` | the plugin interfaces and the plugins: `input`, `filter`, `sorter`, `enricher`, `output`, the SFTP support in `sftp` |
+| `plugins` | the plugin services, the context and state of plugins, and the built-in plugins: `input`, `filter`, `sorter`, `enricher`, `output`, the SFTP support in `sftp` |
 | `parser` | reading and writing M3U playlists |
 | `cli` | the command-line mode |
 | `config` | the configuration files in `~/.m3uedit` and the settings |
@@ -122,37 +124,109 @@ several entries into one step.
 
 ### Plugins
 
-Inputs, filters, sorters, enrichers and outputs are plugins, found by the Java
+Inputs, filters, sorters, enrichers and outputs are plugins written against the plugin API, the package
+`org.bitpunk.m3uedit.api` (see [Writing a plugin](#writing-a-plugin)). They are found by the Java
 [ServiceLoader](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ServiceLoader.html) via the
-files in `src/main/resources/META-INF/services` (one file per plugin interface, see the `*PluginService` classes).
-Registering a plugin there is all that is needed: the add-menus of the pipeline, new projects and the project-files
-take the plugins from the plugin services.
-
-Each plugin declares its identity with the annotation `@PluginType`:
-
-```java
-@PluginType(id = "FileInput", nameKey = "input.file.name")
-public class FileInput extends AbstractInput implements Input {
-```
-
-* `id` is the type id stored in project-files. It must never change once project-files have been written with it,
-  also when the class is renamed or moved. The plugins of m3uedit use the simple class names they have always been
-  stored with; plugins of other parties will use qualified ids (e.g. `de.example.MyInput`).
-* `nameKey` is the key of the name shown to the user, so the add-menus list the plugins without creating them.
+files in `src/main/resources/META-INF/services` (one file per kind of plugin, named after its interface, e.g.
+`org.bitpunk.m3uedit.api.Input`, see the `*PluginService` classes). Registering a plugin there is all that is needed:
+the add-menus of the pipeline, new projects and the project-files take the plugins from the plugin services.
 
 The plugin services describe each plugin by a `PluginDescriptor` (id, class, name) and create new instances with
-`PluginDescriptor.create()`. A plugin with the id of an earlier one is ignored and logged as an error, as the two
-could not be told apart in a project-file.
+`PluginDescriptor.create()`, which also passes the plugin its context. A plugin with the id of an earlier one is
+ignored and logged as an error, as the two could not be told apart in a project-file. Whether a plugin is enabled is
+kept by m3uedit (`PluginStates`), not by the plugin.
 
-Plugins with settings of their own keep them in `~/.m3uedit/plugins/`. External plugins in separate jars are
-planned, see [#46](https://github.com/bit-punk/m3uedit/issues/46).
+External plugins in separate jars are planned, see [#46](https://github.com/bit-punk/m3uedit/issues/46).
+
+### Writing a plugin
+
+The API (`org.bitpunk.m3uedit.api`) only depends on Java and JavaFX; a test (`ApiBoundaryTest`) keeps it that way.
+
+| Type | Purpose |
+|---|---|
+| `Input`, `Filter`, `Sorter`, `Enricher`, `Output` | the kinds of plugins, all extending `Plugin` |
+| `@PluginType` | the type id, the key of the name and the resource bundle of the texts |
+| `PluginContext` | what a plugin gets from m3uedit: its texts, reading and writing M3U playlists, its configuration files, whether it runs without user interface, showing errors |
+| `Entry`, `Playlist` | a channel, and the entries read by an input |
+| `Enrichment`, `Attachment`, `Export`, `Programme`, `ProgrammeGuideProvider` | the results of enrichers, what outputs write, programme guides |
+| `PluginException`, `InputReadException` | errors shown to the user |
+
+A minimal filter:
+
+```java
+@PluginType(id = "de.example.RadioFilter", nameKey = "radioFilter.name", texts = "de.example.messages")
+public class RadioFilter implements Filter {
+    private PluginContext context;
+    private RadioFilterSettings settings = new RadioFilterSettings(true);
+
+    @Override
+    public void init(PluginContext context) {
+        this.context = context;
+    }
+
+    @Override
+    public String getName() {
+        return context.text("radioFilter.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return context.text("radioFilter.description");
+    }
+
+    @Override
+    public List<Entry> filter(List<Entry> entries) {
+        return entries.stream().filter(entry -> !settings.removeRadio() || !"true".equals(entry.getRadio())).toList();
+    }
+
+    @Override
+    public Class<RadioFilterSettings> getSettingsType() {
+        return RadioFilterSettings.class;
+    }
+
+    @Override
+    public RadioFilterSettings getSettings() {
+        return settings;
+    }
+
+    @Override
+    public void setSettings(Record settings) {
+        this.settings = (RadioFilterSettings) settings;
+    }
+}
+
+public record RadioFilterSettings(boolean removeRadio) {
+}
+```
+
+registered in `META-INF/services/org.bitpunk.m3uedit.api.Filter` by the line `de.example.RadioFilter`.
+
+* **Identity:** `@PluginType(id = …)` is the type id stored in project-files. It must never change once project-files
+  have been written with it, also when the class is renamed or moved. The plugins of m3uedit use the simple class
+  names they have always been stored with; plugins of other parties use qualified ids. `nameKey` lets the add-menus
+  name the plugin without creating it. Plugins are compared by identity, so they must not override `equals`.
+* **Context:** m3uedit creates a plugin for each use in a project and calls `init(PluginContext)` once; the plugin
+  keeps the context. Its texts (`context.text(key, …)`) come from its own resource bundle (`texts`, e.g.
+  `de/example/messages.properties` and `messages_de.properties`) in the language of the user interface; the built-in
+  plugins use the bundle of m3uedit.
+* **Settings:** the settings stored in the project-file are a record of plain Java types, without annotations. m3uedit
+  writes its components next to the type of the plugin and whether it is enabled, and passes them back with
+  `setSettings` when the project is loaded; components missing in an older project-file are `null`, `0` or `false`, so
+  the plugin replaces them by its defaults. A plugin without settings keeps the defaults (`NoSettings`). Configuration
+  that belongs to the user rather than to a project (e.g. lists of recently used servers) is kept in configuration
+  files with `context.loadConfig` / `context.saveConfig` in `~/.m3uedit/plugins/`.
+* **Threads:** reading, filtering, sorting, enriching and writing run in the background and must not use JavaFX;
+  they also run in the command-line mode (`context.isHeadless()`). `configure(Window)` opens the plugin's own dialog on
+  the JavaFX application thread and returns whether the user confirmed.
 
 ### Project-files
 
-Projects are stored as YAML by Jackson (`util.ProjectPersisterUtil`), mapping the fields of the model and the
-plugins (not their getters); `transient` and `@JsonIgnore` fields are not stored. Each plugin is stored with the type
-id of its `@PluginType` (e.g. `type: FileInput`, see [Plugins](#plugins)); only the plugins found by the plugin
-services are accepted when loading a project. The entries themselves are not stored, they are read from the inputs when a project is opened.
+Projects are stored as YAML by Jackson (`util.ProjectPersisterUtil`), mapping the fields of the model (not their
+getters); `transient` and `@JsonIgnore` fields are not stored. Each plugin is stored by `jackson.PluginModule` with the
+type id of its `@PluginType`, whether it is enabled and the components of its settings record (e.g.
+`type: FileInput`, `enabled: true`, `source: …`); only the plugins found by the plugin services of the expected kind
+are accepted when loading a project, and the settings are read as the settings record of the plugin, so a project-file
+cannot create other objects. The entries themselves are not stored, they are read from the inputs when a project is opened.
 
 ### Texts and languages
 

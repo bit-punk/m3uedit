@@ -1,9 +1,10 @@
 package org.bitpunk.m3uedit.model;
 
-import org.bitpunk.m3uedit.plugins.Plugin;
-import org.bitpunk.m3uedit.plugins.enricher.Attachment;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.input.Input;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.api.Attachment;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.Input;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;

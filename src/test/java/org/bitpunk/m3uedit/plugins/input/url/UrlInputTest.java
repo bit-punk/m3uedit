@@ -1,8 +1,12 @@
 package org.bitpunk.m3uedit.plugins.input.url;
 
 import com.sun.net.httpserver.HttpServer;
-import org.bitpunk.m3uedit.plugins.input.InputReadException;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.InputReadException;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
+import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -43,11 +47,11 @@ class UrlInputTest {
         });
         server.start();
         try {
-            UrlInput input = new UrlInput();
+            UrlInput input = TestPluginSupport.create(UrlInput::new);
             input.setSelectedInputUrls(List.of(
                     URI.create("http://127.0.0.1:%d/playlist.m3u".formatted(server.getAddress().getPort())).toURL()));
 
-            assertThat(input.read()).extracting(Entry::getName).containsExactly("First, with comma", "Second");
+            assertThat(input.read().entries()).extracting(Entry::getName).containsExactly("First, with comma", "Second");
         } finally {
             server.stop(0);
         }
@@ -56,7 +60,7 @@ class UrlInputTest {
     @Test
     void testAnUnreadableUrlIsReportedTheOthersAreKept(@TempDir Path tempDir) throws IOException {
         Path playlist = Files.writeString(tempDir.resolve("playlist.m3u"), PLAYLIST);
-        UrlInput input = new UrlInput();
+        UrlInput input = TestPluginSupport.create(UrlInput::new);
         input.setSelectedInputUrls(List.of(
                 tempDir.resolve("missing.m3u").toUri().toURL(),
                 playlist.toUri().toURL()));
@@ -71,7 +75,7 @@ class UrlInputTest {
 
     @Test
     void testACancelledDialogKeepsTheUrls() throws Exception {
-        UrlInput input = new UrlInput();
+        UrlInput input = TestPluginSupport.create(UrlInput::new);
         URL url = URI.create("http://example.com/tv.m3u").toURL();
         input.applyDialogResult(Optional.of(List.of(url)));
 
@@ -93,7 +97,7 @@ class UrlInputTest {
         java.util.concurrent.CompletableFuture<List<URL>> shown = new java.util.concurrent.CompletableFuture<>();
         javafx.application.Platform.runLater(() -> {
             try {
-                UrlInputDialogController dialog = new UrlInputDialogController();
+                UrlInputDialogController dialog = new UrlInputDialogController(new DefaultPluginContext(UrlInput.class));
                 dialog.setUrls(urls);
                 shown.complete(List.copyOf(dialog.selectedUrlListView.getItems()));
             } catch (Throwable t) {
@@ -102,5 +106,65 @@ class UrlInputTest {
         });
 
         assertThat(shown.get(10, java.util.concurrent.TimeUnit.SECONDS)).containsExactlyElementsOf(urls);
+    }
+
+    @Test
+    void testTheSettingsAreRestored() throws Exception {
+        UrlInput input = TestPluginSupport.create(UrlInput::new);
+        URL url = URI.create("http://example.com/tv.m3u").toURL();
+        input.applyDialogResult(Optional.of(List.of(url)));
+
+        UrlInput restored = TestPluginSupport.create(UrlInput::new);
+        restored.setSettings(input.getSettings());
+
+        assertThat(restored.getSettingsType()).isEqualTo(UrlInputSettings.class);
+        assertThat(input.getSettings()).isEqualTo(new UrlInputSettings(List.of("http://example.com/tv.m3u"),
+                List.of("http://example.com/tv.m3u")));
+        assertThat(restored.getSelectedInputUrls()).containsExactly(url);
+        assertThat(restored.getSource()).isEqualTo(input.getSource());
+    }
+
+    @Test
+    void testMissingSettingsAreNotConfigured() {
+        UrlInput input = TestPluginSupport.create(UrlInput::new);
+
+        input.setSettings(new UrlInputSettings(null, null));
+
+        assertThat(input.getSelectedInputUrls()).isNull();
+        assertThat(input.getSource()).isNull();
+        assertThat(input.read().entries()).isEmpty();
+    }
+
+    @Test
+    void testTheSettingsAreStoredInTheProjectFileAsBefore(@TempDir Path tempDir) throws IOException {
+        Path projectFile = Files.writeString(tempDir.resolve("url.m3uproj"), """
+                ---
+                name: url
+                inputs:
+                  - type: UrlInput
+                    enabled: true
+                    selectedInputUrls:
+                      - http://example.com/a.m3u
+                      - http://example.com/b.m3u
+                    urlList:
+                      - http://example.com/a.m3u
+                      - http://example.com/b.m3u
+                """);
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+
+        UrlInput input = (UrlInput) loaded.getInputs().getFirst();
+        assertThat(input.getSelectedInputUrls()).containsExactly(URI.create("http://example.com/a.m3u").toURL(),
+                URI.create("http://example.com/b.m3u").toURL());
+        assertThat(input.getSource()).isEqualTo("[http://example.com/a.m3u, http://example.com/b.m3u]");
+        assertThat(ProjectPersisterUtil.persistedState(input)).isEqualTo("""
+                ---
+                selectedInputUrls:
+                  - http://example.com/a.m3u
+                  - http://example.com/b.m3u
+                urlList:
+                  - http://example.com/a.m3u
+                  - http://example.com/b.m3u
+                """);
     }
 }

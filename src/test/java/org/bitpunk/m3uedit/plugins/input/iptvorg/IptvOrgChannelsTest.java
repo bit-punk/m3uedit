@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

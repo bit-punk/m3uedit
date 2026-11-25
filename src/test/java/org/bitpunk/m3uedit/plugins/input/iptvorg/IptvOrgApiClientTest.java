@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.IptvOrgPlaylist;
 import org.bitpunk.m3uedit.plugins.input.iptvorg.model.PlaylistGrouping;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class IptvOrgApiClientTest {
+    private static final PluginContext CONTEXT = new DefaultPluginContext(IptvOrgInput.class);
     private static final String COUNTRIES_JSON = """
             [{"name":"Germany","code":"DE","languages":["deu"],"flag":"🇩🇪"},
              {"name":"Austria","code":"AT","languages":["deu"],"flag":"🇦🇹"},
@@ -34,7 +37,7 @@ class IptvOrgApiClientTest {
 
     @Test
     void testParseCountriesSortedByNameAndSkipsEntriesWithoutCode() {
-        List<IptvOrgPlaylist> playlists = new IptvOrgApiClient().parsePlaylists(PlaylistGrouping.COUNTRY, toStream(COUNTRIES_JSON));
+        List<IptvOrgPlaylist> playlists = new IptvOrgApiClient(CONTEXT).parsePlaylists(PlaylistGrouping.COUNTRY, toStream(COUNTRIES_JSON));
 
         assertThat(playlists).containsExactly(
                 new IptvOrgPlaylist(PlaylistGrouping.COUNTRY, "AT", "Austria"),
@@ -43,7 +46,7 @@ class IptvOrgApiClientTest {
 
     @Test
     void testParseCategoriesUsesIdField() {
-        List<IptvOrgPlaylist> playlists = new IptvOrgApiClient().parsePlaylists(PlaylistGrouping.CATEGORY, toStream(CATEGORIES_JSON));
+        List<IptvOrgPlaylist> playlists = new IptvOrgApiClient(CONTEXT).parsePlaylists(PlaylistGrouping.CATEGORY, toStream(CATEGORIES_JSON));
 
         assertThat(playlists)
                 .extracting(IptvOrgPlaylist::getId)
@@ -51,8 +54,8 @@ class IptvOrgApiClientTest {
     }
 
     @Test
-    void testParseChannelsReturnsOneEntryPerChannelSortedByName() {
-        List<IptvOrgPlaylist> channels = new IptvOrgApiClient().parseChannels(toStream(ALL_STREAMS_M3U));
+    void testParseChannelsReturnsOneEntryPerChannelSortedByName() throws IOException {
+        List<IptvOrgPlaylist> channels = new IptvOrgApiClient(CONTEXT).parseChannels(toStream(ALL_STREAMS_M3U));
 
         assertThat(channels).containsExactly(
                 new IptvOrgPlaylist(PlaylistGrouping.CHANNEL, "3sat.de", "3sat"),
@@ -62,7 +65,7 @@ class IptvOrgApiClientTest {
     @Test
     void testGetChannelsReadsFromPlaylistContainingAllStreams() throws IOException {
         try (IptvOrgTestServer server = new IptvOrgTestServer().serve("/index.m3u", ALL_STREAMS_M3U)) {
-            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl(), server.getBaseUrl());
+            IptvOrgApiClient client = new IptvOrgApiClient(CONTEXT, server.getBaseUrl(), server.getBaseUrl());
 
             assertThat(client.getPlaylists(PlaylistGrouping.CHANNEL))
                     .extracting(IptvOrgPlaylist::getName)
@@ -73,7 +76,7 @@ class IptvOrgApiClientTest {
     @Test
     void testGetPlaylistsReadsFromApiAndCachesResult() throws IOException {
         try (IptvOrgTestServer server = new IptvOrgTestServer().serve("/countries.json", COUNTRIES_JSON)) {
-            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl(), server.getBaseUrl());
+            IptvOrgApiClient client = new IptvOrgApiClient(CONTEXT, server.getBaseUrl(), server.getBaseUrl());
 
             assertThat(client.getPlaylists(PlaylistGrouping.COUNTRY)).hasSize(2);
             assertThat(client.getPlaylists(PlaylistGrouping.COUNTRY)).hasSize(2);
@@ -84,7 +87,7 @@ class IptvOrgApiClientTest {
     @Test
     void testGetPlaylistsThrowsIOExceptionOnHttpError() throws IOException {
         try (IptvOrgTestServer server = new IptvOrgTestServer()) {
-            IptvOrgApiClient client = new IptvOrgApiClient(server.getBaseUrl(), server.getBaseUrl());
+            IptvOrgApiClient client = new IptvOrgApiClient(CONTEXT, server.getBaseUrl(), server.getBaseUrl());
 
             assertThatThrownBy(() -> client.getPlaylists(PlaylistGrouping.REGION))
                     .isInstanceOf(IOException.class)

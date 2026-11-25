@@ -1,10 +1,14 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
-import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
-import org.bitpunk.m3uedit.plugins.enricher.epg.model.EpgEnricherConfig;
+import org.bitpunk.m3uedit.api.Enrichment;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.Programme;
+import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.PluginStates;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
+import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,8 +50,8 @@ class EpgEnricherTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        enricher = new EpgEnricher(new EpgSourceCache(tempDir.resolve("cache"), HttpClient.newHttpClient(),
-                Clock.systemUTC()), NOW);
+        enricher = TestPluginSupport.create(() -> new EpgEnricher(new EpgSourceCache(XmltvTestFiles.CONTEXT,
+                tempDir.resolve("cache"), HttpClient.newHttpClient(), Clock.systemUTC()), NOW));
         source = XmltvTestFiles.write(tempDir.resolve("guide.xml"), XmltvTestFiles.GUIDE).toUri().toString();
         enricher.setSources(List.of(source));
     }
@@ -190,7 +194,7 @@ class EpgEnricherTest {
                         "Nachrichten &amp; Wetter")
                 .doesNotContain("ZDF.de", "arte.de", "Late.de");
         Path written = XmltvTestFiles.write(tempDir.resolve("written.xml"), guide);
-        assertThat(XmltvFiles.readChannels(written)).containsExactly(new XmltvChannel("DasErste.de", List.of("Das Erste")));
+        assertThat(XmltvFiles.readChannels(XmltvTestFiles.CONTEXT, written)).containsExactly(new XmltvChannel("DasErste.de", List.of("Das Erste")));
     }
 
     @Test
@@ -225,8 +229,9 @@ class EpgEnricherTest {
         Enrichment enrichment = enricher.enrich(List.of(entry("Das Erste", null, "http://e/1")));
         assertThat(compile(enrichment, enrichment.entries())).as("programme in 1 hour").contains("Tagesschau");
 
-        EpgEnricher later = new EpgEnricher(new EpgSourceCache(tempDir.resolve("cache"), HttpClient.newHttpClient(),
-                Clock.systemUTC()), Clock.offset(NOW, Duration.ofHours(3)));
+        EpgEnricher later = TestPluginSupport.create(() -> new EpgEnricher(new EpgSourceCache(XmltvTestFiles.CONTEXT,
+                tempDir.resolve("cache"), HttpClient.newHttpClient(), Clock.systemUTC()),
+                Clock.offset(NOW, Duration.ofHours(3))));
         later.setSources(List.of(source));
         later.setCompressGuide(false);
         later.setGuideHoursPast(1);
@@ -253,31 +258,41 @@ class EpgEnricherTest {
 
     @Test
     void testNewEnricherHasTheDefaultSources() {
-        EpgEnricher enricher = new EpgEnricher();
+        EpgEnricher enricher = TestPluginSupport.create(EpgEnricher::new);
 
         assertThat(enricher.getSources()).containsExactly(
                 "https://epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz",
                 "https://epgshare01.online/epgshare01/epg_ripper_AT1.xml.gz",
                 "https://epgshare01.online/epgshare01/epg_ripper_CH1.xml.gz");
-        assertThat(enricher.getEnabled().get()).as("nothing is downloaded until enabled").isFalse();
+        assertThat(PluginStates.enabled(enricher).get()).as("nothing is downloaded until enabled").isFalse();
         // the defaults are copied, changing the sources of one enricher does not change them
         enricher.getSources().clear();
-        assertThat(new EpgEnricher().getSources()).hasSize(3);
+        assertThat(TestPluginSupport.create(EpgEnricher::new).getSources()).hasSize(3);
     }
 
-    private static YamlConfigManager<EpgEnricherConfig>
-    configManager(Path file) {
-        return new YamlConfigManager<>(file, EpgEnricher.CONFIG_RESOURCE,
-                EpgEnricherConfig.class,
-                EpgEnricherConfig::new);
+    /**
+     * @return a context reading the configuration files of the plugins from the given directory
+     */
+    private static PluginContext contextWithConfigDirectory(Path directory) {
+        return new DefaultPluginContext(EpgEnricher.class) {
+            @Override
+            public Path configDirectory() {
+                try {
+                    return Files.createDirectories(directory);
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            }
+        };
     }
 
     @Test
     void testDefaultSourcesAreReadFromTheConfigurationFile() throws IOException {
         Path file = tempDir.resolve("plugins").resolve("epg_enricher.yaml");
+        PluginContext context = contextWithConfigDirectory(tempDir.resolve("plugins"));
 
         // created from the defaults of the application on first use
-        assertThat(EpgEnricher.defaultSources(configManager(file))).hasSize(3)
+        assertThat(EpgEnricher.defaultSources(context)).hasSize(3)
                 .allSatisfy(url -> assertThat(url).startsWith("https://epgshare01.online/"));
         assertThat(file).exists().content().contains("epg_ripper_DE1.xml.gz");
 
@@ -288,10 +303,95 @@ class EpgEnricherTest {
                   - "file:///home/user/guide.xml"
                   - "https://epg.example.org/uk.xml.gz"
                 """);
-        assertThat(EpgEnricher.defaultSources(configManager(file)))
+        assertThat(EpgEnricher.defaultSources(context))
                 .containsExactly("https://epg.example.org/uk.xml.gz", "file:///home/user/guide.xml");
 
         Files.writeString(file, "otherSetting: 1\n");
-        assertThat(EpgEnricher.defaultSources(configManager(file))).as("no sources configured").isEmpty();
+        assertThat(EpgEnricher.defaultSources(context)).as("no sources configured").isEmpty();
+    }
+
+    @Test
+    void testSettingsAreReturnedAndSet() {
+        EpgEnricher source = TestPluginSupport.create(EpgEnricher::new);
+        source.setSources(List.of("https://epg.example.org/de.xml.gz"));
+        source.setStrategies(List.of(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE));
+        source.setUrlRules(List.of(new UrlRule("service=514", "ZDF.de")));
+        source.setCacheHours(6);
+        source.setCompileGuide(false);
+        source.setGuideDaysAhead(0);
+        source.setGuideHoursPast(2);
+        source.setCompressGuide(false);
+
+        assertThat(source.getSettingsType()).isEqualTo(EpgEnricherSettings.class);
+        assertThat(source.getSettings()).isEqualTo(new EpgEnricherSettings(List.of("https://epg.example.org/de.xml.gz"),
+                List.of(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE), List.of(new UrlRule("service=514", "ZDF.de")),
+                6, false, 0, 2, false));
+
+        EpgEnricher target = TestPluginSupport.create(EpgEnricher::new);
+        target.setSettings(source.getSettings());
+        assertThat(target.getSettings()).isEqualTo(source.getSettings());
+        assertThat(target.getSources()).containsExactly("https://epg.example.org/de.xml.gz");
+        assertThat(target.getGuideDaysAhead()).as("0 keeps all programmes").isZero();
+    }
+
+    @Test
+    void testMissingSettingsGetTheDefaults() {
+        EpgEnricher enricher = TestPluginSupport.create(EpgEnricher::new);
+
+        enricher.setSettings(new EpgEnricherSettings(null, null, null, null, null, null, null, null));
+
+        assertThat(enricher.getSources()).containsExactlyElementsOf(EpgEnricher.defaultSources(XmltvTestFiles.CONTEXT));
+        assertThat(enricher.getStrategies()).containsExactly(MatchStrategy.values());
+        assertThat(enricher.getUrlRules()).isEmpty();
+        assertThat(enricher.getCacheHours()).isEqualTo(EpgEnricher.DEFAULT_CACHE_HOURS);
+        assertThat(enricher.isCompileGuide()).isTrue();
+        assertThat(enricher.getGuideDaysAhead()).isEqualTo(EpgEnricher.DEFAULT_GUIDE_DAYS_AHEAD);
+        assertThat(enricher.getGuideHoursPast()).isEqualTo(EpgEnricher.DEFAULT_GUIDE_HOURS_PAST);
+        assertThat(enricher.isCompressGuide()).isTrue();
+
+        enricher.setSettings(new EpgEnricherSettings(List.of(), null, null, null, null, null, null, null));
+        assertThat(enricher.getSources()).as("cleared by the user").isEmpty();
+    }
+
+    @Test
+    void testSettingsAreReadFromAProjectFile() throws IOException {
+        Path projectFile = tempDir.resolve("epg.m3uproj");
+        Files.writeString(projectFile, """
+                name: epg
+                enrichers:
+                - type: EpgEnricher
+                  enabled: true
+                  sources:
+                  - https://epg.example.org/de.xml.gz
+                  strategies:
+                  - TVG_ID
+                  - URL_RULE
+                  urlRules:
+                  - regex: service=514
+                    channelId: ZDF.de
+                  cacheHours: 6
+                  compileGuide: false
+                  guideDaysAhead: 3
+                  guideHoursPast: 0
+                  compressGuide: false
+                - type: EpgEnricher
+                  cacheHours: 2
+                """);
+
+        DataModel loaded = ProjectPersisterUtil.loadProject(projectFile);
+
+        assertThat(loaded.getEnrichers()).hasSize(2);
+        EpgEnricher configured = (EpgEnricher) loaded.getEnrichers().get(0);
+        assertThat(PluginStates.enabled(configured).get()).isTrue();
+        assertThat(configured.getSettings()).isEqualTo(new EpgEnricherSettings(
+                List.of("https://epg.example.org/de.xml.gz"), List.of(MatchStrategy.TVG_ID, MatchStrategy.URL_RULE),
+                List.of(new UrlRule("service=514", "ZDF.de")), 6, false, 3, 0, false));
+        EpgEnricher old = (EpgEnricher) loaded.getEnrichers().get(1);
+        assertThat(old.getSources()).containsExactlyElementsOf(EpgEnricher.defaultSources(XmltvTestFiles.CONTEXT));
+        assertThat(old.getStrategies()).containsExactly(MatchStrategy.values());
+        assertThat(old.getCacheHours()).isEqualTo(2);
+        assertThat(old.isCompileGuide()).isTrue();
+        assertThat(old.getGuideDaysAhead()).isEqualTo(EpgEnricher.DEFAULT_GUIDE_DAYS_AHEAD);
+        assertThat(old.isCompressGuide()).isTrue();
     }
 }

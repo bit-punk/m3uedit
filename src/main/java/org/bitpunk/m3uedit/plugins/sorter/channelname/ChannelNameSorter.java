@@ -1,31 +1,33 @@
 package org.bitpunk.m3uedit.plugins.sorter.channelname;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.PluginType;
-import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.PluginType;
+import org.bitpunk.m3uedit.api.Sorter;
 
 import java.util.Comparator;
 import java.util.List;
 
-@Getter
-@Setter
-@PluginType(id = "ChannelNameSorter", nameKey = "sorter.channelName.name")
-public class ChannelNameSorter extends AbstractPlugin implements Sorter {
+@PluginType(id = "ChannelNameSorter", nameKey = "sorter.channelName.name", texts = "i18n.messages")
+public class ChannelNameSorter implements Sorter {
+    private PluginContext context;
+
+    @Override
+    public void init(PluginContext context) {
+        this.context = context;
+    }
+
     /**
      * @return the name shown to the user, not part of a project-file
      */
     @Override
     public String getName() {
-        return Messages.get("sorter.channelName.name");
+        return context.text("sorter.channelName.name");
     }
 
     @Override
     public String getDescription() {
-        return Messages.get("sorter.channelName.description");
+        return context.text("sorter.channelName.description");
     }
 
     @Override
@@ -35,4 +37,11 @@ public class ChannelNameSorter extends AbstractPlugin implements Sorter {
                 .toList();
     }
 
+    /**
+     * Plugins are compared by identity, only a short description is returned.
+     */
+    @Override
+    public String toString() {
+        return "%s[%s]".formatted(getClass().getSimpleName(), getName());
+    }
 }

@@ -14,7 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
 import lombok.Getter;
-import org.bitpunk.m3uedit.i18n.Messages;
+import org.bitpunk.m3uedit.api.PluginContext;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -48,23 +48,31 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
     @Getter
     private final Spinner<Integer> cacheHoursSpinner = new Spinner<>(1, 24 * 7, EpgEnricher.DEFAULT_CACHE_HOURS);
     @Getter
-    private final CheckBox compileGuideCheckBox = new CheckBox(Messages.get("epgEnricher.config.compileGuide"));
+    private final CheckBox compileGuideCheckBox;
     @Getter
     private final Spinner<Integer> guideDaysAheadSpinner = new Spinner<>(0, 31, EpgEnricher.DEFAULT_GUIDE_DAYS_AHEAD);
     @Getter
     private final Spinner<Integer> guideHoursPastSpinner = new Spinner<>(0, 24 * 7, EpgEnricher.DEFAULT_GUIDE_HOURS_PAST);
     @Getter
-    private final CheckBox compressGuideCheckBox = new CheckBox(Messages.get("epgEnricher.config.compressGuide"));
+    private final CheckBox compressGuideCheckBox;
     @Getter
     private final Label errorLabel = new Label();
     @Getter
-    private final ButtonType okButtonType = new ButtonType(Messages.get("common.ok"), ButtonBar.ButtonData.OK_DONE);
+    private final ButtonType okButtonType;
+    private final PluginContext context;
 
-    public EpgEnricherConfigDialog(EpgEnricher enricher) {
+    /**
+     * @param context the context of the enricher, for the texts and the default sources
+     */
+    public EpgEnricherConfigDialog(EpgEnricher enricher, PluginContext context) {
+        this.context = context;
+        compileGuideCheckBox = new CheckBox(context.text("epgEnricher.config.compileGuide"));
+        compressGuideCheckBox = new CheckBox(context.text("epgEnricher.config.compressGuide"));
+        okButtonType = new ButtonType(context.text("common.ok"), ButtonBar.ButtonData.OK_DONE);
         initModality(Modality.APPLICATION_MODAL);
         setResizable(true);
         setTitle(enricher.getName());
-        setHeaderText(Messages.get("epgEnricher.config.header"));
+        setHeaderText(context.text("epgEnricher.config.header"));
 
         sourcesTextArea.setPromptText("https://example.org/guide-de.xml.gz");
         sourcesTextArea.setPrefRowCount(5);
@@ -74,7 +82,7 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         HBox strategyBox = new HBox(12);
         List<MatchStrategy> enabled = nullToEmpty(enricher.getStrategies());
         for (MatchStrategy strategy : MatchStrategy.values()) {
-            CheckBox checkBox = new CheckBox(strategy.getLabel());
+            CheckBox checkBox = new CheckBox(strategy.getLabel(context));
             checkBox.setSelected(enabled.contains(strategy));
             strategyCheckBoxes.put(strategy, checkBox);
             strategyBox.getChildren().add(checkBox);
@@ -109,42 +117,43 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         grid.setVgap(6);
         grid.setPadding(new Insets(4));
         int row = 0;
-        defaultSourcesButton = new Button(Messages.get("epgEnricher.config.defaultSources"));
+        defaultSourcesButton = new Button(context.text("epgEnricher.config.defaultSources"));
         defaultSourcesButton.setTooltip(new javafx.scene.control.Tooltip(
-                Messages.get("epgEnricher.config.defaultSources.tooltip",
+                context.text("epgEnricher.config.defaultSources.tooltip",
                         "~/.m3uedit/plugins/" + EpgEnricher.CONFIG_FILE_NAME)));
-        defaultSourcesButton.setOnAction(event -> sourcesTextArea.setText(String.join("\n", EpgEnricher.defaultSources())));
+        defaultSourcesButton.setOnAction(event ->
+                sourcesTextArea.setText(String.join("\n", EpgEnricher.defaultSources(context))));
         javafx.scene.layout.VBox sourcesLabel = new javafx.scene.layout.VBox(6,
-                new Label(Messages.get("epgEnricher.config.sources")), defaultSourcesButton);
+                new Label(context.text("epgEnricher.config.sources")), defaultSourcesButton);
         sourcesLabel.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         grid.add(sourcesLabel, 0, row);
         grid.add(sourcesTextArea, 1, row++);
-        grid.add(hint(Messages.get("epgEnricher.config.sources.hint")), 1, row++);
-        grid.add(new Label(Messages.get("epgEnricher.config.strategies")), 0, row);
+        grid.add(hint(context.text("epgEnricher.config.sources.hint")), 1, row++);
+        grid.add(new Label(context.text("epgEnricher.config.strategies")), 0, row);
         grid.add(strategyBox, 1, row++);
-        grid.add(hint(Messages.get("epgEnricher.config.strategies.hint")), 1, row++);
-        grid.add(new Label(Messages.get("epgEnricher.config.urlRules")), 0, row);
+        grid.add(hint(context.text("epgEnricher.config.strategies.hint")), 1, row++);
+        grid.add(new Label(context.text("epgEnricher.config.urlRules")), 0, row);
         grid.add(urlRulesTextArea, 1, row++);
-        grid.add(hint(Messages.get("epgEnricher.config.urlRules.hint", UrlRule.SEPARATOR)), 1, row++);
-        grid.add(new Label(Messages.get("epgEnricher.config.cacheHours")), 0, row);
-        grid.add(new HBox(6, cacheHoursSpinner, new Label(Messages.get("epgEnricher.config.cacheHours.unit"))), 1,
+        grid.add(hint(context.text("epgEnricher.config.urlRules.hint", UrlRule.SEPARATOR)), 1, row++);
+        grid.add(new Label(context.text("epgEnricher.config.cacheHours")), 0, row);
+        grid.add(new HBox(6, cacheHoursSpinner, new Label(context.text("epgEnricher.config.cacheHours.unit"))), 1,
                 row++);
-        grid.add(new Label(Messages.get("epgEnricher.config.guide")), 0, row);
+        grid.add(new Label(context.text("epgEnricher.config.guide")), 0, row);
         grid.add(compileGuideCheckBox, 1, row++);
-        HBox window = new HBox(6, new Label(Messages.get("epgEnricher.config.guideWindow.ahead")), guideDaysAheadSpinner,
-                new Label(Messages.get("epgEnricher.config.guideWindow.past")), guideHoursPastSpinner,
-                new Label(Messages.get("epgEnricher.config.guideWindow.end")));
+        HBox window = new HBox(6, new Label(context.text("epgEnricher.config.guideWindow.ahead")), guideDaysAheadSpinner,
+                new Label(context.text("epgEnricher.config.guideWindow.past")), guideHoursPastSpinner,
+                new Label(context.text("epgEnricher.config.guideWindow.end")));
         window.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         grid.add(window, 1, row++);
         grid.add(compressGuideCheckBox, 1, row++);
-        grid.add(hint(Messages.get("epgEnricher.config.guide.hint")), 1, row++);
+        grid.add(hint(context.text("epgEnricher.config.guide.hint")), 1, row++);
         grid.add(errorLabel, 1, row);
         GridPane.setHgrow(sourcesTextArea, Priority.ALWAYS);
         GridPane.setVgrow(sourcesTextArea, Priority.ALWAYS);
         getDialogPane().setContent(grid);
         // not ButtonType.CANCEL: its text follows the language of the system, not the one of the application
         getDialogPane().getButtonTypes().setAll(okButtonType,
-                new ButtonType(Messages.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE));
+                new ButtonType(context.text("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE));
 
         Button okButton = (Button) getDialogPane().lookupButton(okButtonType);
         sourcesTextArea.textProperty().addListener((observable, oldText, newText) -> validate(okButton));
@@ -176,20 +185,20 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         List<String> errors = new ArrayList<>();
         for (String source : lines(sourcesTextArea.getText())) {
             if (!isValidSource(source)) {
-                errors.add(Messages.get("epgEnricher.config.error.invalidSource", source));
+                errors.add(context.text("epgEnricher.config.error.invalidSource", source));
             }
         }
         if (strategyCheckBoxes.get(MatchStrategy.URL_RULE).isSelected()) {
             for (String line : lines(urlRulesTextArea.getText())) {
                 try {
-                    UrlRule.parse(line);
+                    UrlRule.parse(line, context);
                 } catch (IllegalArgumentException e) {
                     errors.add(e.getMessage());
                 }
             }
         }
         if (strategyCheckBoxes.values().stream().noneMatch(CheckBox::isSelected)) {
-            errors.add(Messages.get("epgEnricher.config.error.noStrategy"));
+            errors.add(context.text("epgEnricher.config.error.noStrategy"));
         }
         return errors;
     }
@@ -200,7 +209,7 @@ public class EpgEnricherConfigDialog extends Dialog<EpgEnricherConfigDialog.Conf
         // rules are kept while the strategy is switched off
         List<UrlRule> rules = lines(urlRulesTextArea.getText()).stream().map(line -> {
             try {
-                return UrlRule.parse(line);
+                return UrlRule.parse(line, context);
             } catch (IllegalArgumentException e) {
                 return null;
             }

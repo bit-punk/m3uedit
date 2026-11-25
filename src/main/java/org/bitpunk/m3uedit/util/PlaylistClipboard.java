@@ -1,6 +1,6 @@
 package org.bitpunk.m3uedit.util;
 
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.parser.ParsingException;
 import org.bitpunk.m3uedit.parser.Writer;

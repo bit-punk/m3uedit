@@ -1,5 +1,7 @@
 package org.bitpunk.m3uedit.plugins;
 
+import org.bitpunk.m3uedit.api.Plugin;
+import org.bitpunk.m3uedit.api.PluginType;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;

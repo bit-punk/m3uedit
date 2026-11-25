@@ -2,7 +2,8 @@ package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
 import javafx.application.Platform;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.testsupport.ConfigDirectoryContext;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,8 +50,13 @@ class PreferredChannelOrderConfigDialogControllerTest {
         }
     }
 
+    private static PreferredChannelOrderConfig loadConfig(Path tempDir) {
+        return new YamlConfigManager<>(tempDir.resolve(PreferredChannelOrderSorter.CONFIG_FILE_NAME),
+                PreferredChannelOrderConfig.class).loadConfig();
+    }
+
     private PreferredChannelOrderSorter createSampleSorter(Path tempDir) {
-        Path configFile = tempDir.resolve("config.yaml");
+        Path configFile = tempDir.resolve(PreferredChannelOrderSorter.CONFIG_FILE_NAME);
         YamlConfigManager<PreferredChannelOrderConfig> manager = new YamlConfigManager<>(configFile, PreferredChannelOrderConfig.class);
 
         ChannelProfile profile1 = ChannelProfile.builder()
@@ -71,7 +77,7 @@ class PreferredChannelOrderConfigDialogControllerTest {
                 .build();
         manager.saveConfig(config);
 
-        PreferredChannelOrderSorter sorter = new PreferredChannelOrderSorter(manager);
+        PreferredChannelOrderSorter sorter = ConfigDirectoryContext.create(PreferredChannelOrderSorter::new, tempDir);
         sorter.setSelectedProfileId("profile1");
         return sorter;
     }
@@ -213,7 +219,7 @@ class PreferredChannelOrderConfigDialogControllerTest {
             controller.saveWorkingState();
             controller.applyAndPersistConfig();
             assertThat(sorter.getSelectedProfileId()).isEqualTo("my_playlist");
-            assertThat(sorter.getConfigManager().loadConfig().getProfiles())
+            assertThat(loadConfig(tempDir).getProfiles())
                     .extracting(ChannelProfile::getId)
                     .containsExactly("profile1", "profile2", "my_playlist");
         });
@@ -251,7 +257,7 @@ class PreferredChannelOrderConfigDialogControllerTest {
             assertThat(sorted).extracting(Entry::getName).containsExactly("RTL", "Das Erste HD", "ZDF HD");
 
             // Verify changes were persisted to manager file
-            PreferredChannelOrderConfig loaded = sorter.getConfigManager().loadConfig();
+            PreferredChannelOrderConfig loaded = loadConfig(tempDir);
             assertThat(loaded.getProfiles().getFirst().getChannels()).containsExactly("RTL", "Das Erste HD", "ZDF HD");
         });
     }

@@ -1,5 +1,8 @@
 package org.bitpunk.m3uedit.plugins.sftp;
 
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+import org.bitpunk.m3uedit.plugins.input.sftp.SftpInput;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient.RemoteEntry;
 import org.junit.jupiter.api.Test;
 
@@ -20,8 +23,9 @@ class SftpBrowserDialogTest {
 
     @Test
     void testDisplayName() {
-        assertThat(SftpBrowserDialog.displayName(new RemoteEntry("tv", true))).isEqualTo("tv/");
-        assertThat(SftpBrowserDialog.displayName(new RemoteEntry("a.m3u", false))).isEqualTo("a.m3u");
-        assertThat(SftpBrowserDialog.displayName(SftpBrowserDialog.PARENT_ENTRY)).isEqualTo(".. (parent directory)");
+        PluginContext context = new DefaultPluginContext(SftpInput.class);
+        assertThat(SftpBrowserDialog.displayName(context, new RemoteEntry("tv", true))).isEqualTo("tv/");
+        assertThat(SftpBrowserDialog.displayName(context, new RemoteEntry("a.m3u", false))).isEqualTo("a.m3u");
+        assertThat(SftpBrowserDialog.displayName(context, SftpBrowserDialog.PARENT_ENTRY)).isEqualTo(".. (parent directory)");
     }
 }

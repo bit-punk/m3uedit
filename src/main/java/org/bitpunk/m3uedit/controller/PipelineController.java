@@ -16,17 +16,19 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
+import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.*;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
-import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.PluginDescriptor;
-import org.bitpunk.m3uedit.plugins.enricher.Enricher;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
-import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.sorter.Sorter;
+import org.bitpunk.m3uedit.api.Enricher;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.Input;
+import org.bitpunk.m3uedit.api.Output;
+import org.bitpunk.m3uedit.api.Sorter;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 
 import java.net.URI;
@@ -190,7 +192,7 @@ public class PipelineController extends VBox implements ModelAware {
     private void setAllEnabled(List<? extends Plugin> plugins, boolean enabled, Runnable recompute) {
         changingAll = true;
         try {
-            plugins.forEach(plugin -> plugin.getEnabled().set(enabled));
+            plugins.forEach(plugin -> PluginStates.enabled(plugin).set(enabled));
         } finally {
             changingAll = false;
         }
@@ -223,15 +225,15 @@ public class PipelineController extends VBox implements ModelAware {
     private void initRecomputeListeners() {
         // re-compute the entries once per change of a filter or sorter: enabled-state or order
         for (Filter filter : dataModel.getFilters()) {
-            filter.getEnabled().addListener((observable, oldValue, newValue) ->
+            PluginStates.enabled(filter).addListener((observable, oldValue, newValue) ->
                     recomputeUnlessChangingAll(dataModel::filterRawEntries));
         }
         for (Sorter sorter : dataModel.getSorters()) {
-            sorter.getEnabled().addListener((observable, oldValue, newValue) ->
+            PluginStates.enabled(sorter).addListener((observable, oldValue, newValue) ->
                     recomputeUnlessChangingAll(dataModel::sortFilteredEntries));
         }
         for (Enricher enricher : dataModel.getEnrichers()) {
-            enricher.getEnabled().addListener((observable, oldValue, newValue) ->
+            PluginStates.enabled(enricher).addListener((observable, oldValue, newValue) ->
                     recomputeUnlessChangingAll(dataModel::enrichSortedEntries));
         }
         dataModel.getFilters().addListener((ListChangeListener<Filter>) change -> dataModel.filterRawEntries());
@@ -271,7 +273,7 @@ public class PipelineController extends VBox implements ModelAware {
         filterStage.setStatusProvider(() -> Messages.get("pipeline.filters.status", enabledCount(dataModel.getFilters()),
                 dataModel.getFilters().size(), loaded - result.filtered().size()));
         int reordered = EntryDiff.compute(result.filtered(), result.sorted()).getMovedCount();
-        sorterStage.setStatusProvider(() -> dataModel.getSorters().stream().filter(sorter -> sorter.getEnabled().get())
+        sorterStage.setStatusProvider(() -> dataModel.getSorters().stream().filter(sorter -> PluginStates.enabled(sorter).get())
                 .findFirst().map(sorter -> Messages.get("pipeline.sorters.status", sorter.getName(), reordered))
                 .orElse(Messages.get("pipeline.sorters.status.none")));
         int changed = result.origins().size();
@@ -326,7 +328,7 @@ public class PipelineController extends VBox implements ModelAware {
     }
 
     private static long enabledCount(List<? extends Plugin> plugins) {
-        return plugins.stream().filter(plugin -> plugin.getEnabled().get()).count();
+        return plugins.stream().filter(plugin -> PluginStates.enabled(plugin).get()).count();
     }
 
     private static <T extends Plugin> Function<T, Badge> stepBadge(PipelineResult result, Function<StepResult, Badge> badge) {
@@ -346,8 +348,7 @@ public class PipelineController extends VBox implements ModelAware {
      */
     private void addInput(PluginDescriptor<Input> plugin) {
         Input input = plugin.create();
-        input.configure();
-        if (input.getSource() != null) {
+        if (input.configure(ownerWindow())) {
             dataModel.getInputs().add(input);
             selectedStep.set(input);
         } else {
@@ -360,8 +361,7 @@ public class PipelineController extends VBox implements ModelAware {
      */
     private void addOutput(PluginDescriptor<Output> plugin) {
         Output output = plugin.create();
-        output.configure();
-        if (output.getOutput() != null) {
+        if (output.configure(ownerWindow())) {
             dataModel.getOutputs().add(output);
         } else {
             log.debug("adding output {} cancelled", plugin.id());
@@ -393,5 +393,12 @@ public class PipelineController extends VBox implements ModelAware {
         icon.setContent(path);
         icon.getStyleClass().add("icon");
         return icon;
+    }
+
+    /**
+     * @return the window of the pipeline, the owner of the dialogs of the plugins
+     */
+    private javafx.stage.Window ownerWindow() {
+        return getScene() == null ? null : getScene().getWindow();
     }
 }

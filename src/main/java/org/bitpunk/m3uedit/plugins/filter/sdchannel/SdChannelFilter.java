@@ -1,12 +1,9 @@
 package org.bitpunk.m3uedit.plugins.filter.sdchannel;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.PluginType;
-import org.bitpunk.m3uedit.plugins.filter.Filter;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.api.PluginType;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -17,26 +14,31 @@ import java.util.regex.Pattern;
  * e.g. "ZDF" is removed if "ZDF HD" exists. Other channels starting with the same name, like "ZDFneo" or
  * "RTL ZWEI", do not make a channel an SD channel.
  */
-@Getter
-@Setter
-@PluginType(id = "SdChannelFilter", nameKey = "filter.sdChannel.name")
-public class SdChannelFilter extends AbstractPlugin implements Filter {
+@PluginType(id = "SdChannelFilter", nameKey = "filter.sdChannel.name", texts = "i18n.messages")
+public class SdChannelFilter implements Filter {
     /**
      * A channel name with HD suffix ("ZDF HD", "ZDFHD", "ZDF (HD)", "Bingo-TV ᴴᴰ"), group 1 is the name without it.
      */
     private static final Pattern HD_NAME = Pattern.compile("^(.*?)\\s*(?:HD|\\(HD\\)|ᴴᴰ)$", Pattern.CASE_INSENSITIVE);
+
+    private PluginContext context;
+
+    @Override
+    public void init(PluginContext context) {
+        this.context = context;
+    }
 
     /**
      * @return the name shown to the user, not part of a project-file
      */
     @Override
     public String getName() {
-        return Messages.get("filter.sdChannel.name");
+        return context.text("filter.sdChannel.name");
     }
 
     @Override
     public String getDescription() {
-        return Messages.get("filter.sdChannel.description");
+        return context.text("filter.sdChannel.description");
     }
 
     @Override
@@ -61,7 +63,7 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
         return input.stream()
                 .filter(entry -> sdNameOf(entry).filter(removedName::equals).isPresent())
                 .findFirst()
-                .map(entry -> Messages.get("filter.sdChannel.reason", entry.getName()))
+                .map(entry -> context.text("filter.sdChannel.reason", entry.getName()))
                 .orElse(null);
     }
 
@@ -81,5 +83,13 @@ public class SdChannelFilter extends AbstractPlugin implements Filter {
 
     private static String normalize(String channelName) {
         return channelName == null ? "" : channelName.strip().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Plugins are compared by identity, only a short description is returned.
+     */
+    @Override
+    public String toString() {
+        return "%s[%s]".formatted(getClass().getSimpleName(), getName());
     }
 }

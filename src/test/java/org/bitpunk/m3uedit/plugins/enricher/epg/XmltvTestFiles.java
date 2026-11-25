@@ -1,5 +1,8 @@
 package org.bitpunk.m3uedit.plugins.enricher.epg;
 
+import org.bitpunk.m3uedit.api.PluginContext;
+import org.bitpunk.m3uedit.plugins.DefaultPluginContext;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -11,6 +14,10 @@ import java.util.zip.GZIPOutputStream;
  * Small XMLTV files for tests.
  */
 final class XmltvTestFiles {
+    /**
+     * The context of the enricher, providing its texts.
+     */
+    static final PluginContext CONTEXT = new DefaultPluginContext(EpgEnricher.class);
     static final String GUIDE = """
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE tv SYSTEM "xmltv.dtd">

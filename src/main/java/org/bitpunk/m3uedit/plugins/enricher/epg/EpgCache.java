@@ -37,8 +37,13 @@ public final class EpgCache {
         }
     }
 
+    /**
+     * The name of the directory within the cache directory of m3uedit.
+     */
+    static final String DIRECTORY_NAME = "epg";
+
     public static Path directory() {
-        return AppConfigPaths.getBaseDir().resolve("cache").resolve("epg");
+        return AppConfigPaths.getBaseDir().resolve("cache").resolve(DIRECTORY_NAME);
     }
 
     public static Usage usage(Path directory) {

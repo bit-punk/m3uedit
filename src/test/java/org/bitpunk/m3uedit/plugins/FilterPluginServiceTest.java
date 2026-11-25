@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.plugins;
 
+import org.bitpunk.m3uedit.api.Plugin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

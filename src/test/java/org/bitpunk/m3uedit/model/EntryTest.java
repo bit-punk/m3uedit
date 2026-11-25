@@ -1,5 +1,6 @@
 package org.bitpunk.m3uedit.model;
 
+import org.bitpunk.m3uedit.api.Entry;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.junit.jupiter.api.Test;

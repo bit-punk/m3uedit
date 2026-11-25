@@ -1,7 +1,7 @@
 package org.bitpunk.m3uedit.controller;
 
 import lombok.Data;
-import org.bitpunk.m3uedit.NamedItem;
+import org.bitpunk.m3uedit.api.NamedItem;
 
 /**
  * Wrapper class for Map.Entry implementing the <i>NamedItem</i>-interface. Used by the {@link MapEditorController} to

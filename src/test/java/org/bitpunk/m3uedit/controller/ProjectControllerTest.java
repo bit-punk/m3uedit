@@ -5,8 +5,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
-import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.api.Entry;
+import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.plugins.output.file.FileOutput;
+import org.bitpunk.m3uedit.testsupport.TestPluginSupport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -95,17 +97,17 @@ class ProjectControllerTest {
         dataModel.setFxExecutor(Runnable::run);
         new ProjectController(dataModel);
 
-        dataModel.getFilters().getFirst().getEnabled().set(true);
+        PluginStates.enabled(dataModel.getFilters().getFirst()).set(true);
         assertThat(backgroundTasks).hasSize(1);
 
-        dataModel.getSorters().getFirst().getEnabled().set(true);
+        PluginStates.enabled(dataModel.getSorters().getFirst()).set(true);
         assertThat(backgroundTasks).hasSize(2);
     }
 
     @Test
     void testSelectingAStepShowsTheDiffAndAnOutputShowsThePlaylist() {
         DataModel dataModel = synchronousDataModel();
-        FileOutput output = new FileOutput();
+        FileOutput output = TestPluginSupport.create(FileOutput::new);
         dataModel.getOutputs().add(output);
         ProjectController projectController = new ProjectController(dataModel);
         var tabs = projectController.resultTabPane.getSelectionModel();

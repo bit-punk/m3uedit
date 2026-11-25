@@ -7,7 +7,6 @@ import javafx.stage.Window;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * The icon of the application, shown by the window system for its windows. Only to be used on the JavaFX
