@@ -58,15 +58,15 @@ jobs:
           name="m3uedit-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
           if [ "$RUNNER_OS" = "Windows" ]; then
             archive="$name.zip"
-            (cd target/dist && 7z a -tzip "../../$archive" .)
+            (cd m3uedit-app/target/dist && 7z a -tzip "../../../$archive" .)
           else
             archive="$name.tar.gz"
-            tar -czf "$archive" -C target/dist .
+            tar -czf "$archive" -C m3uedit-app/target/dist .
           fi
           files=("$archive")
           if [ "$RUNNER_OS" = "Linux" ]; then
             # the shaded jar contains the javafx libraries of the platform it was built on
-            cp target/m3uedit-*.jar "$name.jar"
+            cp m3uedit-app/target/m3uedit-*.jar "$name.jar"
             files+=("$name.jar")
           fi
           echo "FILES=${files[*]}" >> "$GITHUB_ENV"

@@ -15,8 +15,8 @@ except the language:
 |-----------------|--------------------------------------------------------------------------------------------------|
 | Appearance      | the theme: light, dark or the one of the system (also followed when it changes while m3uedit is running), applied to all windows at once; the language of the user interface: the one of the system (German or English), English or German; it is changed when m3uedit is started the next time |
 | External player | the command (e.g. `vlc`, `mpv` or the path of the program), additional arguments and whether the VLC options of the entries are passed |
-| Recently used   | how many recently used projects are remembered; clearing the lists of recently used projects, SFTP servers and FritzBoxes |
-| EPG cache       | the space taken by the downloaded EPG sources; clearing it (the sources are downloaded again when needed) |
+| Recently used   | how many recently used projects are remembered |
+| Collected data  | the data collected while using m3uedit, with its size, and clearing it: the recently used projects, and the data of the plugins, e.g. the recently used SFTP servers and FritzBoxes and the downloaded EPG sources (downloaded again when needed) |
 | Startup         | showing the start screen, or reopening the projects that were open when m3uedit was closed (files that no longer exist are skipped) |
 
 *OK* applies and saves the settings, *Cancel* discards them, also the lists marked to be cleared. The settings of
