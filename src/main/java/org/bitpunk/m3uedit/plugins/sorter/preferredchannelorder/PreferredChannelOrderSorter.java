@@ -1,13 +1,14 @@
 package org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder;
 
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.ChannelProfile;
 import org.bitpunk.m3uedit.plugins.sorter.preferredchannelorder.model.PreferredChannelOrderConfig;
@@ -19,6 +20,7 @@ import java.util.Optional;
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "PreferredChannelOrderSorter", nameKey = "sorter.preferredChannelOrder.name")
 public class PreferredChannelOrderSorter extends AbstractPlugin implements Sorter {
     public static final String RESOURCE_PATH = "plugin/sorter/preferredchannelorder/preferred_channel_order.yaml";
     public static final String CONFIG_FILE_NAME = "preferred_channel_order.yaml";

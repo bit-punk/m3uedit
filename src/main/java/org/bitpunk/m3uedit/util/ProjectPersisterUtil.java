@@ -1,8 +1,8 @@
 package org.bitpunk.m3uedit.util;
 
-import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.jackson.JavaFxModule;
 import org.bitpunk.m3uedit.model.DataModel;
@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -137,8 +138,12 @@ public class ProjectPersisterUtil {
                         FilterPluginService.getInstance(),
                         SorterPluginService.getInstance(),
                         EnricherPluginService.getInstance())
-                .flatMap(pluginService -> pluginService.getAllPluginTypes().stream())
-                .map(pluginType -> new NamedType(pluginType, pluginType.getSimpleName()))
+                .<PluginDescriptor<?>>flatMap(pluginService -> pluginService.getDescriptors().stream())
+                // an id used by plugins of different kinds could not be told apart either
+                .collect(Collectors.collectingAndThen(Collectors.toList(),
+                        descriptors -> PluginDescriptor.withUniqueIds(descriptors, log::error)))
+                .stream()
+                .map(descriptor -> new NamedType(descriptor.type(), descriptor.id()))
                 .toArray(NamedType[]::new);
     }
 

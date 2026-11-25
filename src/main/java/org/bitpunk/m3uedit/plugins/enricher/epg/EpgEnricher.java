@@ -9,11 +9,8 @@ import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.enricher.Attachment;
-import org.bitpunk.m3uedit.plugins.enricher.Enricher;
-import org.bitpunk.m3uedit.plugins.enricher.Enrichment;
-import org.bitpunk.m3uedit.plugins.enricher.Programme;
-import org.bitpunk.m3uedit.plugins.enricher.ProgrammeGuideProvider;
+import org.bitpunk.m3uedit.plugins.PluginType;
+import org.bitpunk.m3uedit.plugins.enricher.*;
 import org.bitpunk.m3uedit.plugins.enricher.epg.model.EpgEnricherConfig;
 import org.bitpunk.m3uedit.util.EntryMapper;
 
@@ -23,15 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPOutputStream;
 
@@ -47,6 +36,7 @@ import java.util.zip.GZIPOutputStream;
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "EpgEnricher", nameKey = "epgEnricher.name")
 public class EpgEnricher extends AbstractPlugin implements Enricher, ProgrammeGuideProvider {
     static final int DEFAULT_CACHE_HOURS = 12;
     static final int DEFAULT_GUIDE_DAYS_AHEAD = 7;

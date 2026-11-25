@@ -125,15 +125,34 @@ several entries into one step.
 Inputs, filters, sorters, enrichers and outputs are plugins, found by the Java
 [ServiceLoader](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ServiceLoader.html) via the
 files in `src/main/resources/META-INF/services` (one file per plugin interface, see the `*PluginService` classes).
+Registering a plugin there is all that is needed: the add-menus of the pipeline, new projects and the project-files
+take the plugins from the plugin services.
+
+Each plugin declares its identity with the annotation `@PluginType`:
+
+```java
+@PluginType(id = "FileInput", nameKey = "input.file.name")
+public class FileInput extends AbstractInput implements Input {
+```
+
+* `id` is the type id stored in project-files. It must never change once project-files have been written with it,
+  also when the class is renamed or moved. The plugins of m3uedit use the simple class names they have always been
+  stored with; plugins of other parties will use qualified ids (e.g. `de.example.MyInput`).
+* `nameKey` is the key of the name shown to the user, so the add-menus list the plugins without creating them.
+
+The plugin services describe each plugin by a `PluginDescriptor` (id, class, name) and create new instances with
+`PluginDescriptor.create()`. A plugin with the id of an earlier one is ignored and logged as an error, as the two
+could not be told apart in a project-file.
+
 Plugins with settings of their own keep them in `~/.m3uedit/plugins/`. External plugins in separate jars are
 planned, see [#46](https://github.com/bit-punk/m3uedit/issues/46).
 
 ### Project-files
 
 Projects are stored as YAML by Jackson (`util.ProjectPersisterUtil`), mapping the fields of the model and the
-plugins (not their getters); `transient` and `@JsonIgnore` fields are not stored. Each plugin is stored with its simple
-class name as type (e.g. `type: FileInput`); only the plugins found by the plugin services are accepted when loading a
-project. The entries themselves are not stored, they are read from the inputs when a project is opened.
+plugins (not their getters); `transient` and `@JsonIgnore` fields are not stored. Each plugin is stored with the type
+id of its `@PluginType` (e.g. `type: FileInput`, see [Plugins](#plugins)); only the plugins found by the plugin
+services are accepted when loading a project. The entries themselves are not stored, they are read from the inputs when a project is opened.
 
 ### Texts and languages
 

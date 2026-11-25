@@ -1,24 +1,21 @@
 package org.bitpunk.m3uedit.plugins.output.file;
 
-import lombok.extern.slf4j.Slf4j;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.output.Export;
 import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
+import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.bitpunk.m3uedit.util.DialogUtil;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +26,7 @@ import java.util.Map;
 
 @Getter
 @Slf4j
+@PluginType(id = "FileOutput", nameKey = "output.file.name")
 public class FileOutput extends AbstractPlugin implements Output {
     @Setter(AccessLevel.PACKAGE)
     private URI output = null;

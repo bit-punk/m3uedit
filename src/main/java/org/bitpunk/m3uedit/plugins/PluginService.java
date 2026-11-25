@@ -2,25 +2,20 @@ package org.bitpunk.m3uedit.plugins;
 
 import java.util.List;
 
-public interface PluginService<T> {
+/**
+ * The plugins of one kind, e.g. all inputs.
+ *
+ * @param <T> the kind of plugins
+ */
+public interface PluginService<T extends Plugin> {
+
     /**
-     * Retrieves all the plugins.
-     *
-     * @return a List of plugins.
+     * @return the plugins, known without creating them, in the order they have been found
+     */
+    List<PluginDescriptor<T>> getDescriptors();
+
+    /**
+     * @return a new instance of each plugin
      */
     List<T> getAllPlugins();
-
-    /**
-     * Retrieves the names of all the plugins.
-     *
-     * @return a List of plugin names.
-     */
-    List<String> getAllPluginNames();
-
-    /**
-     * Retrieves the classes of all the plugins, without instantiating them.
-     *
-     * @return a List of plugin classes.
-     */
-    List<Class<? extends T>> getAllPluginTypes();
 }

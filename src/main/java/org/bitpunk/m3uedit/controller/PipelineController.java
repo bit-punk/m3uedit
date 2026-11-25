@@ -17,20 +17,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.control.PluginStageView;
 import org.bitpunk.m3uedit.control.PluginStageView.Badge;
 import org.bitpunk.m3uedit.i18n.Messages;
-import org.bitpunk.m3uedit.model.DataModel;
-import org.bitpunk.m3uedit.model.Entry;
-import org.bitpunk.m3uedit.model.EntryDiff;
-import org.bitpunk.m3uedit.model.PipelineResult;
-import org.bitpunk.m3uedit.model.StepResult;
+import org.bitpunk.m3uedit.model.*;
 import org.bitpunk.m3uedit.plugins.InputPluginService;
 import org.bitpunk.m3uedit.plugins.OutputPluginService;
 import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.PluginDescriptor;
 import org.bitpunk.m3uedit.plugins.enricher.Enricher;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.input.Input;
-import org.bitpunk.m3uedit.plugins.input.InputFactory;
 import org.bitpunk.m3uedit.plugins.output.Output;
-import org.bitpunk.m3uedit.plugins.output.OutputFactory;
 import org.bitpunk.m3uedit.plugins.sorter.Sorter;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 
@@ -107,7 +102,7 @@ public class PipelineController extends VBox implements ModelAware {
         inputStage = new PluginStageView<>(Messages.get("pipeline.stage.inputs"),
                 Messages.get("pipeline.stage.inputs.hint"), dataModel.getInputs(), selectedStep, false,
                 Input::getSource);
-        inputStage.setAddAction(InputPluginService.getInstance().getAllPluginNames(), this::addInput);
+        inputStage.setAddAction(InputPluginService.getInstance().getDescriptors(), this::addInput);
         // the inputs are reloaded by the data model with each change of its list
         inputStage.setOnConfigured(input -> dataModel.reloadInputs());
 
@@ -135,7 +130,7 @@ public class PipelineController extends VBox implements ModelAware {
         outputStage = new PluginStageView<>(Messages.get("pipeline.stage.outputs"),
                 Messages.get("pipeline.stage.outputs.hint"), dataModel.getOutputs(), selectedStep, false,
                 output -> describe(output.getOutput()));
-        outputStage.setAddAction(OutputPluginService.getInstance().getAllPluginNames(), this::addOutput);
+        outputStage.setAddAction(OutputPluginService.getInstance().getDescriptors(), this::addOutput);
 
         writeButton.setGraphic(icon(ICON_WRITE));
         writeButton.getStyleClass().add("write-button");
@@ -346,27 +341,30 @@ public class PipelineController extends VBox implements ModelAware {
         playlistLabel.setText(Messages.get("pipeline.flow.playlist", dataModel.getSortedEntryList().size()));
     }
 
-    private void addInput(String inputName) {
-        Input input = InputFactory.getInput(inputName);
+    /**
+     * Creates the input chosen in the add-menu and adds it, once it has been configured.
+     */
+    private void addInput(PluginDescriptor<Input> plugin) {
+        Input input = plugin.create();
         input.configure();
         if (input.getSource() != null) {
             dataModel.getInputs().add(input);
             selectedStep.set(input);
         } else {
-            log.debug("adding input {} cancelled", inputName);
+            log.debug("adding input {} cancelled", plugin.id());
         }
     }
 
-    private void addOutput(String outputName) {
-        Output output = OutputFactory.getOutput(outputName);
-        if (output == null) {
-            return;
-        }
+    /**
+     * Creates the output chosen in the add-menu and adds it, once it has been configured.
+     */
+    private void addOutput(PluginDescriptor<Output> plugin) {
+        Output output = plugin.create();
         output.configure();
         if (output.getOutput() != null) {
             dataModel.getOutputs().add(output);
         } else {
-            log.debug("adding output {} cancelled", outputName);
+            log.debug("adding output {} cancelled", plugin.id());
         }
     }
 

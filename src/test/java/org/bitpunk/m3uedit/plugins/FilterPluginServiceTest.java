@@ -25,8 +25,9 @@ class FilterPluginServiceTest {
     }
 
     @Test
-    void getAllPluginNames() {
-        List<String> allPluginNames = FilterPluginService.getInstance().getAllPluginNames();
+    void testTheNamesAreReadWithoutCreatingThePlugins() {
+        List<String> allPluginNames = FilterPluginService.getInstance().getDescriptors().stream()
+                .map(PluginDescriptor::name).toList();
         assertThat(allPluginNames).hasSize(5).contains(
                 "ChannelName Filter",
                 "Reachable URL Filter",

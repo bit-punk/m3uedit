@@ -3,11 +3,12 @@ package org.bitpunk.m3uedit.plugins.input.sftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import javafx.scene.control.DialogPane;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputReadException;
@@ -30,6 +31,7 @@ import java.util.List;
 @Slf4j
 @Getter
 @Setter
+@PluginType(id = "SftpInput", nameKey = "input.sftp.name")
 public class SftpInput extends AbstractInput implements Input {
 
     private SftpConnection sftpConnection;

@@ -27,8 +27,9 @@ class InputPluginServiceTest {
     }
 
     @Test
-    void getAllPluginNames() {
-        List<String> allPluginNames = InputPluginService.getInstance().getAllPluginNames();
+    void testTheNamesAreReadWithoutCreatingThePlugins() {
+        List<String> allPluginNames = InputPluginService.getInstance().getDescriptors().stream()
+                .map(PluginDescriptor::name).toList();
         assertThat(allPluginNames)
                 .hasSize(5)
                 .contains(INPUT_NAMES);
@@ -36,7 +37,8 @@ class InputPluginServiceTest {
 
     @Test
     void getAllPluginTypes() {
-        List<Class<? extends Input>> allPluginTypes = InputPluginService.getInstance().getAllPluginTypes();
+        List<Class<? extends Input>> allPluginTypes = InputPluginService.getInstance().getDescriptors().stream()
+                .<Class<? extends Input>>map(PluginDescriptor::type).toList();
         assertThat(allPluginTypes).containsExactlyInAnyOrder(
                 FileInput.class, FritzBoxInput.class, UrlInput.class, IptvOrgInput.class, SftpInput.class);
     }

@@ -14,10 +14,12 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.PluginDescriptor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +27,30 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PluginStageViewTest {
+
+    /**
+     * A plugin offered by the add-button, named by itself (without {@code @PluginType}).
+     */
+    private static PluginDescriptor<TestPlugin> addable(String name) {
+        return new PluginDescriptor<>(name, TestPlugin.class, new ServiceLoader.Provider<>() {
+            @Override
+            public Class<? extends TestPlugin> type() {
+                return TestPlugin.class;
+            }
+
+            @Override
+            public TestPlugin get() {
+                return new TestPlugin(name);
+            }
+        });
+    }
 
     private static class TestPlugin implements Plugin {
         private final String name;
@@ -204,7 +224,8 @@ class PluginStageViewTest {
         assertThat(find(row(stage, first), CheckBox.class)).isEmpty();
 
         List<String> added = new ArrayList<>();
-        stage.setAddAction(List.of("File Input", "URL Input"), added::add);
+        stage.setAddAction(List.of(addable("File Input"), addable("URL Input")),
+                plugin -> added.add(plugin.create().getName()));
         stage.setRemoveConfirmation(plugin -> true);
         selection.set(first);
 
@@ -214,6 +235,8 @@ class PluginStageViewTest {
         assertThat(selection.get()).isNull();
         assertThat(stage.rowOf(first)).isEmpty();
 
+        assertThat(stage.getAddButton().getItems()).extracting(MenuItem::getText)
+                .containsExactly("File Input", "URL Input");
         stage.getAddButton().getItems().get(1).fire();
         assertThat(added).containsExactly("URL Input");
     }
@@ -222,7 +245,7 @@ class PluginStageViewTest {
     void removingCanBeCancelled() {
         PluginStageView<TestPlugin> stage = new PluginStageView<>("Inputs", "hint", plugins, selection, false,
                 plugin -> "source");
-        stage.setAddAction(List.of(), name -> {});
+        stage.setAddAction(List.of(), plugin -> {});
         stage.setRemoveConfirmation(plugin -> false);
 
         button(row(stage, first), "Remove").fire();

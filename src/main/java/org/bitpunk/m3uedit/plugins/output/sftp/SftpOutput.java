@@ -2,16 +2,17 @@ package org.bitpunk.m3uedit.plugins.output.sftp;
 
 import com.jcraft.jsch.*;
 import javafx.scene.control.DialogPane;
-import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.Writer;
 import org.bitpunk.m3uedit.plugins.AbstractPlugin;
-import org.bitpunk.m3uedit.plugins.output.Output;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.output.Export;
 import org.bitpunk.m3uedit.plugins.output.Export.ExportFile;
+import org.bitpunk.m3uedit.plugins.output.Output;
 import org.bitpunk.m3uedit.plugins.output.OutputException;
 import org.bitpunk.m3uedit.plugins.sftp.RecentSftpServers;
 import org.bitpunk.m3uedit.plugins.sftp.SftpClient;
@@ -33,11 +34,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "SftpOutput", nameKey = "output.sftp.name")
 public class SftpOutput extends AbstractPlugin implements Output {
     public static final String DEFAULT_PLAYLIST_FILENAME = SftpConnection.DEFAULT_FILE_NAME;
     private SftpConnection sftpConnection = null;
