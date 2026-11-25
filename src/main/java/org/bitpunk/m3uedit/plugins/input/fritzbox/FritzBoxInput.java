@@ -1,12 +1,13 @@
 package org.bitpunk.m3uedit.plugins.input.fritzbox;
 
 import javafx.scene.control.DialogPane;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.ParsingException;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputReadException;
@@ -29,6 +30,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "FritzBoxInput", nameKey = "input.fritzbox.name")
 public class FritzBoxInput extends AbstractInput implements Input {
     private List<StreamSource> selectedStreamSources;
     private FritzBoxConnection fritzBoxConnection = null;

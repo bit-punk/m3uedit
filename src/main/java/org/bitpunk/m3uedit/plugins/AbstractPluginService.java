@@ -1,61 +1,36 @@
 package org.bitpunk.m3uedit.plugins;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.ServiceLoader;
 
 /**
- * This abstract class represents a service that handles all plugin-related tasks.
- * @param <T> The type of plugins that the service will handle.
+ * The plugins of one kind (e.g. all inputs), found by a {@link ServiceLoader} via the files in
+ * {@code META-INF/services}.
+ *
+ * @param <T> the kind of plugins
  */
+@Slf4j
 public abstract class AbstractPluginService<T extends Plugin> implements PluginService<T> {
 
-    private final ServiceLoader<T> loader;
+    private final List<PluginDescriptor<T>> descriptors;
 
     /**
-     * Constructs a new AbstractPluginService instance.
-     *
-     * @param loader The service loader used to load plugins.
+     * @param loader finds the plugins; a plugin with the type id of an earlier one is ignored and reported
      */
     protected AbstractPluginService(ServiceLoader<T> loader) {
-        this.loader = loader;
+        this.descriptors = List.copyOf(PluginDescriptor.withUniqueIds(
+                loader.stream().map(PluginDescriptor::of).toList(), log::error));
     }
 
-    /**
-     * Returns all plugins loaded by this service.
-     *
-     * @return A list containing all loaded plugins.
-     */
+    @Override
+    public List<PluginDescriptor<T>> getDescriptors() {
+        return descriptors;
+    }
+
     @Override
     public List<T> getAllPlugins() {
-        return loader
-                .stream()
-                .map(ServiceLoader.Provider::get)
-                .toList();
-    }
-
-    /**
-     * Returns the names of all plugins loaded by this service.
-     *
-     * @return A list containing the names of all loaded plugins.
-     */
-    @Override
-    public List<String> getAllPluginNames() {
-        return loader
-                .stream()
-                .map(serviceProvider -> serviceProvider.get().getName())
-                .toList();
-    }
-
-    /**
-     * Returns the classes of all plugins loaded by this service, without instantiating them.
-     *
-     * @return A list containing the classes of all loaded plugins.
-     */
-    @Override
-    public List<Class<? extends T>> getAllPluginTypes() {
-        return loader
-                .stream()
-                .<Class<? extends T>>map(ServiceLoader.Provider::type)
-                .toList();
+        return descriptors.stream().map(PluginDescriptor::create).toList();
     }
 }

@@ -1,12 +1,13 @@
 package org.bitpunk.m3uedit.plugins.filter.reachableurl;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.config.AppConfigPaths;
 import org.bitpunk.m3uedit.config.YamlConfigManager;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.filter.AbstractUniqueFilter;
 import org.bitpunk.m3uedit.plugins.filter.Filter;
 import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterConfig;
@@ -14,15 +15,12 @@ import org.bitpunk.m3uedit.plugins.filter.reachableurl.model.ReachableUrlFilterC
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "ReachableUrlFilter", nameKey = "filter.reachableUrl.name")
 public class ReachableUrlFilter extends AbstractUniqueFilter implements Filter {
     public static final String RESOURCE_PATH = "plugin/filter/reachableurl/reachable_url_filter.yaml";
     public static final String CONFIG_FILE_NAME = "reachable_url_filter.yaml";

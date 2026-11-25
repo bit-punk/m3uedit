@@ -8,38 +8,17 @@ import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonBase;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.Tooltip;
-import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.input.*;
+import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
 import lombok.Setter;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.plugins.Plugin;
+import org.bitpunk.m3uedit.plugins.PluginDescriptor;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -220,8 +199,6 @@ public class PluginStageView<T extends Plugin> extends VBox {
 
     /**
      * While collapsed, only the header is shown, with the status of the stage instead of its hint.
-     */
-    /**
      * @param number the position of the stage in the pipeline, shown before its name; 0 to show none
      */
     public void setNumber(int number) {
@@ -365,16 +342,17 @@ public class PluginStageView<T extends Plugin> extends VBox {
     }
 
     /**
-     * Shows an add-button with the given plugin names; the selected name is passed to {@code onAdd}.
+     * Shows an add-button offering the given plugins by their names; the selected plugin is passed to {@code onAdd}.
      * Plugins of a stage with an add-button can be removed as well.
      */
-    public void setAddAction(List<String> pluginNames, Consumer<String> onAdd) {
+    public void setAddAction(List<PluginDescriptor<T>> addablePlugins, Consumer<PluginDescriptor<T>> onAdd) {
         addButton = new MenuButton(null, icon(ICON_PLUS));
         addButton.getStyleClass().add("stage-add");
         addButton.setTooltip(new Tooltip(Messages.get("common.add")));
-        for (String pluginName : pluginNames) {
-            MenuItem item = new MenuItem(pluginName);
-            item.setOnAction(event -> onAdd.accept(pluginName));
+        for (PluginDescriptor<T> plugin : addablePlugins) {
+            MenuItem item = new MenuItem(plugin.name());
+            item.setMnemonicParsing(false);
+            item.setOnAction(event -> onAdd.accept(plugin));
             addButton.getItems().add(item);
         }
         header.getChildren().add(addButton);

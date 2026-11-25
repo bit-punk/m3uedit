@@ -2,12 +2,13 @@ package org.bitpunk.m3uedit.plugins.input.iptvorg;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.scene.control.DialogPane;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.parser.ParsingException;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputReadException;
@@ -30,6 +31,7 @@ import static java.util.stream.Collectors.joining;
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "IptvOrgInput", nameKey = "input.iptvorg.name")
 public class IptvOrgInput extends AbstractInput implements Input {
     public static final String IPTV_ORG_PLAYLIST_BASE_URL = "https://iptv-org.github.io/iptv/";
     private static final Duration TIMEOUT = Duration.ofSeconds(30);

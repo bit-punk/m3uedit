@@ -18,8 +18,9 @@ class SorterPluginServiceTest {
     }
 
     @Test
-    void getAllPluginNames() {
-        List<String> allPluginNames = SorterPluginService.getInstance().getAllPluginNames();
+    void testTheNamesAreReadWithoutCreatingThePlugins() {
+        List<String> allPluginNames = SorterPluginService.getInstance().getDescriptors().stream()
+                .map(PluginDescriptor::name).toList();
         assertThat(allPluginNames)
                 .hasSize(2)
                 .contains("ChannelName Sorter");

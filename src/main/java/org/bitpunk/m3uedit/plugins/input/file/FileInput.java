@@ -1,26 +1,22 @@
 package org.bitpunk.m3uedit.plugins.input.file;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.util.DialogUtil;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
-@Slf4j
+@PluginType(id = "FileInput", nameKey = "input.file.name")
 public class FileInput extends AbstractInput implements Input {
     private String source;
 

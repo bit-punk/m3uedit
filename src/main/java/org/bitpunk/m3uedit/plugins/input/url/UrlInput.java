@@ -1,14 +1,15 @@
 package org.bitpunk.m3uedit.plugins.input.url;
 
 import javafx.scene.control.DialogPane;
-import lombok.extern.slf4j.Slf4j;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.Entry;
 import org.bitpunk.m3uedit.model.EntryList;
 import org.bitpunk.m3uedit.parser.Parser;
 import org.bitpunk.m3uedit.parser.ParsingException;
+import org.bitpunk.m3uedit.plugins.PluginType;
 import org.bitpunk.m3uedit.plugins.input.AbstractInput;
 import org.bitpunk.m3uedit.plugins.input.Input;
 import org.bitpunk.m3uedit.plugins.input.InputReadException;
@@ -24,6 +25,7 @@ import java.util.Optional;
 @Getter
 @Setter
 @Slf4j
+@PluginType(id = "UrlInput", nameKey = "input.url.name")
 public class UrlInput extends AbstractInput implements Input {
 
     private static final int TIMEOUT_MILLIS = 20_000;

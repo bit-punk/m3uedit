@@ -18,8 +18,9 @@ class OutputPluginServiceTest {
     }
 
     @Test
-    void getAllPluginNames() {
-        List<String> allPluginNames = OutputPluginService.getInstance().getAllPluginNames();
+    void testTheNamesAreReadWithoutCreatingThePlugins() {
+        List<String> allPluginNames = OutputPluginService.getInstance().getDescriptors().stream()
+                .map(PluginDescriptor::name).toList();
         assertThat(allPluginNames)
                 .hasSize(2)
                 .contains("File Output", "SFTP Output");
