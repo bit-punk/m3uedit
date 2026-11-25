@@ -7,6 +7,7 @@ Building M3UEditor, running it from the IDE, how it is built inside, and how ver
 * [Running from the IDE](#running-from-the-ide)
 * [Tests](#tests)
 * [Architecture](#architecture)
+  * [Modules](#modules)
   * [Packages](#packages)
   * [The pipeline](#the-pipeline)
   * [Manual changes and undo](#manual-changes-and-undo)
@@ -40,9 +41,9 @@ To run the application using the _javafx-maven-plugin_, use:
 ./mvnw javafx:run
 ```
 
-After a successful build you will find the resulting jar under `./target/m3uedit-<version>.jar` (e.g.
+After a successful build you will find the resulting jar under `./m3uedit-app/target/m3uedit-<version>.jar` (e.g.
 `m3uedit-1.2.0-SNAPSHOT.jar`, see [Versions and releases](#versions-and-releases)), which can be started using
-`java -jar target/m3uedit-<version>.jar`. The jar contains the JavaFX libraries of the platform it has been built
+`java -jar m3uedit-app/target/m3uedit-<version>.jar`. The jar contains the plugin API, the built-in plugins and the JavaFX libraries of the platform it has been built
 on, so it only runs on that platform.
 
 To create a self-contained application image for your current platform (including a java runtime, no separate JDK
@@ -52,7 +53,7 @@ or JavaFX installation needed), use the `jpackage` profile:
 ./mvnw -Pjpackage package
 ```
 
-The application can then be started using `./target/dist/m3uedit/bin/m3uedit` (Linux) or the corresponding launcher
+The application can then be started using `./m3uedit-app/target/dist/m3uedit/bin/m3uedit` (Linux) or the corresponding launcher
 on Windows/macOS.
 
 ## Running from the IDE
@@ -63,13 +64,30 @@ needed. Without arguments it starts the user interface, with arguments the [comm
 
 ## Tests
 
-* `./mvnw package` runs all tests.
+* `./mvnw package` runs all tests of all modules.
+* The tests of the built-in plugins are part of `m3uedit-app`, in the packages of the plugins: they use the context
+  and the project-files of the application, which `m3uedit-plugins` cannot depend on. They create plugins with
+  `testsupport.TestPluginSupport`, initialised with their context.
 * Tests use a temporary configuration directory instead of `~/.m3uedit`
-  (see `src/test/java/org/bitpunk/m3uedit/testsupport/TestConfigDirListener.java`), in Maven as well as in the IDE.
+  (see `m3uedit-app/src/test/java/org/bitpunk/m3uedit/testsupport/TestConfigDirListener.java`), in Maven as well as in
+  the IDE.
 * Some tests show windows, so on a machine without display run them using `xvfb-run ./mvnw package`.
 * Tests run in English, whatever the language of the system (see [Texts and languages](#texts-and-languages)).
 
 ## Architecture
+
+### Modules
+
+The build has three Maven modules, with the parent POM in the root directory:
+
+| Module | Content | Depends on |
+|---|---|---|
+| `m3uedit-plugin-api` | the plugin API, the package `org.bitpunk.m3uedit.api` | JavaFX (provided) |
+| `m3uedit-plugins` | the built-in plugins, their dialogs, texts, default configuration files and `META-INF/services` | the plugin API only (and libraries of their own, e.g. JSch) |
+| `m3uedit-app` | the application (artifact `m3uedit`), the shaded jar and the application images | the plugin API; the built-in plugins only at runtime |
+
+So the compiler ensures that the built-in plugins get along with the API, and that the application uses plugins only
+through the API. All modules have the version of the application (`${revision}`).
 
 ### Packages
 
@@ -78,11 +96,11 @@ All classes are in `org.bitpunk.m3uedit`:
 | Package | Content |
 |---|---|
 | (root) | `Main` (user interface or command-line mode), `M3UEditor` (the JavaFX application) |
-| `api` | the plugin API: the interfaces of the plugins, `Entry`, the context of a plugin, see [Writing a plugin](#writing-a-plugin) |
+| `api` | the plugin API (module `m3uedit-plugin-api`): the interfaces of the plugins, `Entry`, the context of a plugin, see [Writing a plugin](#writing-a-plugin) |
 | `model` | `DataModel` (a project and its pipeline), `ManualChange`, the results of a computation |
 | `controller` | the windows and dialogs: main window (`SceneController`), project, pipeline, playlist, diff, programme guide, configuration |
 | `control` | reusable controls, e.g. the stages of the pipeline (`PluginStageView`) |
-| `plugins` | the plugin services, the context and state of plugins, and the built-in plugins: `input`, `filter`, `sorter`, `enricher`, `output`, the SFTP support in `sftp` |
+| `plugins` | the plugin services, the context and state of plugins; in the module `m3uedit-plugins` the built-in plugins: `input`, `filter`, `sorter`, `enricher`, `output`, the SFTP support in `sftp`, the dialog support in `support` |
 | `parser` | reading and writing M3U playlists |
 | `cli` | the command-line mode |
 | `config` | the configuration files in `~/.m3uedit` and the settings |
@@ -127,7 +145,7 @@ several entries into one step.
 Inputs, filters, sorters, enrichers and outputs are plugins written against the plugin API, the package
 `org.bitpunk.m3uedit.api` (see [Writing a plugin](#writing-a-plugin)). They are found by the Java
 [ServiceLoader](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ServiceLoader.html) via the
-files in `src/main/resources/META-INF/services` (one file per kind of plugin, named after its interface, e.g.
+files in `m3uedit-plugins/src/main/resources/META-INF/services` (one file per kind of plugin, named after its interface, e.g.
 `org.bitpunk.m3uedit.api.Input`, see the `*PluginService` classes). Registering a plugin there is all that is needed:
 the add-menus of the pipeline, new projects and the project-files take the plugins from the plugin services.
 
@@ -140,13 +158,15 @@ External plugins in separate jars are planned, see [#46](https://github.com/bit-
 
 ### Writing a plugin
 
-The API (`org.bitpunk.m3uedit.api`) only depends on Java and JavaFX; a test (`ApiBoundaryTest`) keeps it that way.
+The API (`org.bitpunk.m3uedit.api`, module `m3uedit-plugin-api`) only depends on Java and JavaFX; a test
+(`ApiBoundaryTest`) keeps it that way.
 
 | Type | Purpose |
 |---|---|
 | `Input`, `Filter`, `Sorter`, `Enricher`, `Output` | the kinds of plugins, all extending `Plugin` |
 | `@PluginType` | the type id, the key of the name and the resource bundle of the texts |
-| `PluginContext` | what a plugin gets from m3uedit: its texts, reading and writing M3U playlists, its configuration files, whether it runs without user interface, showing errors |
+| `PluginContext` | what a plugin gets from m3uedit: its texts (also as resource bundle for the FXML files of its dialogs), reading and writing M3U playlists, its configuration files, whether it runs without user interface, showing errors |
+| `CollectedData` | data a plugin collects (e.g. recently used servers, downloaded files), shown in the configuration dialog of m3uedit, where the user can clear it |
 | `Entry`, `Playlist` | a channel, and the entries read by an input |
 | `Enrichment`, `Attachment`, `Export`, `Programme`, `ProgrammeGuideProvider` | the results of enrichers, what outputs write, programme guides |
 | `PluginException`, `InputReadException` | errors shown to the user |
@@ -215,6 +235,9 @@ registered in `META-INF/services/org.bitpunk.m3uedit.api.Filter` by the line `de
   the plugin replaces them by its defaults. A plugin without settings keeps the defaults (`NoSettings`). Configuration
   that belongs to the user rather than to a project (e.g. lists of recently used servers) is kept in configuration
   files with `context.loadConfig` / `context.saveConfig` in `~/.m3uedit/plugins/`.
+* **Dialogs:** a plugin builds its own dialogs with JavaFX; the colours of the theme of m3uedit are available as
+  looked-up colours (e.g. `-app-error`, `-app-invalid-background`, see `theme.css`), so the dialogs look right in the
+  light and the dark theme.
 * **Threads:** reading, filtering, sorting, enriching and writing run in the background and must not use JavaFX;
   they also run in the command-line mode (`context.isHeadless()`). `configure(Window)` opens the plugin's own dialog on
   the JavaFX application thread and returns whether the user confirmed.
@@ -230,16 +253,18 @@ cannot create other objects. The entries themselves are not stored, they are rea
 
 ### Texts and languages
 
-The texts of the user interface are kept in `src/main/resources/i18n/messages.properties` (English) and
+The texts of the user interface are kept in `m3uedit-app/src/main/resources/i18n/messages.properties` (English) and
 `messages_de.properties` (German) and read by `org.bitpunk.m3uedit.i18n.Messages`; FXML files refer to them as
-`%key`. Texts with arguments (`{0}`) are formatted by `MessageFormat`, so an apostrophe is written as `''` there.
-`MessagesTest` checks that both languages contain the same keys and arguments and that every key used exists. The
+`%key`. The built-in plugins have texts of their own, `m3uedit-plugins/src/main/resources/org/bitpunk/m3uedit/plugins/
+messages*.properties`, read through their context. Texts with arguments (`{0}`) are formatted by `MessageFormat`, so an
+apostrophe is written as `''` there. `MessagesTest` and `PluginMessagesTest` check that both languages contain the same
+keys and arguments and that every key used exists. The
 command-line mode, the log and the project-files stay in English: the language is only set when the user interface
 is started.
 
 ### Theme
 
-The colours are defined in `src/main/resources/fxml/css/theme.css`, which `org.bitpunk.m3uedit.util.Themes` adds to
+The colours are defined in `m3uedit-app/src/main/resources/fxml/css/theme.css`, which `org.bitpunk.m3uedit.util.Themes` adds to
 every window; the dark theme adds the style class `dark` to the root of each window. Stylesheets use the variables
 of `theme.css` (e.g. `-app-muted`, `-app-error`) instead of fixed colours, and switch their own colours with
 `.dark .their-class` rules.
