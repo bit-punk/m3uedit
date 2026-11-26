@@ -1,9 +1,5 @@
 package org.bitpunk.m3uedit.api;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,9 +11,6 @@ import java.util.Map;
  * channel from two inputs), and removing or moving one of them must not affect the others. A plugin changing an entry
  * (e.g. an enricher) returns a changed copy instead of changing the entry it got.
  */
-@Getter
-@Setter
-@ToString
 public class Entry implements NamedItem {
     /**
      * The stream URLs accepted for an entry.
@@ -54,6 +47,110 @@ public class Entry implements NamedItem {
      * The VLC options ({@code #EXTVLCOPT:key=value}).
      */
     private Map<String, String> vlcOpts;
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
+    public String getGroupTitle() {
+        return groupTitle;
+    }
+
+    public void setGroupTitle(String groupTitle) {
+        this.groupTitle = groupTitle;
+    }
+
+    public String getTvgId() {
+        return tvgId;
+    }
+
+    public void setTvgId(String tvgId) {
+        this.tvgId = tvgId;
+    }
+
+    public String getTvgName() {
+        return tvgName;
+    }
+
+    public void setTvgName(String tvgName) {
+        this.tvgName = tvgName;
+    }
+
+    public String getTvgLogo() {
+        return tvgLogo;
+    }
+
+    public void setTvgLogo(String tvgLogo) {
+        this.tvgLogo = tvgLogo;
+    }
+
+    public String getTvgShift() {
+        return tvgShift;
+    }
+
+    public void setTvgShift(String tvgShift) {
+        this.tvgShift = tvgShift;
+    }
+
+    public String getRadio() {
+        return radio;
+    }
+
+    public void setRadio(String radio) {
+        this.radio = radio;
+    }
+
+    public String getChannelUri() {
+        return channelUri;
+    }
+
+    public void setChannelUri(String channelUri) {
+        this.channelUri = channelUri;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Map<String, String> getVlcOpts() {
+        return vlcOpts;
+    }
+
+    public void setVlcOpts(Map<String, String> vlcOpts) {
+        this.vlcOpts = vlcOpts;
+    }
+
+    @Override
+    public String toString() {
+        return "Entry(index=" + index + ", " +
+                "duration=" + duration + ", " +
+                "groupTitle=" + groupTitle + ", " +
+                "tvgId=" + tvgId + ", " +
+                "tvgName=" + tvgName + ", " +
+                "tvgLogo=" + tvgLogo + ", " +
+                "tvgShift=" + tvgShift + ", " +
+                "radio=" + radio + ", " +
+                "channelUri=" + channelUri + ", " +
+                "name=" + name + ", " +
+                "vlcOpts=" + vlcOpts + ")";
+    }
 
     /**
      * @return a new entry with the same values (and a copy of the VLC options), e.g. to be changed by an enricher

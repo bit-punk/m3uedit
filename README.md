@@ -63,6 +63,8 @@ on macOS open the application via the context menu ("Open") or remove the quaran
 * [Configuration](docs/configuration.md): the configuration dialog and the configuration files
 * [Command-line mode](docs/command-line.md): running projects without user interface, e.g. as a cron job
 * [Development](docs/development.md): building, the architecture, versions and releases
+* [Writing plugins](docs/plugins.md): plugins of your own against the published plugin API, from an empty project to
+  an installed jar
 
 ## Contributing
 

@@ -1,16 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.bitpunk.m3uedit</groupId>
+    <groupId>io.github.bit-punk</groupId>
     <artifactId>m3uedit-parent</artifactId>
     <!-- the release builds set the version of the release tag (-Drevision=1.2.0), see .github/workflows/release.yml -->
     <version>${revision}</version>
     <packaging>pom</packaging>
 
     <name>m3uedit-parent</name>
+    <description>An editor for M3U playlists: collects, filters, sorts and enriches the entries of several sources
+    </description>
+    <url>https://github.com/bit-punk/m3uedit</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/bit-punk/m3uedit/blob/develop/LICENSE.md</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>bit-punk</id>
+            <name>bit-punk</name>
+            <url>https://github.com/bit-punk</url>
+        </developer>
+    </developers>
+
+    <!-- the modules are in the same repository: their URLs are those of the repository (no module path appended) -->
+    <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <connection>scm:git:https://github.com/bit-punk/m3uedit.git</connection>
+        <developerConnection>scm:git:git@github.com:bit-punk/m3uedit.git</developerConnection>
+        <url>https://github.com/bit-punk/m3uedit</url>
+    </scm>
 
     <!-- the plugin API, the built-in plugins written against it, and the application -->
     <modules>
@@ -50,6 +78,11 @@
         <pedantic-pom-enforcers.version>2.3.1</pedantic-pom-enforcers.version>
         <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
         <jackson-dataformat-yaml.version>3.3.0</jackson-dataformat-yaml.version>
+        <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+        <central-publishing-maven-plugin.version>0.12.0</central-publishing-maven-plugin.version>
+        <japicmp-maven-plugin.version>0.27.0</japicmp-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -83,6 +116,21 @@
                 <version>${commons-cli.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.github.bit-punk</groupId>
+                <artifactId>m3uedit-example-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.bit-punk</groupId>
+                <artifactId>m3uedit-plugin-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.bit-punk</groupId>
+                <artifactId>m3uedit-plugins</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
@@ -91,21 +139,6 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bitpunk.m3uedit</groupId>
-                <artifactId>m3uedit-example-plugin</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bitpunk.m3uedit</groupId>
-                <artifactId>m3uedit-plugin-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bitpunk.m3uedit</groupId>
-                <artifactId>m3uedit-plugins</artifactId>
-                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.expressly</groupId>
@@ -160,12 +193,6 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <!-- only needed at compile time (annotation processing) -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <!-- Testing -->
         <dependency>
             <groupId>org.assertj</groupId>
@@ -201,6 +228,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.siom79.japicmp</groupId>
+                    <artifactId>japicmp-maven-plugin</artifactId>
+                    <version>${japicmp-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -253,8 +285,18 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>${maven-gpg-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${maven-jar-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -285,6 +327,11 @@
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven-source-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -334,6 +381,11 @@
                     <groupId>org.panteleyev</groupId>
                     <artifactId>jpackage-maven-plugin</artifactId>
                     <version>${jpackage-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>${central-publishing-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

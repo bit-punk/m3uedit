@@ -1,7 +1,5 @@
 package org.bitpunk.m3uedit.example;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.bitpunk.m3uedit.api.Entry;
 import org.bitpunk.m3uedit.api.Filter;
 import org.bitpunk.m3uedit.api.PluginContext;
@@ -19,13 +17,19 @@ import java.util.List;
         texts = "org.bitpunk.m3uedit.example.messages")
 public class RadioFilter implements Filter {
     private PluginContext context;
-    @Setter
-    @Getter
     private boolean keepRadio;
 
     @Override
     public void init(PluginContext context) {
         this.context = context;
+    }
+
+    public boolean isKeepRadio() {
+        return keepRadio;
+    }
+
+    public void setKeepRadio(boolean keepRadio) {
+        this.keepRadio = keepRadio;
     }
 
     @Override

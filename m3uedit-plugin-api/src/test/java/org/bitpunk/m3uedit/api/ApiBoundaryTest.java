@@ -14,13 +14,13 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The plugin API is what plugins are written against: it must not depend on the rest of m3uedit, and only on Java SE,
- * JavaFX and Lombok (which is used at compile time only).
+ * The plugin API is what plugins are written against: it must not depend on the rest of m3uedit, and only on Java SE
+ * and JavaFX. It does not use Lombok either, so its published sources and Javadoc show the methods plugins call.
  */
 class ApiBoundaryTest {
     private static final Path API = Path.of("src/main/java/org/bitpunk/m3uedit/api");
     private static final Pattern IMPORT = Pattern.compile("^import (?:static )?([\\w.]+)", Pattern.MULTILINE);
-    private static final List<String> ALLOWED = List.of("java.", "javafx.", "lombok.", "org.bitpunk.m3uedit.api.");
+    private static final List<String> ALLOWED = List.of("java.", "javafx.", "org.bitpunk.m3uedit.api.");
 
     @Test
     void testTheApiOnlyUsesJavaAndJavaFx() throws IOException {

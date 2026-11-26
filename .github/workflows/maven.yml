@@ -29,8 +29,21 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      # the maven wrapper ensures the same maven version as in local builds
-      run: xvfb-run --auto-servernum ./mvnw -B --no-transfer-progress package
+      # the maven wrapper ensures the same maven version as in local builds; install, so the plugin template can be
+      # built against the plugin API of this build
+      run: xvfb-run --auto-servernum ./mvnw -B --no-transfer-progress install
+    - name: Build the plugin template
+      # the template is a project of its own (not a module), built against the plugin API of this build like a plugin
+      # of another party against a release; its manifest must declare the version of the API (PluginApi.VERSION)
+      run: |
+        version=$(./mvnw -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+        api=$(grep -oP 'int VERSION = \K\d+' m3uedit-plugin-api/src/main/java/org/bitpunk/m3uedit/api/PluginApi.java)
+        declared=$(grep -oP '<m3uedit.plugin-api>\K\d+' m3uedit-plugin-template/pom.xml)
+        if [ "$api" != "$declared" ]; then
+          echo "::error file=m3uedit-plugin-template/pom.xml::m3uedit.plugin-api is $declared, PluginApi.VERSION is $api"
+          exit 1
+        fi
+        ./mvnw -B --no-transfer-progress -f m3uedit-plugin-template/pom.xml verify -Dm3uedit.version="$version"
     - name: Upload test reports
       # shows which test failed and why
       if: failure()

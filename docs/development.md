@@ -1,7 +1,8 @@
 # Development
 
 Building M3UEditor, running it from the IDE, how it is built inside, and how versions and releases are made. See
-[CONTRIBUTING.md](../CONTRIBUTING.md) for how to contribute.
+[CONTRIBUTING.md](../CONTRIBUTING.md) for how to contribute, and [Writing plugins](plugins.md) for how to write a
+plugin.
 
 * [Building](#building)
 * [Running from the IDE](#running-from-the-ide)
@@ -18,6 +19,7 @@ Building M3UEditor, running it from the IDE, how it is built inside, and how ver
   * [Texts and languages](#texts-and-languages)
   * [Theme](#theme)
 * [Versions and releases](#versions-and-releases)
+  * [The plugin API on Maven Central](#the-plugin-api-on-maven-central)
 * [Links](#links)
 
 ## Building
@@ -89,7 +91,12 @@ The build has three Maven modules, with the parent POM in the root directory:
 | `m3uedit-app` | the application (artifact `m3uedit`), the shaded jar and the application images | the plugin API; the built-in plugins only at runtime |
 
 So the compiler ensures that the built-in plugins get along with the API, and that the application uses plugins only
-through the API. All modules have the version of the application (`${revision}`).
+through the API. All modules have the version of the application (`${revision}`) and the groupId `io.github.bit-punk`
+(the namespace of the plugin API on Maven Central).
+
+The directory `m3uedit-plugin-template` is not a module: it is the template for plugin authors, a Maven project of its
+own building against the published plugin API (see [Writing plugins](plugins.md#from-the-template)). The CI build
+builds it against the API of the build.
 
 ### Packages
 
@@ -163,94 +170,17 @@ data (no class is loaded for it) and written back unchanged; it does not take pa
 
 ### Writing a plugin
 
-The API (`org.bitpunk.m3uedit.api`, module `m3uedit-plugin-api`) only depends on Java and JavaFX; a test
-(`ApiBoundaryTest`) keeps it that way.
-
-| Type | Purpose |
-|---|---|
-| `Input`, `Filter`, `Sorter`, `Enricher`, `Output` | the kinds of plugins, all extending `Plugin` |
-| `@PluginType` | the type id, the key of the name and the resource bundle of the texts |
-| `PluginContext` | what a plugin gets from m3uedit: its texts (also as resource bundle for the FXML files of its dialogs), reading and writing M3U playlists, its configuration files, whether it runs without user interface, showing errors |
-| `CollectedData` | data a plugin collects (e.g. recently used servers, downloaded files), shown in the configuration dialog of m3uedit, where the user can clear it |
-| `Entry`, `Playlist` | a channel, and the entries read by an input |
-| `Enrichment`, `Attachment`, `Export`, `Programme`, `ProgrammeGuideProvider` | the results of enrichers, what outputs write, programme guides |
-| `PluginException`, `InputReadException` | errors shown to the user |
-
-A minimal filter:
-
-```java
-@PluginType(id = "de.example.RadioFilter", nameKey = "radioFilter.name", texts = "de.example.messages")
-public class RadioFilter implements Filter {
-    private PluginContext context;
-    private RadioFilterSettings settings = new RadioFilterSettings(true);
-
-    @Override
-    public void init(PluginContext context) {
-        this.context = context;
-    }
-
-    @Override
-    public String getName() {
-        return context.text("radioFilter.name");
-    }
-
-    @Override
-    public String getDescription() {
-        return context.text("radioFilter.description");
-    }
-
-    @Override
-    public List<Entry> filter(List<Entry> entries) {
-        return entries.stream().filter(entry -> !settings.removeRadio() || !"true".equals(entry.getRadio())).toList();
-    }
-
-    @Override
-    public Class<RadioFilterSettings> getSettingsType() {
-        return RadioFilterSettings.class;
-    }
-
-    @Override
-    public RadioFilterSettings getSettings() {
-        return settings;
-    }
-
-    @Override
-    public void setSettings(Record settings) {
-        this.settings = (RadioFilterSettings) settings;
-    }
-}
-
-public record RadioFilterSettings(boolean removeRadio) {
-}
-```
-
-registered in `META-INF/services/org.bitpunk.m3uedit.api.Filter` by the line `de.example.RadioFilter`. The module
-`m3uedit-example-plugin` is a complete example, with settings, texts in English and German and its build.
-
-* **Identity:** `@PluginType(id = …)` is the type id stored in project-files. It must never change once project-files
-  have been written with it, also when the class is renamed or moved. The plugins of m3uedit use the simple class
-  names they have always been stored with; plugins of other parties use qualified ids. `nameKey` lets the add-menus
-  name the plugin without creating it. Plugins are compared by identity, so they must not override `equals`.
-* **Context:** m3uedit creates a plugin for each use in a project and calls `init(PluginContext)` once; the plugin
-  keeps the context. Its texts (`context.text(key, …)`) come from its own resource bundle (`texts`, e.g.
-  `de/example/messages.properties` and `messages_de.properties`) in the language of the user interface; the built-in
-  plugins use the bundle of m3uedit.
-* **Settings:** the settings stored in the project-file are a record of plain Java types, without annotations. m3uedit
-  writes its components next to the type of the plugin and whether it is enabled, and passes them back with
-  `setSettings` when the project is loaded; components missing in an older project-file are `null`, `0` or `false`, so
-  the plugin replaces them by its defaults. A plugin without settings keeps the defaults (`NoSettings`). Configuration
-  that belongs to the user rather than to a project (e.g. lists of recently used servers) is kept in configuration
-  files with `context.loadConfig` / `context.saveConfig` in `~/.m3uedit/plugins/`.
-* **Dialogs:** a plugin builds its own dialogs with JavaFX; the colours of the theme of m3uedit are available as
-  looked-up colours (e.g. `-app-error`, `-app-invalid-background`, see `theme.css`), so the dialogs look right in the
-  light and the dark theme.
-* **Threads:** reading, filtering, sorting, enriching and writing run in the background and must not use JavaFX;
-  they also run in the command-line mode (`context.isHeadless()`). `configure(Window)` opens the plugin's own dialog on
-  the JavaFX application thread and returns whether the user confirmed.
+How to write a plugin, build and install it is described for plugin authors in [Writing plugins](plugins.md), along
+with the rules of compatibility of the API. The API (`org.bitpunk.m3uedit.api`, module `m3uedit-plugin-api`) only
+depends on Java and JavaFX, and does not use Lombok, so its published sources and Javadoc are what plugins call; a test
+(`ApiBoundaryTest`) keeps it that way. The module `m3uedit-example-plugin` (a radio filter) is the plugin of another
+party the tests of `m3uedit-app` load; the template `m3uedit-plugin-template` (a group filter) is the starting point
+for plugin authors.
 
 ### Plugin jars
 
-A plugin of another party is a jar installed by the user in `~/.m3uedit/extensions/`:
+A plugin of another party is a jar installed by the user in `~/.m3uedit/extensions/` (see also
+[Packaging the jar](plugins.md#packaging-the-jar)):
 
 * It contains the plugin, its `META-INF/services/org.bitpunk.m3uedit.api.<Kind>` files, its texts and resources, and
   the libraries it needs (e.g. a shaded jar). It does not contain the plugin API, JavaFX or libraries of m3uedit:
@@ -303,6 +233,38 @@ raised by a pull request when a release has been published.
 Release Drafter (`.github/release-drafter.yml`) collects the pull requests merged into `develop` in a draft release,
 sorted by their labels, which are set from the names of their branches (`feature/`, `fix/`, `chore/`). Publishing
 the draft builds the application images for Linux, Windows and macOS and attaches them to the release.
+
+### The plugin API on Maven Central
+
+Publishing a release (not a pre-release) also publishes the plugin API `io.github.bit-punk:m3uedit-plugin-api` in
+the version of the release to Maven Central: jar, sources and Javadoc, signed, with a POM without parent and without
+`${revision}` (flatten plugin, mode `ossrh`). The job `plugin-api` of the release workflow first builds the plugin
+template against the API, then publishes it (profile `central` of `m3uedit-plugin-api`, the
+`central-publishing-maven-plugin`, waiting until Maven Central has published it), and attaches the template with the
+version of the release as `m3uedit-plugin-template-<version>.zip`. [javadoc.io](https://javadoc.io/doc/io.github.bit-punk/m3uedit-plugin-api)
+shows the Javadoc of each published version by itself.
+
+It needs these secrets of the repository:
+
+| Secret | Content |
+|---|---|
+| `CENTRAL_USERNAME`, `CENTRAL_PASSWORD` | a user token of [central.sonatype.com](https://central.sonatype.com) for the verified namespace `io.github.bit-punk` |
+| `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | the GPG key signing the artifacts (armored private key), its public key published on a key server (e.g. `keys.openpgp.org`) |
+
+Maven Central never deletes or replaces a version: a release that has been published cannot be published again with
+other content.
+
+**Compatibility of the API:** the build compares the API with the first release of the current `PluginApi.VERSION`
+(property `plugin-api.baseline` of `m3uedit-plugin-api/pom.xml`, [japicmp](https://siom79.github.io/japicmp/)) and
+fails on changes that are not binary or source compatible. Such a change is only made deliberately: it raises
+`PluginApi.VERSION` (and the `m3uedit.plugin-api` of the template, checked by the CI build) and sets
+`plugin-api.baseline` to the coming release, so the check starts again from there; the release notes name it. Until
+the baseline has been published (e.g. before the first release of a new `PluginApi.VERSION`), the check is skipped
+with a warning. Changes of meaning are not found by the check, see the rules in
+[Compatibility](plugins.md#compatibility). The report is written to `m3uedit-plugin-api/target/japicmp/`.
+
+After a release, the pull request raising the `revision` also sets `m3uedit.version` of the template to the release
+just published, so the template in the repository builds against a published API.
 
 ## Links
 
