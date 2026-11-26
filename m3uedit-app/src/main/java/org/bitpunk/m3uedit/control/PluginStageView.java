@@ -18,6 +18,7 @@ import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.PluginDescriptor;
 import org.bitpunk.m3uedit.plugins.PluginStates;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 public class PluginStageView<T extends Plugin> extends VBox {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass DISABLED_PLUGIN = PseudoClass.getPseudoClass("plugin-disabled");
+    private static final PseudoClass MISSING_PLUGIN = PseudoClass.getPseudoClass("plugin-missing");
     private static final PseudoClass DROP_BEFORE = PseudoClass.getPseudoClass("drop-before");
     private static final PseudoClass DROP_AFTER = PseudoClass.getPseudoClass("drop-after");
     private static final PseudoClass COLLAPSED = PseudoClass.getPseudoClass("collapsed");
@@ -522,6 +524,8 @@ public class PluginStageView<T extends Plugin> extends VBox {
                 grip.setVisible(reorderable);
                 enabledCheckBox = new CheckBox();
                 enabledCheckBox.selectedProperty().bindBidirectional(PluginStates.enabled(plugin));
+                // a plugin that is not installed does not take part anyway, its state is kept for the project-file
+                enabledCheckBox.setDisable(plugin instanceof MissingPlugin);
                 enabledCheckBox.setAccessibleText(Messages.get("stage.enable", plugin.getName()));
                 getChildren().addAll(grip, enabledCheckBox);
                 PluginStates.enabled(plugin).addListener((observable, oldValue, newValue) -> {
@@ -558,7 +562,7 @@ public class PluginStageView<T extends Plugin> extends VBox {
                 if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
                     select(plugin);
                     event.consume();
-                } else if (event.getCode() == KeyCode.DELETE && addButton != null) {
+                } else if (event.getCode() == KeyCode.DELETE && isRemovable()) {
                     remove(plugin);
                     event.consume();
                 }
@@ -578,7 +582,10 @@ public class PluginStageView<T extends Plugin> extends VBox {
             setTooltipText(plugin.getDescription());
             configureButton.setVisible(plugin.isConfigurable());
             configureButton.setManaged(plugin.isConfigurable());
-            Badge badge = badgeProvider.apply(plugin);
+            Badge badge = plugin instanceof MissingPlugin
+                    ? new Badge(Messages.get("missingPlugin.badge"), "badge-error", plugin.getDescription())
+                    : badgeProvider.apply(plugin);
+            pseudoClassStateChanged(MISSING_PLUGIN, plugin instanceof MissingPlugin);
             badgeLabel.getStyleClass().setAll("badge");
             if (badge == null) {
                 badgeLabel.setText(null);
@@ -603,8 +610,16 @@ public class PluginStageView<T extends Plugin> extends VBox {
             downButton.setDisable(index == size - 1);
         }
 
+        /**
+         * @return true if the plugin can be removed: the plugins of stages with an add-button, and plugins that are
+         * not installed (e.g. a filter of another party)
+         */
+        boolean isRemovable() {
+            return addButton != null || plugin instanceof MissingPlugin;
+        }
+
         void updateRemovable() {
-            boolean removable = addButton != null;
+            boolean removable = isRemovable();
             removeButton.setVisible(removable);
             removeButton.setManaged(removable);
             if (removable && !tools.getChildren().contains(removeButton)) {

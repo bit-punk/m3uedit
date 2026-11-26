@@ -39,6 +39,7 @@ import org.bitpunk.m3uedit.api.Export.ExportFile;
 import org.bitpunk.m3uedit.api.Output;
 import org.bitpunk.m3uedit.api.Sorter;
 import org.bitpunk.m3uedit.plugins.PluginStates;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 import org.bitpunk.m3uedit.util.EntryMapper;
 import org.bitpunk.m3uedit.util.UncaughtExceptionHandler;
 
@@ -63,6 +64,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * The model of a project: its inputs, filters, sorters and outputs, plus the entry-lists computed from them.
@@ -387,6 +389,21 @@ public class DataModel {
     }
 
     /**
+     * @return true if the plugin takes part in the computation: it is enabled and installed
+     */
+    private static boolean isApplied(Plugin plugin) {
+        return PluginStates.enabled(plugin).get() && !(plugin instanceof MissingPlugin);
+    }
+
+    /**
+     * @return the plugins of the project that are not installed, in the order of the pipeline
+     */
+    public List<MissingPlugin> getMissingPlugins() {
+        return Stream.of(inputs, filters, sorters, enrichers, outputs).flatMap(List::stream)
+                .filter(MissingPlugin.class::isInstance).map(MissingPlugin.class::cast).toList();
+    }
+
+    /**
      * Sorters sort completely, so only the last one applied would take effect: at most one sorter is enabled.
      * Of several enabled sorters (e.g. in older project files) the last one is kept, as it took effect.
      */
@@ -508,10 +525,11 @@ public class DataModel {
 
         // take snapshots on the calling (JavaFX) thread, the background thread must not access the observable lists
         List<Input> inputsSnapshot = new ArrayList<>(inputs);
-        List<Filter> enabledFilters = filters.stream().filter(filter -> PluginStates.enabled(filter).get())
+        // plugins that are not installed are skipped, as if they were disabled
+        List<Filter> enabledFilters = filters.stream().filter(DataModel::isApplied)
                 .sorted(Comparator.comparingInt(Filter::order)).toList();
-        List<Sorter> enabledSorters = sorters.stream().filter(sorter -> PluginStates.enabled(sorter).get()).toList();
-        List<Enricher> enabledEnrichers = enrichers.stream().filter(enricher -> PluginStates.enabled(enricher).get()).toList();
+        List<Sorter> enabledSorters = sorters.stream().filter(DataModel::isApplied).toList();
+        List<Enricher> enabledEnrichers = enrichers.stream().filter(DataModel::isApplied).toList();
         List<Entry> rawSnapshot = new ArrayList<>(rawEntryList);
         List<Entry> filteredSnapshot = new ArrayList<>(filteredEntryList);
         // the results of the steps not re-computed are taken over from the previous computation (immutable)

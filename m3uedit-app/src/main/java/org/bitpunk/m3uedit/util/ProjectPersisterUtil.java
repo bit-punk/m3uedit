@@ -10,6 +10,7 @@ import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.jackson.JavaFxModule;
 import org.bitpunk.m3uedit.jackson.PluginModule;
 import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
@@ -113,7 +114,8 @@ public class ProjectPersisterUtil {
     public static String persistedState(Plugin plugin) {
         try {
             // the settings, not whether it is enabled
-            return MapperHolder.SETTINGS_MAPPER.writeValueAsString(plugin.getSettings());
+            Object settings = plugin instanceof MissingPlugin missing ? missing.getRawSettings() : plugin.getSettings();
+            return MapperHolder.SETTINGS_MAPPER.writeValueAsString(settings);
         } catch (JacksonException e) {
             log.warn("The state of {} cannot be written", plugin, e);
             return null;

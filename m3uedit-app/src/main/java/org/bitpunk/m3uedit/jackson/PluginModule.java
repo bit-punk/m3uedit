@@ -14,6 +14,12 @@ import org.bitpunk.m3uedit.plugins.PluginDescriptor;
 import org.bitpunk.m3uedit.plugins.PluginService;
 import org.bitpunk.m3uedit.plugins.PluginStates;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
+import org.bitpunk.m3uedit.plugins.missing.MissingEnricher;
+import org.bitpunk.m3uedit.plugins.missing.MissingFilter;
+import org.bitpunk.m3uedit.plugins.missing.MissingInput;
+import org.bitpunk.m3uedit.plugins.missing.MissingOutput;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
+import org.bitpunk.m3uedit.plugins.missing.MissingSorter;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
@@ -28,6 +34,7 @@ import tools.jackson.databind.ser.std.StdSerializer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
@@ -38,7 +45,9 @@ import java.util.function.Supplier;
  *   source: /home/me/tv.m3u
  * </pre>
  * Only the plugins of the plugin services of the expected kind are accepted (an output can not be loaded as input),
- * and the settings are read as the settings record of the plugin, so a project-file cannot create other objects.
+ * and the settings are read as the settings record of the plugin, so a project-file cannot create other objects. A
+ * plugin whose type id is not known (e.g. a plugin of another party that is not installed) is kept as
+ * {@link MissingPlugin}, only as data, and written back unchanged.
  */
 public class PluginModule extends SimpleModule {
     public static final String TYPE_PROPERTY = "type";
@@ -74,12 +83,16 @@ public class PluginModule extends SimpleModule {
     public PluginModule(Supplier<ObjectMapper> settingsMapper, Services services) {
         super(PluginModule.class.getSimpleName());
         addSerializer(Plugin.class, new PluginSerializer(settingsMapper, services));
-        addDeserializer(Input.class, new PluginDeserializer<>(Input.class, services.inputs(), settingsMapper));
-        addDeserializer(Filter.class, new PluginDeserializer<>(Filter.class, services.filters(), settingsMapper));
-        addDeserializer(Sorter.class, new PluginDeserializer<>(Sorter.class, services.sorters(), settingsMapper));
+        addDeserializer(Input.class, new PluginDeserializer<>(Input.class, services.inputs(), MissingInput::new,
+                services, settingsMapper));
+        addDeserializer(Filter.class, new PluginDeserializer<>(Filter.class, services.filters(), MissingFilter::new,
+                services, settingsMapper));
+        addDeserializer(Sorter.class, new PluginDeserializer<>(Sorter.class, services.sorters(), MissingSorter::new,
+                services, settingsMapper));
         addDeserializer(Enricher.class, new PluginDeserializer<>(Enricher.class, services.enrichers(),
-                settingsMapper));
-        addDeserializer(Output.class, new PluginDeserializer<>(Output.class, services.outputs(), settingsMapper));
+                MissingEnricher::new, services, settingsMapper));
+        addDeserializer(Output.class, new PluginDeserializer<>(Output.class, services.outputs(), MissingOutput::new,
+                services, settingsMapper));
     }
 
     static class PluginSerializer extends StdSerializer<Plugin> {
@@ -95,11 +108,19 @@ public class PluginModule extends SimpleModule {
         @Override
         public void serialize(Plugin plugin, JsonGenerator generator, SerializationContext context)
                 throws JacksonException {
-            String id = services.all().stream()
-                    .flatMap(service -> service.find(plugin.getClass()).stream())
-                    .map(PluginDescriptor::id).findFirst()
-                    .orElseThrow(() -> new IllegalStateException("unknown plugin " + plugin.getClass().getName()));
-            JsonNode settingsNode = settingsMapper.get().valueToTree(plugin.getSettings());
+            String id;
+            JsonNode settingsNode;
+            if (plugin instanceof MissingPlugin missing) {
+                // written back as read, so nothing is lost
+                id = missing.getTypeId();
+                settingsNode = missing.getRawSettings();
+            } else {
+                id = services.all().stream()
+                        .flatMap(service -> service.find(plugin.getClass()).stream())
+                        .map(PluginDescriptor::id).findFirst()
+                        .orElseThrow(() -> new IllegalStateException("unknown plugin " + plugin.getClass().getName()));
+                settingsNode = settingsMapper.get().valueToTree(plugin.getSettings());
+            }
             generator.writeStartObject(plugin);
             generator.writeStringProperty(TYPE_PROPERTY, id);
             generator.writeBooleanProperty(ENABLED_PROPERTY, PluginStates.enabled(plugin).get());
@@ -117,12 +138,21 @@ public class PluginModule extends SimpleModule {
 
     static class PluginDeserializer<T extends Plugin> extends StdDeserializer<T> {
         private final transient Supplier<? extends PluginService<T>> service;
+        private final transient BiFunction<String, ObjectNode, ? extends T> missing;
+        private final transient Services services;
         private final transient Supplier<ObjectMapper> settingsMapper;
 
+        /**
+         * @param missing creates the placeholder of a plugin that is not installed
+         * @param services the plugins of all kinds, to tell a plugin that is not installed from one of another kind
+         */
         PluginDeserializer(Class<T> kind, Supplier<? extends PluginService<T>> service,
+                           BiFunction<String, ObjectNode, ? extends T> missing, Services services,
                            Supplier<ObjectMapper> settingsMapper) {
             super(kind);
             this.service = service;
+            this.missing = missing;
+            this.services = services;
             this.settingsMapper = settingsMapper;
         }
 
@@ -137,9 +167,10 @@ public class PluginModule extends SimpleModule {
                 return context.reportInputMismatch(this, "plugin without %s", TYPE_PROPERTY);
             }
             PluginDescriptor<T> descriptor = service.get().find(type.asString()).orElse(null);
-            if (descriptor == null) {
-                return context.reportInputMismatch(this, "unknown %s: %s", handledType().getSimpleName(),
-                        type.asString());
+            boolean otherKind = services.all().stream().anyMatch(other -> other.find(type.asString()).isPresent());
+            if (descriptor == null && otherKind) {
+                return context.reportInputMismatch(this, "%s is not a plugin of the kind %s", type.asString(),
+                        handledType().getSimpleName());
             }
             JsonNode enabled = node.get(ENABLED_PROPERTY);
             if (enabled != null && !enabled.isBoolean()) {
@@ -150,8 +181,14 @@ public class PluginModule extends SimpleModule {
             settings.remove(TYPE_PROPERTY);
             settings.remove(ENABLED_PROPERTY);
 
-            T plugin = descriptor.create();
-            plugin.setSettings(settingsMapper.get().treeToValue(settings, plugin.getSettingsType()));
+            T plugin;
+            if (descriptor == null) {
+                // not installed: kept as data, no class is loaded for it
+                plugin = missing.apply(type.asString(), settings);
+            } else {
+                plugin = descriptor.create();
+                plugin.setSettings(settingsMapper.get().treeToValue(settings, plugin.getSettingsType()));
+            }
             PluginStates.enabled(plugin).set(enabled != null && enabled.booleanValue());
             return plugin;
         }

@@ -10,6 +10,7 @@ import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.plugins.PluginDescriptor;
 import org.bitpunk.m3uedit.plugins.PluginJars;
 import org.bitpunk.m3uedit.plugins.PluginServices;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 import org.bitpunk.m3uedit.util.HeadlessMode;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -81,6 +83,13 @@ public class CommandLineRunner {
         project.setFxExecutor(Runnable::run);
 
         // the entries are not stored in the project, so the inputs are read and the pipeline is computed
+        // the playlist would not be the one the project describes
+        List<MissingPlugin> missing = project.getMissingPlugins();
+        if (!missing.isEmpty()) {
+            err.printf("%s: plugins not installed: %s, the playlist is not written%n", name,
+                    missing.stream().map(MissingPlugin::getTypeId).distinct().collect(Collectors.joining(", ")));
+            return FAILED;
+        }
         project.reloadInputs();
         List<String> inputErrors = project.getInputErrors();
         inputErrors.forEach(error -> err.printf("%s: input could not be read: %s%n", name, error));
