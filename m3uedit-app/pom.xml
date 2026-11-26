@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.bitpunk.m3uedit</groupId>
+        <groupId>io.github.bit-punk</groupId>
         <artifactId>m3uedit-parent</artifactId>
         <version>${revision}</version>
     </parent>
@@ -34,12 +34,12 @@
             <artifactId>commons-cli</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <groupId>io.github.bit-punk</groupId>
+            <artifactId>m3uedit-plugin-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.bitpunk.m3uedit</groupId>
-            <artifactId>m3uedit-plugin-api</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.glassfish.expressly</groupId>
@@ -74,16 +74,22 @@
             <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
+        <!-- only needed at compile time (annotation processing); not used by the plugin API -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- the built-in plugins, only at runtime: the application uses plugins through the API only -->
         <dependency>
-            <groupId>org.bitpunk.m3uedit</groupId>
+            <groupId>io.github.bit-punk</groupId>
             <artifactId>m3uedit-plugins</artifactId>
             <scope>runtime</scope>
         </dependency>
         <!-- the jar of the example plugin, loaded by the tests like a plugin of another party; it is built before the
              application, but not part of its classpath (see the configuration of surefire) -->
         <dependency>
-            <groupId>org.bitpunk.m3uedit</groupId>
+            <groupId>io.github.bit-punk</groupId>
             <artifactId>m3uedit-example-plugin</artifactId>
             <scope>test</scope>
         </dependency>
@@ -120,7 +126,7 @@
                 <configuration>
                     <!-- loaded by the tests from its own jar, like a plugin installed by the user -->
                     <classpathDependencyExcludes>
-                        <classpathDependencyExclude>org.bitpunk.m3uedit:m3uedit-example-plugin</classpathDependencyExclude>
+                        <classpathDependencyExclude>io.github.bit-punk:m3uedit-example-plugin</classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <systemPropertyVariables>
                         <m3uedit.examplePlugin.classes>${project.basedir}/../m3uedit-example-plugin/target/classes</m3uedit.examplePlugin.classes>

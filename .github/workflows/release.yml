@@ -1,7 +1,7 @@
 name: Release Artifacts
 
 # Builds the application for Linux, Windows and macOS once a release is published (e.g. the draft of Release Drafter)
-# and attaches the archives to the release.
+# and attaches the archives to the release; publishes the plugin API to Maven Central and attaches the plugin template.
 on:
   release:
     types: [ published ]
@@ -75,3 +75,57 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "$GITHUB_REF_NAME" $FILES --clobber
+
+  plugin-api:
+    # Maven Central keeps every version for ever: pre-releases are not published
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    permissions:
+      # to attach the plugin template to the release
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+          # the token of central.sonatype.com (namespace io.github.bit-punk) and the key signing the artifacts
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Determine the version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Build the plugin API and the plugin template against it
+        # the template is checked before anything is published
+        env:
+          MAVEN_ARGS: -B --no-transfer-progress -Drevision=${{ steps.version.outputs.version }}
+        run: |
+          ./mvnw -pl m3uedit-plugin-api -am install
+          ./mvnw -f m3uedit-plugin-template/pom.xml verify -Dm3uedit.version=${{ steps.version.outputs.version }}
+      - name: Publish the plugin API to Maven Central
+        # jar, sources and Javadoc, signed; waits until Maven Central has published them
+        env:
+          MAVEN_ARGS: -B --no-transfer-progress -Drevision=${{ steps.version.outputs.version }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./mvnw -Pcentral -pl m3uedit-plugin-api -DskipTests deploy
+      - name: Attach the plugin template to the release
+        # a copy of m3uedit-plugin-template building against the API of this release, with the maven wrapper
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          name="m3uedit-plugin-template-$VERSION"
+          mkdir -p "dist/$name"
+          git archive HEAD m3uedit-plugin-template | tar -x --strip-components=1 -C "dist/$name"
+          sed -i "s#<m3uedit.version>[^<]*</m3uedit.version>#<m3uedit.version>$VERSION</m3uedit.version>#" \
+            "dist/$name/pom.xml"
+          cp -r mvnw mvnw.cmd .mvn "dist/$name/"
+          (cd dist && zip -qr "$name.zip" "$name")
+          gh release upload "$GITHUB_REF_NAME" "dist/$name.zip" --clobber

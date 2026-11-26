@@ -233,6 +233,8 @@ would not be the playlist the project describes.
 **A plugin runs with your rights, like m3uedit itself: only install plugins you trust.** m3uedit never downloads
 plugins, and opening a project-file never loads a plugin.
 
+How to write a plugin of your own is described in [Writing plugins](plugins.md).
+
 ## Keyboard shortcuts
 
 On macOS, Cmd is used instead of Ctrl for the functions of the *Edit* menu, the configuration and the search; the

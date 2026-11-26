@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.bitpunk.m3uedit</groupId>
+        <groupId>io.github.bit-punk</groupId>
         <artifactId>m3uedit-parent</artifactId>
         <version>${revision}</version>
     </parent>
@@ -22,12 +22,12 @@
             <artifactId>jsch</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <groupId>io.github.bit-punk</groupId>
+            <artifactId>m3uedit-plugin-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.bitpunk.m3uedit</groupId>
-            <artifactId>m3uedit-plugin-api</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.glassfish.expressly</groupId>
@@ -64,6 +64,12 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- only needed at compile time (annotation processing); not used by the plugin API -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    A plugin for m3uedit, built against the published plugin API only. Copy this directory, then change the groupId,
+    the artifactId, the package and the type id of the plugin (see README.md).
+
+    mvn package   =>   target/m3uedit-group-filter-1.0.0-SNAPSHOT.jar, to be copied to ~/.m3uedit/extensions/
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example.m3uedit</groupId>
+    <artifactId>m3uedit-group-filter</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>m3uedit-group-filter</name>
+    <description>A filter plugin for m3uedit: removes the entries of chosen groups</description>
+
+    <properties>
+        <!-- the release of m3uedit whose plugin API the plugin is built against -->
+        <m3uedit.version>1.3.0</m3uedit.version>
+        <!-- the version of the plugin API (PluginApi.VERSION) of that release, written to the manifest -->
+        <m3uedit.plugin-api>1</m3uedit.plugin-api>
+        <!-- m3uedit runs on Java 25 with JavaFX 25 -->
+        <maven.compiler.release>25</maven.compiler.release>
+        <javafx.version>25.0.5.1</javafx.version>
+        <junit-jupiter.version>6.1.3</junit-jupiter.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- provided by m3uedit at runtime: never put them into the jar -->
+        <dependency>
+            <groupId>io.github.bit-punk</groupId>
+            <artifactId>m3uedit-plugin-api</artifactId>
+            <version>${m3uedit.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <!-- m3uedit only loads jars built for its version of the plugin API -->
+                            <M3UEdit-Plugin-API>${m3uedit.plugin-api}</M3UEdit-Plugin-API>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.6.1</version>
+            </plugin>
+            <!--
+                A plugin needing libraries (not provided by m3uedit) puts them into its jar with the shade plugin; a
+                library m3uedit also uses must be relocated, see "Libraries" in the guide (docs/plugins.md).
+            -->
+        </plugins>
+    </build>
+</project>

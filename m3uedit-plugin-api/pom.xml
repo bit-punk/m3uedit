@@ -5,15 +5,26 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.bitpunk.m3uedit</groupId>
+        <groupId>io.github.bit-punk</groupId>
         <artifactId>m3uedit-parent</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <!-- the API plugins are written against (package org.bitpunk.m3uedit.api): only Java and JavaFX -->
+    <!-- the API plugins are written against (package org.bitpunk.m3uedit.api): only Java and JavaFX. Published to
+         Maven Central with every release (jar, sources, Javadoc), see .github/workflows/release.yml and
+         docs/plugins.md -->
     <artifactId>m3uedit-plugin-api</artifactId>
 
     <name>m3uedit-plugin-api</name>
+    <description>The API plugins of m3uedit (inputs, filters, sorters, enrichers, outputs) are written against
+    </description>
+
+    <properties>
+        <!-- the first release of m3uedit with the current PluginApi.VERSION: japicmp checks that the API is still
+             compatible with it. Raising PluginApi.VERSION (an incompatible change) sets it to the coming release, as
+             there is nothing to be compatible with yet; see "Compatibility" in docs/plugins.md -->
+        <plugin-api.baseline>1.3.0</plugin-api.baseline>
+    </properties>
 
     <dependencies>
         <!-- provided by m3uedit at runtime -->
@@ -23,4 +34,119 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- published on its own: a POM without the parent, with the version instead of ${revision} -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <configuration>
+                    <flattenMode>ossrh</flattenMode>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- also built by the CI build, so broken Javadoc is noticed before a release -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <doclint>all,-missing</doclint>
+                    <links>
+                        <link>https://openjfx.io/javadoc/25/</link>
+                    </links>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- fails the build on changes not compatible with plugins built against the baseline -->
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <configuration>
+                    <oldVersion>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <version>${plugin-api.baseline}</version>
+                        </dependency>
+                    </oldVersion>
+                    <parameter>
+                        <onlyModified>true</onlyModified>
+                        <breakBuildOnBinaryIncompatibleModifications>true</breakBuildOnBinaryIncompatibleModifications>
+                        <breakBuildOnSourceIncompatibleModifications>true</breakBuildOnSourceIncompatibleModifications>
+                        <!-- before the baseline is published (or offline), the check is skipped with a warning -->
+                        <ignoreMissingOldVersion>true</ignoreMissingOldVersion>
+                        <ignoreMissingClasses>true</ignoreMissingClasses>
+                        <skipXmlReport>true</skipXmlReport>
+                    </parameter>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-api-compatibility</id>
+                        <!-- package, not verify: the CI build runs up to package -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>cmp</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!--
+            Signs the artifacts and publishes them to Maven Central, used by the release workflow:
+            ./mvnw -Pcentral -pl m3uedit-plugin-api -Drevision=1.3.0 deploy
+            It needs the server "central" (the token of central.sonatype.com) in the settings.xml and a GPG key.
+        -->
+        <profile>
+            <id>central</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
