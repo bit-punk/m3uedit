@@ -2,6 +2,8 @@ package org.bitpunk.m3uedit;
 
 import org.bitpunk.m3uedit.cli.CommandLineOptions;
 import org.bitpunk.m3uedit.cli.CommandLineRunner;
+import org.bitpunk.m3uedit.plugins.PluginJars;
+import org.bitpunk.m3uedit.plugins.PluginServices;
 import org.bitpunk.m3uedit.util.AppVersion;
 
 /**
@@ -53,6 +55,10 @@ public class Main {
         System.setProperty(LOG_LEVEL_PROPERTY, options.verbose() ? "INFO" : "ERROR");
         if (!options.verbose()) {
             System.setProperty(LOG_PATTERN_PROPERTY, SHORT_LOG_PATTERN);
+        }
+        if (options.listPlugins()) {
+            CommandLineRunner.listPlugins(System.out, PluginServices.all(), PluginJars.installed());
+            return CommandLineRunner.OK;
         }
         return new CommandLineRunner(System.out, System.err).run(options);
     }

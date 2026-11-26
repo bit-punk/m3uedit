@@ -13,6 +13,7 @@ Building M3UEditor, running it from the IDE, how it is built inside, and how ver
   * [Manual changes and undo](#manual-changes-and-undo)
   * [Plugins](#plugins)
   * [Writing a plugin](#writing-a-plugin)
+  * [Plugin jars](#plugin-jars)
   * [Project-files](#project-files)
   * [Texts and languages](#texts-and-languages)
   * [Theme](#theme)
@@ -84,6 +85,7 @@ The build has three Maven modules, with the parent POM in the root directory:
 |---|---|---|
 | `m3uedit-plugin-api` | the plugin API, the package `org.bitpunk.m3uedit.api` | JavaFX (provided) |
 | `m3uedit-plugins` | the built-in plugins, their dialogs, texts, default configuration files and `META-INF/services` | the plugin API only (and libraries of their own, e.g. JSch) |
+| `m3uedit-example-plugin` | an example of a plugin of another party (a radio filter), built as jar of its own; the tests of `m3uedit-app` load it like an installed jar | the plugin API (provided) |
 | `m3uedit-app` | the application (artifact `m3uedit`), the shaded jar and the application images | the plugin API; the built-in plugins only at runtime |
 
 So the compiler ensures that the built-in plugins get along with the API, and that the application uses plugins only
@@ -154,7 +156,9 @@ The plugin services describe each plugin by a `PluginDescriptor` (id, class, nam
 ignored and logged as an error, as the two could not be told apart in a project-file. Whether a plugin is enabled is
 kept by m3uedit (`PluginStates`), not by the plugin.
 
-External plugins in separate jars are planned, see [#46](https://github.com/bit-punk/m3uedit/issues/46).
+Plugins of other parties are installed as jars in `~/.m3uedit/extensions/` (`PluginJars`), see
+[Plugin jars](#plugin-jars). Projects using plugins that are not installed are part of phase 5 of
+[#46](https://github.com/bit-punk/m3uedit/issues/46).
 
 ### Writing a plugin
 
@@ -219,7 +223,8 @@ public record RadioFilterSettings(boolean removeRadio) {
 }
 ```
 
-registered in `META-INF/services/org.bitpunk.m3uedit.api.Filter` by the line `de.example.RadioFilter`.
+registered in `META-INF/services/org.bitpunk.m3uedit.api.Filter` by the line `de.example.RadioFilter`. The module
+`m3uedit-example-plugin` is a complete example, with settings, texts in English and German and its build.
 
 * **Identity:** `@PluginType(id = …)` is the type id stored in project-files. It must never change once project-files
   have been written with it, also when the class is renamed or moved. The plugins of m3uedit use the simple class
@@ -241,6 +246,24 @@ registered in `META-INF/services/org.bitpunk.m3uedit.api.Filter` by the line `de
 * **Threads:** reading, filtering, sorting, enriching and writing run in the background and must not use JavaFX;
   they also run in the command-line mode (`context.isHeadless()`). `configure(Window)` opens the plugin's own dialog on
   the JavaFX application thread and returns whether the user confirmed.
+
+### Plugin jars
+
+A plugin of another party is a jar installed by the user in `~/.m3uedit/extensions/`:
+
+* It contains the plugin, its `META-INF/services/org.bitpunk.m3uedit.api.<Kind>` files, its texts and resources, and
+  the libraries it needs (e.g. a shaded jar). It does not contain the plugin API, JavaFX or libraries of m3uedit:
+  each jar gets a class loader of its own with m3uedit as parent, which is asked first, so these are always the
+  classes of m3uedit. A plugin needing another version of a library of m3uedit has to relocate it when shading.
+* Its manifest declares the version of the plugin API it was built for, `M3UEdit-Plugin-API: 1`
+  (`PluginApi.VERSION`, raised with every incompatible change of the API); m3uedit only loads jars built for its
+  version. With Maven, e.g. `<manifestEntries><M3UEdit-Plugin-API>1</M3UEdit-Plugin-API></manifestEntries>` in the
+  configuration of the `maven-jar-plugin` (the example plugin uses a `MANIFEST.MF` of its resources).
+* Its plugins use qualified type ids (e.g. `de.example.RadioFilter`); a plugin with the id of a built-in plugin, or of
+  a plugin of a jar loaded before (jars are loaded in the order of their names), is not loaded.
+
+Jars that cannot be loaded, and plugins in them that cannot be loaded or created, are skipped with the reason
+(`PluginJars.getProblems()`), shown by *Help → Plugins* and `--list-plugins`.
 
 ### Project-files
 

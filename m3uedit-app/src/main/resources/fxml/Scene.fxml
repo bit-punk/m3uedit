@@ -106,6 +106,7 @@
                         <MenuItem fx:id="programmeGuideMenuItem" onAction="#handleProgrammeGuideAction" text="%menu.project.programmeGuide"/>
                     </Menu>
                     <Menu text="%menu.help">
+                        <MenuItem onAction="#handlePluginsAction" text="%menu.help.plugins"/>
                         <MenuItem onAction="#handleAboutAction" text="%menu.help.about"/>
                     </Menu>
                 </MenuBar>

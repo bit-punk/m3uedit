@@ -15,6 +15,7 @@
     <!-- the plugin API, the built-in plugins written against it, and the application -->
     <modules>
         <module>m3uedit-app</module>
+        <module>m3uedit-example-plugin</module>
         <module>m3uedit-plugin-api</module>
         <module>m3uedit-plugins</module>
     </modules>
@@ -36,6 +37,7 @@
         <expressly.version>6.0.0</expressly.version>
         <jsch.version>2.28.8</jsch.version>
         <assertj-core.version>3.27.7</assertj-core.version>
+        <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
         <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
@@ -89,6 +91,11 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bitpunk.m3uedit</groupId>
+                <artifactId>m3uedit-example-plugin</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bitpunk.m3uedit</groupId>
@@ -243,6 +250,11 @@
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

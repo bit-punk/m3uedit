@@ -48,38 +48,54 @@ public class PluginModule extends SimpleModule {
      * @param settingsMapper maps the settings of the plugins (without this module)
      */
     public PluginModule(Supplier<ObjectMapper> settingsMapper) {
-        super(PluginModule.class.getSimpleName());
-        addSerializer(Plugin.class, new PluginSerializer(settingsMapper));
-        addDeserializer(Input.class, new PluginDeserializer<>(Input.class, InputPluginService::getInstance, settingsMapper));
-        addDeserializer(Filter.class, new PluginDeserializer<>(Filter.class, FilterPluginService::getInstance, settingsMapper));
-        addDeserializer(Sorter.class, new PluginDeserializer<>(Sorter.class, SorterPluginService::getInstance, settingsMapper));
-        addDeserializer(Enricher.class, new PluginDeserializer<>(Enricher.class, EnricherPluginService::getInstance,
-                settingsMapper));
-        addDeserializer(Output.class, new PluginDeserializer<>(Output.class, OutputPluginService::getInstance,
-                settingsMapper));
+        this(settingsMapper, new Services(InputPluginService::getInstance, FilterPluginService::getInstance,
+                SorterPluginService::getInstance, EnricherPluginService::getInstance,
+                OutputPluginService::getInstance));
     }
 
     /**
-     * @return the plugin services, by the kind of plugin they provide
+     * The plugin services of each kind, by default those of m3uedit.
      */
-    private static List<PluginService<?>> services() {
-        return List.of(InputPluginService.getInstance(), FilterPluginService.getInstance(),
-                SorterPluginService.getInstance(), EnricherPluginService.getInstance(),
-                OutputPluginService.getInstance());
+    public record Services(Supplier<? extends PluginService<Input>> inputs,
+                           Supplier<? extends PluginService<Filter>> filters,
+                           Supplier<? extends PluginService<Sorter>> sorters,
+                           Supplier<? extends PluginService<Enricher>> enrichers,
+                           Supplier<? extends PluginService<Output>> outputs) {
+
+        List<PluginService<?>> all() {
+            return List.of(inputs.get(), filters.get(), sorters.get(), enrichers.get(), outputs.get());
+        }
+    }
+
+    /**
+     * @param settingsMapper maps the settings of the plugins (without this module)
+     * @param services       the plugins accepted, e.g. with plugins installed by the user in tests
+     */
+    public PluginModule(Supplier<ObjectMapper> settingsMapper, Services services) {
+        super(PluginModule.class.getSimpleName());
+        addSerializer(Plugin.class, new PluginSerializer(settingsMapper, services));
+        addDeserializer(Input.class, new PluginDeserializer<>(Input.class, services.inputs(), settingsMapper));
+        addDeserializer(Filter.class, new PluginDeserializer<>(Filter.class, services.filters(), settingsMapper));
+        addDeserializer(Sorter.class, new PluginDeserializer<>(Sorter.class, services.sorters(), settingsMapper));
+        addDeserializer(Enricher.class, new PluginDeserializer<>(Enricher.class, services.enrichers(),
+                settingsMapper));
+        addDeserializer(Output.class, new PluginDeserializer<>(Output.class, services.outputs(), settingsMapper));
     }
 
     static class PluginSerializer extends StdSerializer<Plugin> {
         private final transient Supplier<ObjectMapper> settingsMapper;
+        private final transient Services services;
 
-        PluginSerializer(Supplier<ObjectMapper> settingsMapper) {
+        PluginSerializer(Supplier<ObjectMapper> settingsMapper, Services services) {
             super(Plugin.class);
             this.settingsMapper = settingsMapper;
+            this.services = services;
         }
 
         @Override
         public void serialize(Plugin plugin, JsonGenerator generator, SerializationContext context)
                 throws JacksonException {
-            String id = services().stream()
+            String id = services.all().stream()
                     .flatMap(service -> service.find(plugin.getClass()).stream())
                     .map(PluginDescriptor::id).findFirst()
                     .orElseThrow(() -> new IllegalStateException("unknown plugin " + plugin.getClass().getName()));

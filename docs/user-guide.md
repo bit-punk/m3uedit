@@ -13,6 +13,7 @@ programme guide.
 * [The playlist](#the-playlist)
 * [The diff](#the-diff)
 * [The programme guide](#the-programme-guide)
+* [Plugins of other parties](#plugins-of-other-parties)
 * [Keyboard shortcuts](#keyboard-shortcuts)
 
 The settings of M3UEditor are described in [Configuration](configuration.md), running projects without user
@@ -205,6 +206,24 @@ blocks along a time axis.
 * The guide follows the changes of the playlist and of the pipeline while it is open.
 
 Only one programme guide window is open per project.
+
+## Plugins of other parties
+
+Inputs, filters, sorters, enrichers and outputs are plugins. Besides the built-in ones, plugins of other parties can
+be installed:
+
+1. Copy the jar of the plugin into the directory `extensions` of the configuration directory, `~/.m3uedit/extensions/`
+   (created if needed).
+2. Start m3uedit again: the plugin is offered like the built-in ones, e.g. in the add-menu of the inputs, or as an
+   additional filter in the pipeline. Projects using it store its settings like those of the built-in plugins.
+
+Updating a plugin means replacing its jar, removing it deleting its jar; both take effect at the next start.
+*Help → Plugins* lists all plugins with their source (built-in, or the jar), the directory to install them in, and the
+jars that could not be loaded with the reason, e.g. a jar built for another version of m3uedit. In the command-line
+mode, `m3uedit --list-plugins` prints the same.
+
+**A plugin runs with your rights, like m3uedit itself: only install plugins you trust.** m3uedit never downloads
+plugins, and opening a project-file never loads a plugin.
 
 ## Keyboard shortcuts
 

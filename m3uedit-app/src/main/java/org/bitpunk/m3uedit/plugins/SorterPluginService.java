@@ -3,12 +3,11 @@ package org.bitpunk.m3uedit.plugins;
 import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.api.Sorter;
 
-import java.util.ServiceLoader;
 
 public class SorterPluginService<T extends Plugin> extends AbstractPluginService<T> {
 
-    private SorterPluginService(ServiceLoader<T> loader) {
-        super(loader);
+    private SorterPluginService(Class<T> kind, PluginJars jars) {
+        super(kind, jars);
     }
 
     public static SorterPluginService<Sorter> getInstance() {
@@ -16,6 +15,6 @@ public class SorterPluginService<T extends Plugin> extends AbstractPluginService
     }
 
     private static class SingletonHolder {
-        private static final SorterPluginService<Sorter> INSTANCE = new SorterPluginService<>(ServiceLoader.load(Sorter.class));
+        private static final SorterPluginService<Sorter> INSTANCE = new SorterPluginService<>(Sorter.class, PluginJars.installed());
     }
 }
