@@ -317,4 +317,24 @@ class CommandLineRunnerTest {
             return "removes all entries";
         }
     }
+
+    @Test
+    void testThePluginsAreListedWithTheJarsNotLoaded(@org.junit.jupiter.api.io.TempDir Path extensions) throws Exception {
+        org.bitpunk.m3uedit.testsupport.ExamplePluginJar.build(extensions, "radio-filter.jar");
+        java.nio.file.Files.writeString(extensions.resolve("broken.jar"), "not a jar");
+        org.bitpunk.m3uedit.plugins.PluginJars jars = org.bitpunk.m3uedit.plugins.PluginJars.load(extensions,
+                getClass().getClassLoader());
+        List<org.bitpunk.m3uedit.plugins.PluginDescriptor<?>> plugins = new java.util.ArrayList<>(
+                org.bitpunk.m3uedit.plugins.AbstractPluginService.of(org.bitpunk.m3uedit.api.Filter.class, jars)
+                        .getDescriptors());
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+
+        CommandLineRunner.listPlugins(new java.io.PrintStream(bytes, true, java.nio.charset.StandardCharsets.UTF_8),
+                plugins, jars);
+
+        String listed = bytes.toString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(listed).contains("Filter    UniqueNameFilter", "Unique Name Filter",
+                "org.bitpunk.m3uedit.example.RadioFilter", "Radio Filter (example)  (radio-filter.jar)",
+                "Not loaded:", "broken.jar: not a jar");
+    }
 }

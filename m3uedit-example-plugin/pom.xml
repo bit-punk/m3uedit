@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.bitpunk.m3uedit</groupId>
+        <artifactId>m3uedit-parent</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <!-- an example of a plugin of another party: built against the plugin API only, installed as jar of its own; the
+         tests of m3uedit-app load its jar like any other plugin jar. Not part of the application. -->
+    <artifactId>m3uedit-example-plugin</artifactId>
+
+    <name>m3uedit-example-plugin</name>
+
+    <dependencies>
+        <!-- provided by m3uedit at runtime -->
+        <dependency>
+            <groupId>org.bitpunk.m3uedit</groupId>
+            <artifactId>m3uedit-plugin-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <!-- declares the version of the plugin API it was built for (M3UEdit-Plugin-API) -->
+                        <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

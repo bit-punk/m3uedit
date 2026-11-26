@@ -32,7 +32,11 @@ Without options, the user interface is started as before.
 | `-q`, `--quiet`             | only print errors                                                               |
 | `-v`, `--verbose`           | print details of the run                                                        |
 | `-h`, `--help`              | print the help                                                                  |
+| `--list-plugins`            | print the plugins: the built-in ones, those installed in `~/.m3uedit/extensions`, and the jars that could not be loaded |
 | `--version`                 | print the version                                                               |
+
+Plugins of other parties installed in `~/.m3uedit/extensions` are used as in the user interface; a jar that cannot
+be loaded is reported on stderr, and a project using one of its plugins cannot be run.
 
 The output of the command-line mode is always in English, whatever language is set for the user interface.
 

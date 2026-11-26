@@ -66,4 +66,13 @@ class CommandLineOptionsTest {
         assertThatThrownBy(() -> CommandLineOptions.parse("-q", "-v", "-r", "a")).isInstanceOf(UsageException.class)
                 .hasMessage("--quiet and --verbose cannot be combined");
     }
+
+    @Test
+    void testThePluginsCanBeListed() throws Exception {
+        CommandLineOptions options = CommandLineOptions.parse("--list-plugins");
+
+        assertThat(options.listPlugins()).isTrue();
+        assertThat(options.projects()).isEmpty();
+        assertThat(CommandLineOptions.usage()).contains("--list-plugins");
+    }
 }

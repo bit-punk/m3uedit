@@ -22,6 +22,7 @@ entries of several sources, filters, sorts and enriches them and writes the resu
 * write the playlist to a local file or an SFTP server
 * save everything as a project to re-create the playlist later on, also without user interface from the command
   line, e.g. as a cron job
+* extensible by plugins of other parties (inputs, filters, sorters, enrichers, outputs)
 * in English or German, with a light or dark theme
 
 M3UEditor does not provide any streams or programme guides itself: it only edits playlists of sources you choose.

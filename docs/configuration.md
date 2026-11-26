@@ -40,6 +40,7 @@ default values on first use and can be edited by hand:
 | `plugins/reachable_url_filter.yaml`    | connect-timeout used to check whether a stream is reachable |
 | `plugins/sftp_recent_servers.yaml`     | recently used SFTP servers (passwords are never stored)     |
 | `cache/epg/`                           | downloaded EPG sources                                      |
+| `extensions/`                          | jars of plugins of other parties, see the [user guide](user-guide.md#plugins-of-other-parties) |
 
 The files are read again before they are changed, so changes made by hand are kept.
 

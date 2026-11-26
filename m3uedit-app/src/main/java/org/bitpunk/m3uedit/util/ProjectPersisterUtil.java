@@ -91,6 +91,14 @@ public class ProjectPersisterUtil {
     }
 
     /**
+     * @return a mapper of project-files accepting the given plugins, e.g. with plugins installed by the user
+     */
+    // package-private for tests
+    static ObjectMapper mapperFor(PluginModule.Services services) {
+        return builder().addModule(new PluginModule(() -> MapperHolder.SETTINGS_MAPPER, services)).build();
+    }
+
+    /**
      * @return the mapper of the settings of the plugins
      */
     // package-private for tests

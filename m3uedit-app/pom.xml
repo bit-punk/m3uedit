@@ -80,6 +80,13 @@
             <artifactId>m3uedit-plugins</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- the jar of the example plugin, loaded by the tests like a plugin of another party; it is built before the
+             application, but not part of its classpath (see the configuration of surefire) -->
+        <dependency>
+            <groupId>org.bitpunk.m3uedit</groupId>
+            <artifactId>m3uedit-example-plugin</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <resources>
@@ -106,6 +113,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- loaded by the tests from its own jar, like a plugin installed by the user -->
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>org.bitpunk.m3uedit:m3uedit-example-plugin</classpathDependencyExclude>
+                    </classpathDependencyExcludes>
+                    <systemPropertyVariables>
+                        <m3uedit.examplePlugin.classes>${project.basedir}/../m3uedit-example-plugin/target/classes</m3uedit.examplePlugin.classes>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -1,7 +1,15 @@
 package org.bitpunk.m3uedit.cli;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.api.Enricher;
+import org.bitpunk.m3uedit.api.Filter;
+import org.bitpunk.m3uedit.api.Input;
+import org.bitpunk.m3uedit.api.Output;
+import org.bitpunk.m3uedit.api.Sorter;
 import org.bitpunk.m3uedit.model.DataModel;
+import org.bitpunk.m3uedit.plugins.PluginDescriptor;
+import org.bitpunk.m3uedit.plugins.PluginJars;
+import org.bitpunk.m3uedit.plugins.PluginServices;
 import org.bitpunk.m3uedit.util.HeadlessMode;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
 
@@ -11,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Runs projects without user interface (command-line mode, see {@link CommandLineOptions#usage()}): the inputs are
@@ -43,6 +52,10 @@ public class CommandLineRunner {
      */
     public int run(CommandLineOptions options) {
         HeadlessMode.setActive(true);
+        // plugin jars that cannot be loaded are skipped; the projects using their plugins fail then
+        PluginServices.all();
+        PluginJars.installed().getProblems().forEach(problem ->
+                err.printf("m3uedit: plugin jar %s not loaded: %s%n", problem.file(), problem.reason()));
         int exitCode = OK;
         for (Path projectFile : options.projects()) {
             exitCode = Math.max(exitCode, run(projectFile, options));
@@ -118,5 +131,27 @@ public class CommandLineRunner {
         if (!options.quiet()) {
             out.println(format.formatted(args));
         }
+    }
+
+    /**
+     * Prints the plugins (option {@code --list-plugins}): the built-in ones, those installed by the user, and the jars
+     * that could not be loaded.
+     */
+    public static void listPlugins(PrintStream out, List<PluginDescriptor<?>> plugins, PluginJars jars) {
+        out.printf("Plugins (built-in, and installed in %s):%n", PluginJars.directory());
+        for (PluginDescriptor<?> plugin : plugins) {
+            out.printf("  %-9s %-45s %s%s%n", kind(plugin), plugin.id(), plugin.name(),
+                    plugin.isInstalled() ? "  (" + plugin.jar().getFileName() + ")" : "");
+        }
+        List<PluginJars.Problem> problems = jars.getProblems();
+        if (!problems.isEmpty()) {
+            out.println("Not loaded:");
+            problems.forEach(problem -> out.printf("  %s: %s%n", problem.file().getFileName(), problem.reason()));
+        }
+    }
+
+    private static String kind(PluginDescriptor<?> plugin) {
+        return Stream.of(Input.class, Filter.class, Sorter.class, Enricher.class, Output.class)
+                .filter(kind -> kind.isAssignableFrom(plugin.type())).map(Class::getSimpleName).findFirst().orElse("");
     }
 }

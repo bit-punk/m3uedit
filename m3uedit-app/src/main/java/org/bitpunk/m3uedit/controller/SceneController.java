@@ -45,6 +45,8 @@ import org.bitpunk.m3uedit.config.Settings;
 import org.bitpunk.m3uedit.i18n.Messages;
 import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
+import org.bitpunk.m3uedit.plugins.PluginJars;
+import org.bitpunk.m3uedit.plugins.PluginServices;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.PlaylistClipboard;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
@@ -286,6 +288,11 @@ public class SceneController implements Initializable {
                 messageReporter.accept(Messages.get("scene.languageChanged"));
             }
         });
+    }
+
+    @FXML
+    void handlePluginsAction() {
+        new PluginsDialog(PluginServices.all(), PluginJars.installed()).showAndWait();
     }
 
     @FXML

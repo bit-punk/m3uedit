@@ -1,0 +1,1 @@
+M3UEdit-Plugin-API: 1
