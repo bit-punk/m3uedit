@@ -435,9 +435,7 @@ class ProjectPersisterUtilTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            // arbitrary classes as plugins
-            "inputs: [{type: java.lang.ProcessBuilder, command: [touch]}]",
-            "inputs: [{type: ProcessBuilder, command: [touch]}]",
+            // a YAML-tag instead of a type
             "inputs: [!<java.lang.ProcessBuilder> {command: [touch]}]",
             // plugins of another kind, or without type
             "inputs: [{type: UniqueNameFilter}]",
@@ -456,6 +454,21 @@ class ProjectPersisterUtilTest {
                 .hasMessageNotContaining("Unexpected end-of-input");
         Path projectFile = Files.writeString(tempDir.resolve("crafted.m3uproj"), yaml);
         assertThat(ProjectPersisterUtil.loadProject(projectFile)).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"java.lang.ProcessBuilder", "ProcessBuilder"})
+    void testArbitraryClassesAreOnlyPluginsThatAreNotInstalled(String type) throws Exception {
+        String yaml = "name: crafted\ninputs: [{type: %s, command: [touch]}]\n".formatted(type);
+
+        DataModel loaded = ProjectPersisterUtil.getMapper().readValue(yaml, DataModel.class);
+
+        // only data: no class is loaded for an unknown type
+        assertThat(loaded.getInputs()).singleElement().isInstanceOfSatisfying(
+                org.bitpunk.m3uedit.plugins.missing.MissingInput.class, missing -> {
+                    assertThat(missing.getTypeId()).isEqualTo(type);
+                    assertThat(missing.getRawSettings().toString()).contains("touch");
+                });
     }
 
     @Test

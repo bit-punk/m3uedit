@@ -157,8 +157,9 @@ ignored and logged as an error, as the two could not be told apart in a project-
 kept by m3uedit (`PluginStates`), not by the plugin.
 
 Plugins of other parties are installed as jars in `~/.m3uedit/extensions/` (`PluginJars`), see
-[Plugin jars](#plugin-jars). Projects using plugins that are not installed are part of phase 5 of
-[#46](https://github.com/bit-punk/m3uedit/issues/46).
+[Plugin jars](#plugin-jars). A plugin of a project-file that is not installed is kept as placeholder
+(`plugins.missing.MissingPlugin`, one class per kind): its type id, whether it is enabled and its settings are kept as
+data (no class is loaded for it) and written back unchanged; it does not take part in the computation.
 
 ### Writing a plugin
 

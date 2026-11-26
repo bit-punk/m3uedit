@@ -182,6 +182,12 @@
     -fx-opacity: 0.55;
 }
 
+/* a plugin of the project that is not installed: kept, but not used */
+.plugin-row:plugin-missing .plugin-title {
+    -fx-font-style: italic;
+    -fx-opacity: 0.7;
+}
+
 .plugin-row:drop-before {
     -fx-border-color: -fx-accent transparent transparent transparent;
     -fx-border-width: 2 0 0 0;

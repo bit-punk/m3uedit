@@ -36,7 +36,8 @@ Without options, the user interface is started as before.
 | `--version`                 | print the version                                                               |
 
 Plugins of other parties installed in `~/.m3uedit/extensions` are used as in the user interface; a jar that cannot
-be loaded is reported on stderr, and a project using one of its plugins cannot be run.
+be loaded is reported on stderr. A project using a plugin that is not installed is not written (exit code 1), see the
+[user guide](user-guide.md#plugins-of-other-parties).
 
 The output of the command-line mode is always in English, whatever language is set for the user interface.
 

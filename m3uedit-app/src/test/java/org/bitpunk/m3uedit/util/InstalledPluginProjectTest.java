@@ -12,16 +12,15 @@ import org.bitpunk.m3uedit.plugins.AbstractPluginService;
 import org.bitpunk.m3uedit.plugins.PluginJars;
 import org.bitpunk.m3uedit.plugins.PluginService;
 import org.bitpunk.m3uedit.plugins.PluginStates;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 import org.bitpunk.m3uedit.testsupport.ExamplePluginJar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * A plugin installed as jar is stored in project-files like a built-in one.
@@ -64,17 +63,30 @@ class InstalledPluginProjectTest {
     }
 
     @Test
-    void testWithoutTheJarTheProjectCannotBeRead() throws Exception {
+    void testWithoutTheJarThePluginIsKeptAndUsedAgainOnceInstalled() throws Exception {
         ExamplePluginJar.build(extensions, "radio-filter.jar");
         PluginModule.Services withJar = services(PluginJars.load(extensions, getClass().getClassLoader()));
         Filter radio = withJar.filters().get().find(ExamplePluginJar.RADIO_FILTER).orElseThrow().create();
+        radio.setSettings(radio.getSettingsType().getConstructor(Boolean.class).newInstance(true));
+        PluginStates.enabled(radio).set(true);
         DataModel project = DataModelFactory.createDataModel("radio");
         project.getFilters().add(radio);
         String yaml = ProjectPersisterUtil.mapperFor(withJar).writeValueAsString(project);
 
-        // a project-file can not cause a plugin to be loaded (projects with missing plugins: phase 5 of #46)
-        assertThatThrownBy(() -> ProjectPersisterUtil.mapperFor(services(PluginJars.none()))
-                .readValue(yaml, DataModel.class)).isInstanceOf(JacksonException.class)
-                .hasMessageContaining(ExamplePluginJar.RADIO_FILTER);
+        // the jar is removed: the project is opened and saved with the plugin as placeholder
+        ObjectMapper withoutJar = ProjectPersisterUtil.mapperFor(services(PluginJars.none()));
+        DataModel opened = withoutJar.readValue(yaml, DataModel.class);
+        assertThat(opened.getMissingPlugins()).extracting(MissingPlugin::getTypeId)
+                .containsExactly(ExamplePluginJar.RADIO_FILTER);
+        String savedAgain = withoutJar.writeValueAsString(opened);
+
+        // the jar is installed again: the plugin is used with its settings
+        DataModel reopened = ProjectPersisterUtil.mapperFor(withJar).readValue(savedAgain, DataModel.class);
+        Filter loadedRadio = reopened.getFilters().stream()
+                .filter(filter -> filter.getClass().getName().equals(ExamplePluginJar.RADIO_FILTER))
+                .findFirst().orElseThrow();
+        assertThat(loadedRadio.getSettings()).isEqualTo(radio.getSettings());
+        assertThat(PluginStates.enabled(loadedRadio).get()).isTrue();
+        assertThat(reopened.getMissingPlugins()).isEmpty();
     }
 }

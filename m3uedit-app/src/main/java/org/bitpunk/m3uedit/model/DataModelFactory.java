@@ -3,10 +3,11 @@ package org.bitpunk.m3uedit.model;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.extern.slf4j.Slf4j;
+import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.EnricherPluginService;
 import org.bitpunk.m3uedit.plugins.FilterPluginService;
-import org.bitpunk.m3uedit.api.Plugin;
 import org.bitpunk.m3uedit.plugins.SorterPluginService;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,10 +43,11 @@ public class DataModelFactory {
 
     // package-private for tests
     static <T extends Plugin> void completePlugins(ObservableList<T> plugins, List<T> availablePlugins) {
-        Set<Class<?>> types = new HashSet<>();
+        Set<Object> types = new HashSet<>();
         List<T> completed = new ArrayList<>();
         for (T plugin : plugins) {
-            if (types.add(plugin.getClass())) {
+            // plugins that are not installed are told apart by their type id
+            if (types.add(plugin instanceof MissingPlugin missing ? missing.getTypeId() : plugin.getClass())) {
                 completed.add(plugin);
             } else {
                 log.warn("dropping duplicate plugin {} from project", plugin);

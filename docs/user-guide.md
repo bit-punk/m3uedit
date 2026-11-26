@@ -222,6 +222,14 @@ Updating a plugin means replacing its jar, removing it deleting its jar; both ta
 jars that could not be loaded with the reason, e.g. a jar built for another version of m3uedit. In the command-line
 mode, `m3uedit --list-plugins` prints the same.
 
+**Projects using plugins that are not installed** (e.g. a project from another computer, or after removing a jar)
+are opened anyway, with a message naming the missing plugins. A missing plugin is shown in the pipeline as *not
+installed*, with its type id; its settings are kept and saved unchanged, so the project uses the plugin again once it
+is installed. Until then it does not take part: a missing input is reported as input that could not be read, a
+missing filter, sorter or enricher is skipped, a missing output is not written to. It can be removed from the project
+like any input or output. The command-line mode does not write the playlist of such a project (exit code 1), as it
+would not be the playlist the project describes.
+
 **A plugin runs with your rights, like m3uedit itself: only install plugins you trust.** m3uedit never downloads
 plugins, and opening a project-file never loads a plugin.
 

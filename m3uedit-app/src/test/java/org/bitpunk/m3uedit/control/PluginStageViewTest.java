@@ -373,4 +373,24 @@ class PluginStageViewTest {
         assertThat(stage.isInactive()).isFalse();
         assertThat(header.getProperties().values()).noneMatch(javafx.scene.control.Tooltip.class::isInstance);
     }
+
+    @Test
+    void aPluginThatIsNotInstalledIsMarkedAndCanBeRemoved() {
+        org.bitpunk.m3uedit.api.Filter missing = new org.bitpunk.m3uedit.plugins.missing.MissingFilter(
+                "de.example.RadioFilter", tools.jackson.databind.node.JsonNodeFactory.instance.objectNode());
+        ObservableList<org.bitpunk.m3uedit.api.Filter> filters = FXCollections.observableArrayList(missing);
+        // a stage of filters: without add-button, so built-in filters cannot be removed
+        PluginStageView<org.bitpunk.m3uedit.api.Filter> stage = new PluginStageView<>("Filters", "hint", filters,
+                selection, true, plugin -> null);
+        stage.setRemoveConfirmation(plugin -> true);
+        HBox row = stage.rowOf(missing).orElseThrow();
+
+        assertThat(find(row, Label.class)).anySatisfy(label -> assertThat(label.getText()).isEqualTo("not installed"));
+        assertThat(find(row, CheckBox.class)).singleElement().satisfies(box -> assertThat(box.isDisabled()).isTrue());
+        assertThat(find(row, Button.class)).noneMatch(b -> "Configure".equals(b.getAccessibleText()) && b.isVisible());
+
+        button(row, "Remove").fire();
+
+        assertThat(filters).isEmpty();
+    }
 }

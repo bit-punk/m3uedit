@@ -332,4 +332,32 @@ class SceneControllerRecentProjectsTest {
             }
         });
     }
+
+    @Test
+    void testOpeningAProjectWithPluginsThatAreNotInstalledTellsWhichAreMissing() throws Exception {
+        Path project = Files.writeString(tempDir.resolve("other.m3uproj"), """
+                name: other computer
+                filters:
+                  - type: de.example.RadioFilter
+                    enabled: true
+                """);
+        runOnFxThread(() -> {
+            Fixture f = loadScene();
+            List<String> messages = new ArrayList<>();
+            f.controller().messageReporter = messages::add;
+            f.controller().projectLoader = path -> {
+                DataModel dataModel = org.bitpunk.m3uedit.util.ProjectPersisterUtil.loadProject(path);
+                dataModel.setBackgroundExecutor(task -> {
+                });
+                return dataModel;
+            };
+
+            f.controller().openProject(project);
+
+            assertThat(f.tabPane().getTabs()).hasSize(1);
+            assertThat(f.errors()).isEmpty();
+            assertThat(messages).singleElement().asString()
+                    .contains("other computer", "de.example.RadioFilter", "Help → Plugins");
+        });
+    }
 }

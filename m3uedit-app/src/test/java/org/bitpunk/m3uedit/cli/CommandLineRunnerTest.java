@@ -261,7 +261,8 @@ class CommandLineRunnerTest {
 
     @Test
     void testAProjectThatCannotBeLoaded() throws Exception {
-        Path broken = Files.writeString(dir.resolve("broken.m3uproj"), "---\nname: broken\ninputs:\n  - type: NoSuchInput\n");
+        // an input listed as output (a plugin that is not installed would be opened, see the next test)
+        Path broken = Files.writeString(dir.resolve("broken.m3uproj"), "---\nname: broken\noutputs:\n  - type: FileInput\n");
 
         assertThat(run("-r", broken.toString())).isEqualTo(CommandLineRunner.USAGE);
         assertThat(err()).contains("project-file could not be loaded");
@@ -336,5 +337,29 @@ class CommandLineRunnerTest {
         assertThat(listed).contains("Filter    UniqueNameFilter", "Unique Name Filter",
                 "org.bitpunk.m3uedit.example.RadioFilter", "Radio Filter (example)  (radio-filter.jar)",
                 "Not loaded:", "broken.jar: not a jar");
+    }
+
+    @Test
+    void testAProjectWithPluginsThatAreNotInstalledIsNotWritten() throws Exception {
+        Path input = Files.writeString(dir.resolve("in.m3u"), "#EXTM3U\n#EXTINF:-1,Das Erste\nhttp://example.com/ard\n");
+        Path project = Files.writeString(dir.resolve("missing.m3uproj"), """
+                name: missing
+                inputs:
+                  - type: FileInput
+                    source: "%s"
+                filters:
+                  - type: de.example.RadioFilter
+                    enabled: true
+                outputs:
+                  - type: FileOutput
+                    output: %s
+                """.formatted(input, output.toUri()));
+
+        int exitCode = run("--run", project.toString());
+
+        assertThat(exitCode).isEqualTo(CommandLineRunner.FAILED);
+        assertThat(err.toString(StandardCharsets.UTF_8)).contains("plugins not installed: de.example.RadioFilter",
+                "the playlist is not written");
+        assertThat(output).doesNotExist();
     }
 }

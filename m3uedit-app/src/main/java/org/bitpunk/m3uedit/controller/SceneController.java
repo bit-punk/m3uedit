@@ -47,6 +47,7 @@ import org.bitpunk.m3uedit.model.DataModel;
 import org.bitpunk.m3uedit.model.DataModelFactory;
 import org.bitpunk.m3uedit.plugins.PluginJars;
 import org.bitpunk.m3uedit.plugins.PluginServices;
+import org.bitpunk.m3uedit.plugins.missing.MissingPlugin;
 import org.bitpunk.m3uedit.util.DialogUtil;
 import org.bitpunk.m3uedit.util.PlaylistClipboard;
 import org.bitpunk.m3uedit.util.ProjectPersisterUtil;
@@ -63,6 +64,7 @@ import java.time.format.FormatStyle;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -817,6 +819,12 @@ public class SceneController implements Initializable {
         addNewProjectTab(dataModel);
         recentProjects.add(projectFile);
         dataModel.reloadInputs();       // entries are not persisted, so they are loaded from the inputs
+        List<MissingPlugin> missing = dataModel.getMissingPlugins();
+        if (!missing.isEmpty()) {
+            messageReporter.accept(Messages.get("scene.missingPlugins", dataModel.getName(),
+                    missing.stream().map(MissingPlugin::getTypeId).distinct().collect(Collectors.joining(", ")),
+                    PluginJars.directory()));
+        }
     }
 
     private Optional<Tab> findProjectTab(Path projectFile) {
