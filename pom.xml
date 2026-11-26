@@ -22,7 +22,7 @@
 
     <properties>
         <!-- the version of local builds: the next release (the draft of Release Drafter) as snapshot -->
-        <revision>1.2.1-SNAPSHOT</revision>
+        <revision>1.3.0-SNAPSHOT</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- compiles against the API of this java version, whichever JDK runs the build -->
         <maven.compiler.release>25</maven.compiler.release>
